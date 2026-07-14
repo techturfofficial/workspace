@@ -1,0 +1,13 @@
+{
+  "name": "tech-turf-root",
+  "version": "1.0.0",
+  "description": "Tech Turf CRM Root Package",
+  "scripts": {
+    "dev": "concurrently \"cross-env PORT=3000 npm run dev --prefix project\" \"cross-env PORT=5000 npm run dev --prefix project\"",
+    "start": "concurrently \"cross-env PORT=3000 npm run start --prefix project\" \"cross-env PORT=5000 npm run start --prefix project\""
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.3",
+    "cross-env": "^10.1.0"
+  }
+}

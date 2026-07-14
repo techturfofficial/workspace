@@ -51,7 +51,7 @@ router.post('/', verifyToken, checkRole('admin', 'client_handler', 'team_leader'
     content, media, guidelines, credentials,
     agreement, payment_terms, ownership, nda,
     maintenance, updates, marketing, team_leader_id, team_members,
-    brand_colors, brand_tone, goals, project_key
+    brand_colors, brand_tone, goals, project_key, stage
   } = req.body;
   if (!name) return res.status(400).json({ message: 'Name required' });
   try {
@@ -64,8 +64,8 @@ router.post('/', verifyToken, checkRole('admin', 'client_handler', 'team_leader'
       content, media, guidelines, credentials,
       agreement, payment_terms, ownership, nda,
       maintenance, updates, marketing, team_leader_id, team_members,
-      brand_colors, brand_tone, goals, project_key
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+      brand_colors, brand_tone, goals, project_key, stage
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
       name, company, phone, phone_alt, email, location, comm_method,
       industry, business_desc, audience, competitors, brand_assets,
       service_type, project_desc, project_goals, features, design_prefs, reference_examples || '',
@@ -75,7 +75,8 @@ router.post('/', verifyToken, checkRole('admin', 'client_handler', 'team_leader'
       agreement, payment_terms, ownership, nda,
       maintenance, updates, marketing,
       team_leader_id || null, team_members || '',
-      brand_colors, brand_tone, goals, project_key
+      brand_colors, brand_tone, goals, project_key,
+      stage || 'new_register'
     );
     res.json({ message: 'Client created', id: result.lastInsertRowid });
   } catch (err) {
@@ -94,7 +95,7 @@ router.put('/:id', verifyToken, checkRole('admin', 'client_handler', 'team_leade
     'content', 'media', 'guidelines', 'credentials',
     'agreement', 'payment_terms', 'ownership', 'nda',
     'maintenance', 'updates', 'marketing',
-    'brand_colors', 'brand_tone', 'goals', 'retainer_mode', 'team_leader_id', 'team_members', 'project_key'
+    'brand_colors', 'brand_tone', 'goals', 'retainer_mode', 'team_leader_id', 'team_members', 'project_key', 'stage'
   ];
 
   try {
@@ -144,6 +145,33 @@ router.delete('/:id', verifyToken, checkRole('admin'), (req, res) => {
   } catch (err) {
     console.error('Failed to delete client:', err.message);
     res.status(500).json({ message: 'Failed to delete client' });
+  }
+});
+
+// POST /api/clients/:id/provision-login (staff only)
+const crypto = require('crypto');
+const { hashPassword } = require('../auth');
+router.post('/:id/provision-login', verifyToken, checkRole('admin', 'client_handler'), async (req, res) => {
+  const { id } = req.params;
+  try {
+    const client = db.prepare('SELECT id, name FROM clients WHERE id=?').get(id);
+    if (!client) return res.status(404).json({ message: 'Client not found' });
+
+    const clientLoginId = 'TT-CLI-' + String(client.id).padStart(5, '0');
+    const tempPassword = 'TT-' + crypto.randomBytes(4).toString('hex').toUpperCase() + '$9z';
+    const hash = await hashPassword(tempPassword);
+
+    db.prepare('UPDATE clients SET client_login_id=?, password_hash=?, is_active=1 WHERE id=?')
+      .run(clientLoginId, hash, client.id);
+
+    res.json({
+      message: 'Client portal login provisioned successfully',
+      client_login_id: clientLoginId,
+      temp_password: tempPassword
+    });
+  } catch (err) {
+    console.error('Provision login error:', err);
+    res.status(500).json({ message: 'Failed to provision client login: ' + err.message });
   }
 });
 

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Client Connect Login | Tech Turf CRM</title>
+  <!-- Typography -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/client-portal.css?v=logo-fix-20260622">
+</head>
+<body>
+  <!-- Ambient background elements -->
+  <div id="three-bg"></div>
+
+  <div class="login-wrapper">
+    <div class="glass-card login-card">
+      <div class="login-logo">
+        <img src="assets/logo.jpg" alt="Tech Turf">
+      </div>
+      <h2 style="font-family: var(--font-display); font-size: 1.6rem; margin-bottom: 8px; font-weight: 700;">CLIENT CONNECT</h2>
+      <p class="login-subtitle">Access your Tech Turf project workspace & deliverables</p>
+
+      <form id="login-form">
+        <div class="form-group" style="text-align: left;">
+          <label for="client-login-id">Client Access ID</label>
+          <input type="text" id="client-login-id" class="form-control" placeholder="e.g. TT-CLI-00012" required autocomplete="username">
+        </div>
+        <div class="form-group" style="text-align: left;">
+          <label for="password">Password / Portal PIN</label>
+          <input type="password" id="password" class="form-control" placeholder="••••••••••••" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn-primary w-100" style="margin-top: 10px;">AUTHORIZE ACCESS</button>
+      </form>
+
+      <div class="login-helper">
+        Forgot access? Contact your Tech Turf account manager.
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- API client -->
+  <script src="js/api.js"></script>
+  <!-- Login script logic -->
+  <script>
+    // Toast helper
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+        <span style="font-weight:600;">${message}</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // Redirect if already logged in
+    if (localStorage.getItem('client_token')) {
+      window.location.href = 'index.html';
+    }
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const loginId = document.getElementById('client-login-id').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const response = await clientApi.post('/login', {
+          client_login_id: loginId,
+          password: password
+        });
+
+        localStorage.setItem('client_token', response.token);
+        localStorage.setItem('client_info', JSON.stringify(response.client));
+
+        showToast('Authorization successful! Redirecting...', 'success');
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 1000);
+      } catch (err) {
+        showToast(err.message || 'Invalid credentials', 'error');
+      }
+    });
+  </script>
+</body>
+</html>

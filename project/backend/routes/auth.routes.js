@@ -6,29 +6,15 @@ const { sendMail } = require('../services/mailer');
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
-  const { email, password, role } = req.body;
+  const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
   const user = db.prepare('SELECT * FROM users WHERE email = ? AND is_active = 1').get(email.toLowerCase().trim());
-  if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+  if (!user) return res.status(401).json({ message: 'No users found in database' });
   if (['suspended', 'exited'].includes((user.employment_status || '').toLowerCase())) {
     return res.status(403).json({ message: `Account is ${user.employment_status}` });
   }
   const valid = await comparePassword(password, user.password);
   if (!valid) return res.status(401).json({ message: 'Invalid credentials' });
-
-  if (role) {
-    const selectedRole = String(role).trim().toLowerCase();
-    const allowedRoles = [
-      String(user.role || '').trim().toLowerCase(),
-      ...(String(user.secondary_roles || '')
-        .split(',')
-        .map(r => r.trim().toLowerCase())
-        .filter(Boolean))
-    ];
-    if (!allowedRoles.includes(selectedRole)) {
-      return res.status(403).json({ message: 'Selected role does not match your account roles' });
-    }
-  }
 
   // Log login event
   try {

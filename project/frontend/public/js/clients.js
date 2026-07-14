@@ -23,6 +23,7 @@ async function initClients() {
       location: document.getElementById('client-location').value,
       comm_method: document.getElementById('client-comm-method').value,
       project_key: document.getElementById('client-project-key').value,
+      stage: document.getElementById('client-stage')?.value || 'new_register',
 
       // 2. Business Details
       industry: document.getElementById('client-industry').value,
@@ -93,43 +94,223 @@ async function loadClients() {
     const filtered = !search ? clients : clients.filter((client) => {
       return [client.name, client.company, client.email, client.phone].some((value) => (value || '').toLowerCase().includes(search));
     });
-    const container = document.getElementById('clients-list');
-    if (filtered.length === 0) {
-      container.innerHTML = `
-        <div class="empty-state" style="grid-column:1/-1;">
-          <i class="fas fa-users"></i>
-          <div class="empty-title">No clients found</div>
-          <div class="empty-desc">You have not added any clients yet.</div>
-        </div>
-      `;
-      return;
-    }
-    container.innerHTML = filtered.map(c => `
-      <div class="glass-card client-card anim-fade-up" onclick="openClientDetail('${c.id}')">
-        <div class="client-avatar">${c.name.substring(0, 2).toUpperCase()}</div>
-        <div class="client-name">${c.name}</div>
-        <div class="client-company">${c.company || 'Private Client'}</div>
-        <div class="client-stats">
-          <div class="client-stat">
-            <div class="client-stat-val">${c.active_projects}</div>
-            <div class="client-stat-label">Projects</div>
+    const stages = ['new_register', 'order_confirmed', 'processing', 'review', 'completion'];
+    const grouped = {};
+
+    stages.forEach(stage => {
+      grouped[stage] = [];
+      const colCards = document.getElementById(`cards-${stage}`);
+      const colCount = document.getElementById(`count-${stage}`);
+      if (colCards) colCards.innerHTML = '';
+      if (colCount) colCount.textContent = '0';
+    });
+
+    filtered.forEach(c => {
+      const stage = stages.includes(c.stage) ? c.stage : 'new_register';
+      grouped[stage].push(c);
+    });
+
+    stages.forEach(stage => {
+      const colCards = document.getElementById(`cards-${stage}`);
+      const colCount = document.getElementById(`count-${stage}`);
+      if (!colCards) return;
+
+      const clientsInStage = grouped[stage];
+      if (colCount) colCount.textContent = clientsInStage.length;
+
+      if (clientsInStage.length === 0) {
+        colCards.innerHTML = '<div class="kanban-empty">No clients in this stage</div>';
+        return;
+      }
+
+      colCards.innerHTML = clientsInStage.map(c => `
+        <div class="glass-card client-card anim-fade-up" draggable="true" data-client-id="${c.id}" onclick="openClientDetail('${c.id}')">
+          <div class="client-avatar">${c.name.substring(0, 2).toUpperCase()}</div>
+          <div class="client-name">${c.name}</div>
+          <div class="client-company">${c.company || 'Private Client'}</div>
+          <div class="client-stats">
+            <div class="client-stat">
+              <div class="client-stat-val">${c.active_projects}</div>
+              <div class="client-stat-label">Projects</div>
+            </div>
+            <div class="client-stat">
+              <div class="client-stat-val">${c.satisfaction_score || 0}</div>
+              <div class="client-stat-label">Rating</div>
+            </div>
           </div>
-          <div class="client-stat">
-            <div class="client-stat-val">${c.satisfaction_score || 0}</div>
-            <div class="client-stat-label">Rating</div>
-          </div>
         </div>
-      </div>
-    `).join('');
+      `).join('');
+    });
+
+    initDragAndDrop();
   } catch (e) {
     showToast('Failed to load clients', 'error');
   }
+}
+
+function initDragAndDrop() {
+  const cards = document.querySelectorAll('.client-card');
+  const columns = document.querySelectorAll('.kanban-column-cards');
+
+  cards.forEach(card => {
+    if (card._dragInit) return;
+    card._dragInit = true;
+
+    card.addEventListener('dragstart', (e) => {
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', card.dataset.clientId);
+    });
+
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      document.querySelectorAll('.kanban-column.drag-over').forEach(col => col.classList.remove('drag-over'));
+    });
+  });
+
+  columns.forEach(column => {
+    if (column._dragInit) return;
+    column._dragInit = true;
+
+    column.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      column.closest('.kanban-column')?.classList.add('drag-over');
+    });
+
+    column.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      column.closest('.kanban-column')?.classList.add('drag-over');
+    });
+
+    column.addEventListener('dragleave', (e) => {
+      if (!column.contains(e.relatedTarget)) {
+        column.closest('.kanban-column')?.classList.remove('drag-over');
+      }
+    });
+
+    column.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      const col = column.closest('.kanban-column');
+      col?.classList.remove('drag-over');
+
+      const clientId = e.dataTransfer.getData('text/plain');
+      const targetStage = col?.dataset.stage;
+      if (!clientId || !targetStage) return;
+
+      try {
+        await api.put(`/clients/${clientId}`, { stage: targetStage });
+        showToast('Stage updated successfully', 'success');
+        loadClients();
+      } catch (err) {
+        showToast('Failed to update stage: ' + err.message, 'error');
+      }
+    });
+  });
 }
 
 function initSearch() {
   const input = document.getElementById('client-search');
   if (!input) return;
   input.addEventListener('input', debounce(() => loadClients(), 200));
+}
+
+function openNewClientEditor() {
+  const panel = document.getElementById('detail-panel');
+  const overlay = document.getElementById('detail-panel-overlay');
+
+  if (!panel || !overlay) {
+    return showToast('UI Error: Detail panel missing.', 'error');
+  }
+
+  panel.style.display = 'block';
+  document.getElementById('panel-title').textContent = 'New Client';
+  document.getElementById('panel-body').innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:16px;">
+      <div style="padding:16px; background:var(--bg-hover); border-radius:12px; border-left:3px solid var(--accent-primary);">
+        <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:12px;">Client Identity</div>
+        <div class="form-group">
+          <label for="quick-client-name">Full Name</label>
+          <input id="quick-client-name" class="form-control" type="text" placeholder="Client name">
+        </div>
+        <div class="form-group">
+          <label for="quick-client-company">Company Name</label>
+          <input id="quick-client-company" class="form-control" type="text" placeholder="Company or brand">
+        </div>
+        <div class="form-group">
+          <label for="quick-client-project-key">Project Key</label>
+          <input id="quick-client-project-key" class="form-control" type="text" placeholder="e.g. LUXE-2024">
+        </div>
+      </div>
+
+      <div style="padding:16px; background:var(--bg-hover); border-radius:12px;">
+        <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:12px;">Contact</div>
+        <div class="form-group">
+          <label for="quick-client-email">Email Address</label>
+          <input id="quick-client-email" class="form-control" type="email" placeholder="client@example.com">
+        </div>
+        <div class="form-group">
+          <label for="quick-client-phone">Contact Number</label>
+          <input id="quick-client-phone" class="form-control" type="text" placeholder="Primary phone">
+        </div>
+        <div class="form-group">
+          <label for="quick-client-location">Location</label>
+          <input id="quick-client-location" class="form-control" type="text" placeholder="City, Country">
+        </div>
+      </div>
+
+      <div style="padding:16px; background:var(--bg-hover); border-radius:12px;">
+        <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:12px;">Project Brief</div>
+        <div class="form-group">
+          <label for="quick-client-service-type">Service Type</label>
+          <input id="quick-client-service-type" class="form-control" type="text" placeholder="Website / Branding / Marketing">
+        </div>
+        <div class="form-group">
+          <label for="quick-client-project-desc">Project Description</label>
+          <textarea id="quick-client-project-desc" class="form-control" rows="4" placeholder="Short project note"></textarea>
+        </div>
+      </div>
+
+      <button class="btn-primary" style="width:100%; margin-top:8px;" onclick="createQuickClient()">
+        <i class="fas fa-check"></i> CREATE CLIENT
+      </button>
+      <button class="btn-danger" style="width:100%;" onclick="closeDetailPanel()">CANCEL</button>
+    </div>
+  `;
+
+  panel.classList.add('open');
+  overlay.style.display = 'block';
+  overlay.onclick = closeDetailPanel;
+  setTimeout(() => document.getElementById('quick-client-name')?.focus(), 50);
+}
+
+async function createQuickClient() {
+  const name = document.getElementById('quick-client-name')?.value.trim();
+
+  if (!name) {
+    return showToast('Client name is required', 'error');
+  }
+
+  const data = {
+    name,
+    company: document.getElementById('quick-client-company')?.value.trim() || '',
+    project_key: document.getElementById('quick-client-project-key')?.value.trim() || '',
+    email: document.getElementById('quick-client-email')?.value.trim() || '',
+    phone: document.getElementById('quick-client-phone')?.value.trim() || '',
+    location: document.getElementById('quick-client-location')?.value.trim() || '',
+    service_type: document.getElementById('quick-client-service-type')?.value.trim() || '',
+    project_desc: document.getElementById('quick-client-project-desc')?.value.trim() || '',
+    stage: 'new_register'
+  };
+
+  try {
+    await api.post('/clients', data);
+    showToast('Client created successfully', 'success');
+    closeDetailPanel();
+    loadClients();
+  } catch (err) {
+    showToast(err.message || 'Failed to create client', 'error');
+  }
 }
 
 async function openClientDetail(id) {
@@ -293,7 +474,7 @@ async function editClient(id) {
     });
 
     // Handle selects separately
-    ['comm-method', 'agreement', 'nda', 'maintenance', 'updates', 'team-leader-id'].forEach(f => {
+    ['comm-method', 'agreement', 'nda', 'maintenance', 'updates', 'team-leader-id', 'stage'].forEach(f => {
       const el = document.getElementById(`edit-client-${f}`);
       if (el) {
         const fieldName = f.replace(/-/g, '_');
@@ -326,11 +507,340 @@ async function editClient(id) {
           </div>`).join('');
     }
 
-    openModal('edit-client-modal');
+    openClientEditDrawer(c);
   } catch (e) {
     console.error(e);
     showToast('Failed to load edit data', 'error');
   }
+}
+
+function openClientEditDrawer(c) {
+  const panel = document.getElementById('detail-panel');
+  const overlay = document.getElementById('detail-panel-overlay');
+
+  if (!panel || !overlay) {
+    return showToast('UI Error: Detail panel missing.', 'error');
+  }
+
+  const stageOptions = [
+    ['new_register', 'New Register'],
+    ['order_confirmed', 'Order Confirmed'],
+    ['processing', 'Processing'],
+    ['review', 'Review'],
+    ['completion', 'Completion']
+  ].map(([value, label]) => `<option value="${value}" ${c.stage === value ? 'selected' : ''}>${label}</option>`).join('');
+  const commOptions = ['Call', 'WhatsApp', 'Email'].map(value => `<option value="${value}" ${c.comm_method === value ? 'selected' : ''}>${value}</option>`).join('');
+  const budgetOptions = ['5k-10k', '10k-25k', '25k+'].map(value => `<option value="${value}" ${c.budget === value ? 'selected' : ''}>${value}</option>`).join('');
+  const urgencyOptions = ['Normal', 'Fast', 'Urgent'].map(value => `<option value="${value}" ${c.urgency === value ? 'selected' : ''}>${value}</option>`).join('');
+  const yesNoOptions = (current) => ['No', 'Yes'].map(value => `<option value="${value}" ${current === value ? 'selected' : ''}>${value}</option>`).join('');
+  const leaderOptions = '<option value="">Select a Team Leader</option>' + allUsers
+    .filter(u => ['admin', 'team_leader', 'client_handler'].includes(u.role))
+    .map(u => `<option value="${u.id}" ${String(c.team_leader_id || '') === String(u.id) ? 'selected' : ''}>${escapeHtml(u.name)} (${escapeHtml((u.role || '').replace('_', ' '))})</option>`)
+    .join('');
+
+  panel.style.display = 'block';
+  document.getElementById('panel-title').textContent = 'Edit Client';
+  document.getElementById('panel-body').innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:16px;">
+      <div style="padding:16px; background:var(--bg-hover); border-radius:12px; border-left:3px solid var(--accent-primary);">
+        <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:12px;">Client Identity</div>
+        <div class="form-group">
+          <label for="drawer-edit-name">Full Name</label>
+          <input id="drawer-edit-name" class="form-control" type="text" value="${escapeAttr(c.name)}">
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-company">Company Name</label>
+          <input id="drawer-edit-company" class="form-control" type="text" value="${escapeAttr(c.company)}">
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-project-key">Project Key</label>
+          <input id="drawer-edit-project-key" class="form-control" type="text" value="${escapeAttr(c.project_key)}">
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-stage">Stage</label>
+          <select id="drawer-edit-stage" class="form-control" title="Stage">${stageOptions}</select>
+        </div>
+      </div>
+
+      <div style="padding:16px; background:var(--bg-hover); border-radius:12px;">
+        <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:12px;">Contact</div>
+        <div class="form-group">
+          <label for="drawer-edit-email">Email Address</label>
+          <input id="drawer-edit-email" class="form-control" type="email" value="${escapeAttr(c.email)}">
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-phone">Contact Number</label>
+          <input id="drawer-edit-phone" class="form-control" type="text" value="${escapeAttr(c.phone)}">
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-phone-alt">Alternate Contact Number</label>
+          <input id="drawer-edit-phone-alt" class="form-control" type="text" value="${escapeAttr(c.phone_alt)}">
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-location">Location</label>
+          <input id="drawer-edit-location" class="form-control" type="text" value="${escapeAttr(c.location)}">
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-comm-method">Preferred Communication</label>
+          <select id="drawer-edit-comm-method" class="form-control" title="Communication Method">${commOptions}</select>
+        </div>
+      </div>
+
+      <div style="padding:16px; background:var(--bg-hover); border-radius:12px;">
+        <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:12px;">Business Details</div>
+        <div class="form-group">
+          <label for="drawer-edit-industry">Industry / Business Type</label>
+          <input id="drawer-edit-industry" class="form-control" type="text" value="${escapeAttr(c.industry)}">
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-business-desc">Business Description</label>
+          <textarea id="drawer-edit-business-desc" class="form-control" rows="3">${escapeHtml(c.business_desc)}</textarea>
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-audience">Target Audience</label>
+          <input id="drawer-edit-audience" class="form-control" type="text" value="${escapeAttr(c.audience)}">
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-competitors">Competitors</label>
+          <input id="drawer-edit-competitors" class="form-control" type="text" value="${escapeAttr(c.competitors)}">
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-brand-assets">Existing Brand Assets</label>
+          <textarea id="drawer-edit-brand-assets" class="form-control" rows="3">${escapeHtml(c.brand_assets)}</textarea>
+        </div>
+      </div>
+
+      <div style="padding:16px; background:var(--bg-hover); border-radius:12px;">
+        <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:12px;">Project Brief</div>
+        <div class="form-group">
+          <label for="drawer-edit-service-type">Service Type</label>
+          <input id="drawer-edit-service-type" class="form-control" type="text" value="${escapeAttr(c.service_type)}">
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-project-desc">Project Description</label>
+          <textarea id="drawer-edit-project-desc" class="form-control" rows="4">${escapeHtml(c.project_desc)}</textarea>
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-project-goals">Project Goals</label>
+          <input id="drawer-edit-project-goals" class="form-control" type="text" value="${escapeAttr(c.project_goals)}">
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-features">Features Required</label>
+          <input id="drawer-edit-features" class="form-control" type="text" value="${escapeAttr(c.features)}">
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-design-prefs">Design Preferences</label>
+          <input id="drawer-edit-design-prefs" class="form-control" type="text" value="${escapeAttr(c.design_prefs)}">
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-reference-examples">Reference Examples</label>
+          <textarea id="drawer-edit-reference-examples" class="form-control" rows="3">${escapeHtml(c.reference_examples)}</textarea>
+        </div>
+      </div>
+
+      <div style="padding:16px; background:var(--bg-hover); border-radius:12px;">
+        <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:12px;">Technical Requirements</div>
+        <div class="form-group">
+          <label for="drawer-edit-platform">Platform Preference</label>
+          <input id="drawer-edit-platform" class="form-control" type="text" value="${escapeAttr(c.platform)}">
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-tech">Technology Preference</label>
+          <input id="drawer-edit-tech" class="form-control" type="text" value="${escapeAttr(c.tech)}">
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-integrations">Integration Needs</label>
+          <input id="drawer-edit-integrations" class="form-control" type="text" value="${escapeAttr(c.integrations)}">
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-hosting">Hosting / Domain Status</label>
+          <input id="drawer-edit-hosting" class="form-control" type="text" value="${escapeAttr(c.hosting)}">
+        </div>
+      </div>
+
+      <div style="padding:16px; background:var(--bg-hover); border-radius:12px;">
+        <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:12px;">Budget & Timeline</div>
+        <div class="form-group">
+          <label for="drawer-edit-budget">Budget Range</label>
+          <select id="drawer-edit-budget" class="form-control" title="Budget">${budgetOptions}</select>
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-timeline">Deadline / Timeline</label>
+          <input id="drawer-edit-timeline" class="form-control" type="text" value="${escapeAttr(c.timeline)}">
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-urgency">Urgency Level</label>
+          <select id="drawer-edit-urgency" class="form-control" title="Urgency">${urgencyOptions}</select>
+        </div>
+      </div>
+
+      <div style="padding:16px; background:var(--bg-hover); border-radius:12px;">
+        <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:12px;">Content & Access</div>
+        <div class="form-group">
+          <label for="drawer-edit-content">Content Availability</label>
+          <textarea id="drawer-edit-content" class="form-control" rows="3">${escapeHtml(c.content)}</textarea>
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-media">Media / Assets</label>
+          <textarea id="drawer-edit-media" class="form-control" rows="3">${escapeHtml(c.media)}</textarea>
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-guidelines">Brand Guidelines</label>
+          <textarea id="drawer-edit-guidelines" class="form-control" rows="3">${escapeHtml(c.guidelines)}</textarea>
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-credentials">Credentials / Access Info</label>
+          <textarea id="drawer-edit-credentials" class="form-control" rows="3">${escapeHtml(c.credentials)}</textarea>
+        </div>
+      </div>
+
+      <div style="padding:16px; background:var(--bg-hover); border-radius:12px;">
+        <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:12px;">Legal & Agreement</div>
+        <div class="form-group">
+          <label for="drawer-edit-agreement">Agreement Signed</label>
+          <select id="drawer-edit-agreement" class="form-control" title="Agreement">${yesNoOptions(c.agreement)}</select>
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-payment-terms">Payment Terms</label>
+          <input id="drawer-edit-payment-terms" class="form-control" type="text" value="${escapeAttr(c.payment_terms)}">
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-ownership">Ownership Terms</label>
+          <input id="drawer-edit-ownership" class="form-control" type="text" value="${escapeAttr(c.ownership)}">
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-nda">NDA Required</label>
+          <select id="drawer-edit-nda" class="form-control" title="NDA">${yesNoOptions(c.nda)}</select>
+        </div>
+      </div>
+
+      <div style="padding:16px; background:var(--bg-hover); border-radius:12px;">
+        <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:12px;">Post-Project & Team</div>
+        <div class="form-group">
+          <label for="drawer-edit-maintenance">Maintenance Required</label>
+          <select id="drawer-edit-maintenance" class="form-control" title="Maintenance">${yesNoOptions(c.maintenance)}</select>
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-updates">Future Updates</label>
+          <select id="drawer-edit-updates" class="form-control" title="Updates">${yesNoOptions(c.updates)}</select>
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-marketing">Marketing Needs</label>
+          <input id="drawer-edit-marketing" class="form-control" type="text" value="${escapeAttr(c.marketing)}">
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-team-leader-id">Team Leader</label>
+          <select id="drawer-edit-team-leader-id" class="form-control" title="Team Leader">${leaderOptions}</select>
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-team-members">Team Members</label>
+          <textarea id="drawer-edit-team-members" class="form-control" rows="3">${escapeHtml(c.team_members)}</textarea>
+        </div>
+      </div>
+
+      <div style="padding:16px; background:var(--bg-hover); border-radius:12px;">
+        <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:12px;">Brand Strategy</div>
+        <div class="form-group">
+          <label for="drawer-edit-brand-colors">Brand Colors</label>
+          <input id="drawer-edit-brand-colors" class="form-control" type="text" value="${escapeAttr(c.brand_colors)}">
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-brand-tone">Brand Tone</label>
+          <input id="drawer-edit-brand-tone" class="form-control" type="text" value="${escapeAttr(c.brand_tone)}">
+        </div>
+        <div class="form-group">
+          <label for="drawer-edit-goals">Brand Goals</label>
+          <textarea id="drawer-edit-goals" class="form-control" rows="3">${escapeHtml(c.goals)}</textarea>
+        </div>
+      </div>
+
+      <button class="btn-primary" style="width:100%; margin-top:8px;" onclick="saveClientDrawerEdit(${Number(c.id)})">
+        <i class="fas fa-check"></i> SAVE CHANGES
+      </button>
+      <button class="btn-danger" style="width:100%;" onclick="openClientDetail('${Number(c.id)}')">CANCEL</button>
+    </div>
+  `;
+
+  panel.classList.add('open');
+  overlay.style.display = 'block';
+  overlay.onclick = closeDetailPanel;
+  setTimeout(() => document.getElementById('drawer-edit-name')?.focus(), 50);
+}
+
+async function saveClientDrawerEdit(id) {
+  const name = document.getElementById('drawer-edit-name')?.value.trim();
+
+  if (!name) {
+    return showToast('Client name is required', 'error');
+  }
+
+  const data = {
+    name,
+    company: document.getElementById('drawer-edit-company')?.value.trim() || '',
+    project_key: document.getElementById('drawer-edit-project-key')?.value.trim() || '',
+    stage: document.getElementById('drawer-edit-stage')?.value || 'new_register',
+    email: document.getElementById('drawer-edit-email')?.value.trim() || '',
+    phone: document.getElementById('drawer-edit-phone')?.value.trim() || '',
+    phone_alt: document.getElementById('drawer-edit-phone-alt')?.value.trim() || '',
+    location: document.getElementById('drawer-edit-location')?.value.trim() || '',
+    comm_method: document.getElementById('drawer-edit-comm-method')?.value || '',
+    industry: document.getElementById('drawer-edit-industry')?.value.trim() || '',
+    business_desc: document.getElementById('drawer-edit-business-desc')?.value.trim() || '',
+    audience: document.getElementById('drawer-edit-audience')?.value.trim() || '',
+    competitors: document.getElementById('drawer-edit-competitors')?.value.trim() || '',
+    brand_assets: document.getElementById('drawer-edit-brand-assets')?.value.trim() || '',
+    service_type: document.getElementById('drawer-edit-service-type')?.value.trim() || '',
+    project_desc: document.getElementById('drawer-edit-project-desc')?.value.trim() || '',
+    project_goals: document.getElementById('drawer-edit-project-goals')?.value.trim() || '',
+    features: document.getElementById('drawer-edit-features')?.value.trim() || '',
+    design_prefs: document.getElementById('drawer-edit-design-prefs')?.value.trim() || '',
+    reference_examples: document.getElementById('drawer-edit-reference-examples')?.value.trim() || '',
+    platform: document.getElementById('drawer-edit-platform')?.value.trim() || '',
+    tech: document.getElementById('drawer-edit-tech')?.value.trim() || '',
+    integrations: document.getElementById('drawer-edit-integrations')?.value.trim() || '',
+    hosting: document.getElementById('drawer-edit-hosting')?.value.trim() || '',
+    budget: document.getElementById('drawer-edit-budget')?.value || '',
+    timeline: document.getElementById('drawer-edit-timeline')?.value.trim() || '',
+    urgency: document.getElementById('drawer-edit-urgency')?.value || '',
+    content: document.getElementById('drawer-edit-content')?.value.trim() || '',
+    media: document.getElementById('drawer-edit-media')?.value.trim() || '',
+    guidelines: document.getElementById('drawer-edit-guidelines')?.value.trim() || '',
+    credentials: document.getElementById('drawer-edit-credentials')?.value.trim() || '',
+    agreement: document.getElementById('drawer-edit-agreement')?.value || '',
+    payment_terms: document.getElementById('drawer-edit-payment-terms')?.value.trim() || '',
+    ownership: document.getElementById('drawer-edit-ownership')?.value.trim() || '',
+    nda: document.getElementById('drawer-edit-nda')?.value || '',
+    maintenance: document.getElementById('drawer-edit-maintenance')?.value || '',
+    updates: document.getElementById('drawer-edit-updates')?.value || '',
+    marketing: document.getElementById('drawer-edit-marketing')?.value.trim() || '',
+    team_leader_id: document.getElementById('drawer-edit-team-leader-id')?.value || null,
+    team_members: document.getElementById('drawer-edit-team-members')?.value.trim() || '',
+    brand_colors: document.getElementById('drawer-edit-brand-colors')?.value.trim() || '',
+    brand_tone: document.getElementById('drawer-edit-brand-tone')?.value.trim() || '',
+    goals: document.getElementById('drawer-edit-goals')?.value.trim() || ''
+  };
+
+  try {
+    await api.put(`/clients/${id}`, data);
+    showToast('Client updated successfully', 'success');
+    await loadClients();
+    openClientDetail(id);
+  } catch (err) {
+    showToast(err.message || 'Failed to update client', 'error');
+  }
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function escapeAttr(value) {
+  return escapeHtml(value);
 }
 
 function initEditForm() {
@@ -349,7 +859,7 @@ function initEditForm() {
       'content', 'media', 'guidelines', 'credentials',
       'agreement', 'payment_terms', 'ownership', 'nda',
       'maintenance', 'updates', 'marketing',
-      'brand_colors', 'brand_tone', 'goals', 'team_leader_id', 'project_key'
+      'brand_colors', 'brand_tone', 'goals', 'team_leader_id', 'project_key', 'stage'
     ];
 
     const data = {};
@@ -556,6 +1066,9 @@ window.initClients = initClients;
 window.openClientDetail = openClientDetail;
 window.closeDetailPanel = closeDetailPanel;
 window.editClient = editClient;
+window.saveClientDrawerEdit = saveClientDrawerEdit;
+window.openNewClientEditor = openNewClientEditor;
+window.createQuickClient = createQuickClient;
 window.togglePickerDropdown = togglePickerDropdown;
 window.openPickerDropdown = openPickerDropdown;
 window.filterPickerOptions = filterPickerOptions;

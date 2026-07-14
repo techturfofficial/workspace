@@ -101,6 +101,14 @@ function initSidebar() {
         <i class="fas fa-database"></i><span class="menu-text">Database Viewer</span>
       </div>
 
+      <div class="menu-item admin-only" id="payments-link">
+        <i class="fas fa-money-check-alt"></i><span class="menu-text">Payments</span>
+      </div>
+
+      <div class="menu-item" id="tickets-link">
+        <i class="fas fa-ticket-alt"></i><span class="menu-text">Tickets</span>
+      </div>
+
       <hr class="sidebar-divider">
       
       <div class="menu-item" data-nav="profile.html">
@@ -161,6 +169,9 @@ function initSidebar() {
 
   const logoutBtn = document.getElementById('logout-btn');
   if (logoutBtn) logoutBtn.onclick = () => auth.logout();
+
+  // Handle browser back/forward
+  window.onpopstate = () => loadPage(window.location.pathname + window.location.search);
 
   loadNotifications();
   setInterval(loadNotifications, 30000);

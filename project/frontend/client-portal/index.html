@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Client Connect | Tech Turf CRM</title>
+  <!-- Typography -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/client-portal.css?v=logo-fix-20260622">
+  <!-- FontAwesome for UI Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <div id="app-layout">
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar">
+      <div class="brand-section">
+        <div class="brand-logo">
+          <img src="assets/logo.jpg" alt="Tech Turf">
+        </div>
+      </div>
+
+      <nav style="display: flex; flex-direction: column; flex-grow: 1;">
+        <ul class="nav-links">
+          <li class="nav-item" id="nav-home">
+            <a href="#home"><i class="fa-solid fa-house"></i> Home</a>
+          </li>
+          <li class="nav-item" id="nav-workspace">
+            <a href="#workspace"><i class="fa-solid fa-briefcase"></i> Workspace</a>
+          </li>
+          <li class="nav-item" id="nav-reviews">
+            <a href="#reviews"><i class="fa-solid fa-star"></i> Review Center</a>
+          </li>
+          <li class="nav-item" id="nav-communication">
+            <a href="#communication"><i class="fa-solid fa-comments"></i> Communication Hub</a>
+          </li>
+          <li class="nav-item" id="nav-payments">
+            <a href="#payments"><i class="fa-solid fa-credit-card"></i> Payments</a>
+          </li>
+          <li class="nav-item" id="nav-support">
+            <a href="#support"><i class="fa-solid fa-circle-question"></i> Support</a>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="client-profile-summary">
+        <div class="client-name-label" id="profile-client-name">Loading...</div>
+        <div class="client-company-label" id="profile-client-company">Company Ltd.</div>
+        <div style="margin-top: 15px;">
+          <a href="#change-password" style="font-size: 0.75rem; color: var(--accent-secondary); font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+            <i class="fa-solid fa-key"></i> UPDATE PASSWORD
+          </a>
+        </div>
+        <div style="margin-top: 10px;">
+          <button onclick="portalApp.logout()" class="btn-secondary" style="font-size: 0.7rem; padding: 6px 12px; width: 100%; border-color: var(--accent-pink); color: var(--accent-pink);">
+            <i class="fa-solid fa-sign-out-alt"></i> LOGOUT
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace Area -->
+    <main id="main-content">
+      <header>
+        <div class="header-title" id="header-view-title">CONNECT HUB</div>
+        <div class="header-actions">
+          <span style="font-size: 0.9rem; color: var(--text-secondary);" id="topbar-client-id">TT-CLI-00000</span>
+          <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-weight: 700; color: white;" id="topbar-avatar">C</div>
+        </div>
+      </header>
+
+      <!-- View Container -->
+      <div class="view-container">
+
+        <!-- 1. HOME VIEW -->
+        <section id="view-home" class="portal-view active">
+          <!-- Banner carousel (Dynamic Promos/Banners) -->
+          <div class="banner-carousel" id="banners-list">
+            <!-- Rendered dynamically -->
+          </div>
+
+          <!-- Active Projects -->
+          <div class="glass-card panel-body">
+            <h3 class="card-title">
+              <span><i class="fa-solid fa-bars-progress" style="color:var(--accent-secondary);"></i> Active Projects</span>
+            </h3>
+            <div id="home-active-projects" class="project-card-list">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. WORKSPACE VIEW -->
+        <section id="view-workspace" class="portal-view">
+          <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 30px;" id="workspace-grid-layout">
+            <!-- Projects list -->
+            <div class="glass-card panel-body">
+              <h3 class="card-title"><span><i class="fa-solid fa-folder-open" style="color: var(--accent-secondary);"></i> All Projects</span></h3>
+              <div id="workspace-projects-list" style="display:flex; flex-direction:column; gap:16px;">
+                <!-- Rendered dynamically -->
+              </div>
+            </div>
+
+            <!-- Selected Project Details -->
+            <div class="glass-card panel-body" id="workspace-project-details-panel">
+              <div class="empty-state">
+                <i class="fa-solid fa-hand-pointer"></i>
+                <div class="empty-title">Select a project to view overview</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. REVIEW CENTER VIEW -->
+        <section id="view-reviews" class="portal-view">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+            <!-- Review submission form -->
+            <div class="glass-card panel-body">
+              <h3 class="card-title"><span><i class="fa-solid fa-star-half-stroke"></i> Share Your Feedback</span></h3>
+              <form id="review-form">
+                <div class="form-group">
+                  <label for="review-project-select">Target Project</label>
+                  <select id="review-project-select" class="form-control" required>
+                    <option value="">Select a project...</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Rapport Rating</label>
+                  <div class="star-rating" id="star-rating-container">
+                    <span class="star" data-rating="1"><i class="fa-solid fa-star"></i></span>
+                    <span class="star" data-rating="2"><i class="fa-solid fa-star"></i></span>
+                    <span class="star" data-rating="3"><i class="fa-solid fa-star"></i></span>
+                    <span class="star" data-rating="4"><i class="fa-solid fa-star"></i></span>
+                    <span class="star" data-rating="5"><i class="fa-solid fa-star"></i></span>
+                  </div>
+                  <input type="hidden" id="selected-rating" required>
+                </div>
+                <div class="form-group">
+                  <label for="review-feedback">Feedback & Suggestions</label>
+                  <textarea id="review-feedback" class="form-control" placeholder="Describe your experience working with us, quality of deliverables, etc." required></textarea>
+                </div>
+                <button type="submit" class="btn-primary">SUBMIT FEEDBACK</button>
+              </form>
+            </div>
+
+            <!-- Feedback ledger -->
+            <div class="glass-card panel-body">
+              <h3 class="card-title"><span><i class="fa-solid fa-clock-rotate-left"></i> Feedback Ledger</span></h3>
+              <div id="reviews-history" style="display:flex; flex-direction:column; gap:15px; max-height:450px; overflow-y:auto; padding-right:10px;">
+                <!-- Rendered dynamically -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. COMMUNICATION HUB VIEW -->
+        <section id="view-communication" class="portal-view">
+          <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 30px;">
+            <!-- Chat panel -->
+            <div class="glass-card panel-body">
+              <h3 class="card-title"><span><i class="fa-solid fa-comment-dots"></i> Live Chat with Team Lead</span></h3>
+              <div class="chat-wrapper">
+                <div class="chat-messages" id="chat-messages-container">
+                  <!-- Messages rendered dynamically -->
+                </div>
+                <form id="chat-input-form" class="chat-input-area">
+                  <input type="text" id="chat-message-input" placeholder="Type a message to dispatch..." required autocomplete="off">
+                  <button type="submit" class="btn-primary" style="font-size:0.75rem; border-radius:0;">SEND</button>
+                </form>
+              </div>
+            </div>
+
+            <!-- Propose meeting slot -->
+            <div class="glass-card panel-body">
+              <h3 class="card-title"><span><i class="fa-solid fa-calendar-check"></i> Propose a Meeting</span></h3>
+              <form id="meeting-form" style="margin-bottom: 25px;">
+                <div class="form-group">
+                  <label for="meeting-title">Agenda / Title</label>
+                  <input type="text" id="meeting-title" class="form-control" placeholder="e.g. Milestone Review, Deliverable Alignment" required>
+                </div>
+                <div class="form-group">
+                  <label for="meeting-desc">Brief Description</label>
+                  <textarea id="meeting-desc" class="form-control" placeholder="What would you like to discuss?" style="min-height:80px;"></textarea>
+                </div>
+                <div class="form-group">
+                  <label for="meeting-time">Date & Time</label>
+                  <input type="datetime-local" id="meeting-time" class="form-control" required>
+                </div>
+                <button type="submit" class="btn-primary">PROPOSE TIME</button>
+              </form>
+
+              <h4 style="font-family:var(--font-display); font-size:0.9rem; margin-bottom:15px; color:var(--text-secondary); text-transform:uppercase;">Meeting Ledger</h4>
+              <div id="meetings-list" style="display:flex; flex-direction:column; gap:10px; max-height:220px; overflow-y:auto;">
+                <!-- Rendered dynamically -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. PAYMENTS VIEW -->
+        <section id="view-payments" class="portal-view">
+          <div style="display: grid; grid-template-columns: 1.2fr 2fr; gap: 30px; margin-bottom: 30px;">
+            <!-- Contract details -->
+            <div class="glass-card panel-body">
+              <h3 class="card-title"><span><i class="fa-solid fa-file-signature"></i> Contract Parameters</span></h3>
+              <div id="contract-details" style="display:flex; flex-direction:column; gap:15px; font-size:0.95rem;">
+                <!-- Rendered dynamically -->
+              </div>
+            </div>
+
+            <!-- Invoices / Transactions list -->
+            <div class="glass-card panel-body">
+              <h3 class="card-title">
+                <span><i class="fa-solid fa-receipt"></i> Transaction History</span>
+                <button onclick="portalApp.generateStatement()" class="btn-secondary" style="font-size:0.7rem; padding:6px 14px;">GENERATE STATEMENT</button>
+              </h3>
+              <table class="vault-table" id="payments-table">
+                <thead>
+                  <tr>
+                    <th>Ref ID</th>
+                    <th>Payment Date</th>
+                    <th>Payment Method</th>
+                    <th>Notes</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="payments-tbody">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. SUPPORT VIEW -->
+        <section id="view-support" class="portal-view">
+          <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 30px;">
+            <!-- Raise Ticket form -->
+            <div class="glass-card panel-body">
+              <h3 class="card-title"><span><i class="fa-solid fa-ticket"></i> Log Support Incident</span></h3>
+              <form id="ticket-form">
+                <div class="form-group">
+                  <label for="ticket-title">Issue Summary</label>
+                  <input type="text" id="ticket-title" class="form-control" placeholder="Describe the issue in a few words" required>
+                </div>
+                <div class="form-group">
+                  <label for="ticket-priority">Urgency Priority</label>
+                  <select id="ticket-priority" class="form-control">
+                    <option value="low">Low - General query</option>
+                    <option value="normal" selected>Normal - Needs review</option>
+                    <option value="urgent">Urgent - Blocking progression</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="ticket-category">Category</label>
+                  <select id="ticket-category" class="form-control">
+                    <option value="Billing">Billing & Payments</option>
+                    <option value="Content">Content Delivery</option>
+                    <option value="Design">Visual/Design Vault</option>
+                    <option value="General" selected>General Support</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="ticket-desc">Detailed Description</label>
+                  <textarea id="ticket-desc" class="form-control" placeholder="Provide context, links, or instructions to help resolve the issue." required></textarea>
+                </div>
+                <button type="submit" class="btn-primary">CREATE TICKET</button>
+              </form>
+            </div>
+
+            <!-- Incidents history -->
+            <div class="glass-card panel-body">
+              <h3 class="card-title"><span><i class="fa-solid fa-headset"></i> Incident Ledger</span></h3>
+              <div id="tickets-list" style="display:flex; flex-direction:column; gap:15px; max-height:500px; overflow-y:auto;">
+                <!-- Rendered dynamically -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7. UPDATE PASSWORD VIEW -->
+        <section id="view-change-password" class="portal-view">
+          <div style="max-width: 500px; margin: 0 auto;" class="glass-card panel-body">
+            <h3 class="card-title"><span><i class="fa-solid fa-key"></i> Update Access Credentials</span></h3>
+            <form id="change-pass-form">
+              <div class="form-group">
+                <label for="new-password">New Password</label>
+                <input type="password" id="new-password" class="form-control" placeholder="Minimum 12 characters" required autocomplete="new-password">
+              </div>
+              <div class="form-group">
+                <label for="confirm-password">Confirm Password</label>
+                <input type="password" id="confirm-password" class="form-control" placeholder="Confirm your new password" required autocomplete="new-password">
+              </div>
+              <p style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:20px; line-height:1.5;">
+                * Password requirements: At least 12 characters, including uppercase, lowercase, numbers, and symbols.
+              </p>
+              <button type="submit" class="btn-primary">UPDATE PASSWORD</button>
+            </form>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- API connection -->
+  <script src="js/api.js"></script>
+  <!-- Application router & controller -->
+  <script src="js/portal.js"></script>
+</body>
+</html>

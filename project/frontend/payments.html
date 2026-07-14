@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tech Turf | Payments</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    body {
+      margin: 0;
+      background: #f8fafc;
+      color: #111827;
+      font-family: Inter, Rajdhani, Arial, sans-serif;
+    }
+
+    .pay-shell {
+      display: grid;
+      grid-template-columns: 292px 1fr;
+      min-height: 100vh;
+      background: #f8fafc;
+    }
+
+    .pay-sidebar {
+      background: #0f172a;
+      color: #94a3b8;
+      padding: 30px 24px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      box-sizing: border-box;
+    }
+
+    .pay-brand {
+      color: #fff;
+      font-weight: 900;
+      font-size: 1.55rem;
+      letter-spacing: 0;
+      margin-bottom: 42px;
+    }
+
+    .pay-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .pay-nav a {
+      color: #94a3b8;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 650;
+    }
+
+    .pay-nav a.active {
+      color: #fff;
+      background: rgba(255, 107, 0, 0.14);
+      box-shadow: inset 3px 0 0 #ff6b00;
+    }
+
+    .pay-main {
+      min-width: 0;
+    }
+
+    .pay-topbar {
+      height: 78px;
+      background: #fff;
+      border-bottom: 2px solid rgba(16, 42, 150, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      box-sizing: border-box;
+      gap: 20px;
+    }
+
+    .pay-search {
+      width: min(420px, 48vw);
+      height: 42px;
+      border: 2px solid rgba(16, 42, 150, 0.12);
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 16px;
+      color: #64748b;
+      background: #fff;
+    }
+
+    .pay-search input {
+      border: 0;
+      outline: 0;
+      flex: 1;
+      font-size: 0.95rem;
+      background: transparent;
+    }
+
+    .pay-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .pay-btn {
+      border: 0;
+      border-radius: 8px;
+      min-height: 42px;
+      padding: 0 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      font-weight: 800;
+      cursor: pointer;
+      color: #fff;
+      background: #102a96;
+      box-shadow: 0 14px 28px rgba(16, 42, 150, 0.2);
+    }
+
+    .pay-btn.secondary {
+      background: #fff;
+      color: #102a96;
+      border: 2px solid rgba(16, 42, 150, 0.12);
+      box-shadow: none;
+    }
+
+    .pay-content {
+      padding: 34px 28px 42px;
+    }
+
+    .pay-kicker {
+      color: #94a3b8;
+      font-size: 0.92rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .pay-title-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+
+    .pay-title {
+      margin: 0;
+      color: #111827;
+      font-size: 2rem;
+      line-height: 1.05;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .period-tabs {
+      display: inline-flex;
+      background: #fff;
+      border: 2px solid rgba(16, 42, 150, 0.12);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .period-tabs button {
+      border: 0;
+      background: transparent;
+      padding: 11px 14px;
+      font-weight: 800;
+      color: #64748b;
+      cursor: pointer;
+    }
+
+    .period-tabs button.active {
+      background: #102a96;
+      color: #fff;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .metric-card {
+      background: #fff;
+      border: 2px solid rgba(16, 42, 150, 0.08);
+      border-radius: 8px;
+      padding: 16px;
+      min-height: 110px;
+      box-sizing: border-box;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric-card::after {
+      content: "";
+      position: absolute;
+      inset: auto 14px 12px auto;
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: rgba(16, 42, 150, 0.06);
+    }
+
+    .metric-card.revenue { background: #fff6ed; }
+    .metric-card.paid { background: #eefdf3; }
+    .metric-card.pending { background: #fff8e8; }
+    .metric-card.overdue { background: #fff1f2; }
+
+    .metric-label {
+      color: #475569;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .metric-value {
+      font-size: 2rem;
+      font-weight: 900;
+      color: #0f172a;
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+
+    .metric-sub {
+      color: #64748b;
+      font-size: 0.88rem;
+      font-weight: 650;
+    }
+
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.8fr);
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .panel {
+      background: #fff;
+      border: 2px solid rgba(16, 42, 150, 0.08);
+      border-radius: 8px;
+      padding: 20px;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: #0f766e;
+    }
+
+    .panel-note {
+      color: #94a3b8;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .chart-wrap {
+      height: 310px;
+      position: relative;
+      border-top: 2px solid #e5e7eb;
+      padding-top: 16px;
+    }
+
+    .chart-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .donut-wrap {
+      display: grid;
+      place-items: center;
+      min-height: 310px;
+      position: relative;
+    }
+
+    .donut {
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: conic-gradient(#16a34a 0 62%, #f59e0b 62% 84%, #ef4444 84% 100%);
+      display: grid;
+      place-items: center;
+      box-shadow: inset 0 0 0 1px rgba(16, 42, 150, 0.08);
+    }
+
+    .donut-inner {
+      width: 128px;
+      height: 128px;
+      background: #fff;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: #0f172a;
+      font-weight: 900;
+    }
+
+    .legend {
+      display: grid;
+      gap: 10px;
+      width: 100%;
+      margin-top: 14px;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #475569;
+      font-weight: 750;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 8px;
+    }
+
+    .lower-grid {
+      display: grid;
+      grid-template-columns: minmax(360px, 1fr) minmax(320px, 0.8fr);
+      gap: 18px;
+    }
+
+    .payment-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .payment-table th,
+    .payment-table td {
+      padding: 14px 12px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    .payment-table th {
+      color: #64748b;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .payment-table td {
+      font-weight: 750;
+      color: #0f172a;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 76px;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 0.72rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .status-paid { color: #15803d; background: #dcfce7; }
+    .status-pending { color: #b45309; background: #fef3c7; }
+    .status-overdue { color: #b91c1c; background: #fee2e2; }
+
+    .mini-bars {
+      display: grid;
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 82px 1fr 56px;
+      gap: 12px;
+      align-items: center;
+      color: #475569;
+      font-weight: 800;
+    }
+
+    .bar-track {
+      height: 12px;
+      border-radius: 999px;
+      background: #eef2ff;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #102a96, #3b82f6);
+    }
+
+    .pay-form {
+      display: grid;
+      gap: 12px;
+    }
+
+    .pay-form input,
+    .pay-form select {
+      width: 100%;
+      min-height: 42px;
+      border: 2px solid rgba(16, 42, 150, 0.12);
+      border-radius: 8px;
+      padding: 0 12px;
+      box-sizing: border-box;
+      outline: 0;
+      font-size: 0.95rem;
+    }
+
+    .pay-form input:focus,
+    .pay-form select:focus {
+      border-color: #102a96;
+    }
+
+    @media (max-width: 1100px) {
+      .pay-shell { grid-template-columns: 1fr; }
+      .pay-sidebar { display: none; }
+      .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .analytics-grid,
+      .lower-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      .pay-topbar {
+        height: auto;
+        align-items: stretch;
+        flex-direction: column;
+        padding: 16px;
+      }
+
+      .pay-search {
+        width: 100%;
+      }
+
+      .pay-content {
+        padding: 24px 16px;
+      }
+
+      .pay-title-row {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .metric-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .payment-table {
+        min-width: 680px;
+      }
+
+      .table-scroll {
+        overflow-x: auto;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="pay-shell">
+    <aside class="pay-sidebar">
+      <div class="pay-brand">TECH TURF</div>
+      <nav class="pay-nav">
+        <a href="dashboard.html"><i class="fas fa-table-cells-large"></i> Dashboard</a>
+        <a href="projects.html"><i class="fas fa-diagram-project"></i> Projects</a>
+        <a href="tasks.html"><i class="fas fa-list-check"></i> Tasks</a>
+        <a href="submissions.html"><i class="fas fa-file-arrow-up"></i> Submissions</a>
+        <a href="clients.html"><i class="fas fa-user-tie"></i> Clients</a>
+        <a href="payments.html" class="active"><i class="fas fa-credit-card"></i> Payments</a>
+        <a href="announcements.html"><i class="fas fa-bullhorn"></i> Announcements</a>
+        <a href="drive.html"><i class="fas fa-hard-drive"></i> Secure Drive</a>
+        <a href="nexus_chat.html"><i class="fas fa-comments"></i> Team Messenger</a>
+        <a href="users.html"><i class="fas fa-users-gear"></i> User Management</a>
+      </nav>
+    </aside>
+
+    <main class="pay-main">
+      <header class="pay-topbar">
+        <div class="pay-search">
+          <i class="fas fa-search"></i>
+          <input id="payment-search" type="search" placeholder="Search payments, clients, methods...">
+        </div>
+        <div class="pay-actions">
+          <button class="pay-btn secondary" type="button"><i class="fas fa-calendar-days"></i> Last 30 Days</button>
+          <button class="pay-btn secondary" type="button"><i class="fas fa-share-nodes"></i> Share</button>
+          <button class="pay-btn" type="button" onclick="document.getElementById('pay-user').focus()">
+            <i class="fas fa-plus"></i> Add Payment
+          </button>
+        </div>
+      </header>
+
+      <section class="pay-content">
+        <div class="pay-title-row">
+          <div>
+            <div class="pay-kicker">Workspace / Finance</div>
+            <h1 class="pay-title">PAYMENT DASHBOARD</h1>
+          </div>
+          <div class="period-tabs" aria-label="Payment period">
+            <button type="button" data-days="7">7 Days</button>
+            <button type="button" data-days="30" class="active">30 Days</button>
+            <button type="button" data-days="90">Quarter</button>
+          </div>
+        </div>
+
+        <div class="metric-grid">
+          <div class="metric-card revenue">
+            <div class="metric-label">Revenue</div>
+            <div class="metric-value" id="metric-revenue">₹0</div>
+            <div class="metric-sub">0.0% since last period</div>
+          </div>
+          <div class="metric-card paid">
+            <div class="metric-label">Paid Invoices</div>
+            <div class="metric-value" id="metric-paid">0</div>
+            <div class="metric-sub">Closed payment records</div>
+          </div>
+          <div class="metric-card pending">
+            <div class="metric-label">Pending</div>
+            <div class="metric-value" id="metric-pending">0</div>
+            <div class="metric-sub">Awaiting confirmation</div>
+          </div>
+          <div class="metric-card overdue">
+            <div class="metric-label">Overdue</div>
+            <div class="metric-value" id="metric-overdue">0</div>
+            <div class="metric-sub">Needs follow-up</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Average Deal</div>
+            <div class="metric-value" id="metric-average">₹0</div>
+            <div class="metric-sub">Per recorded payment</div>
+          </div>
+        </div>
+
+        <div class="analytics-grid">
+          <section class="panel">
+            <div class="panel-head">
+              <h2 class="panel-title">Revenue by Month</h2>
+              <span class="panel-note">Payments trend</span>
+            </div>
+            <div class="chart-wrap">
+              <svg class="chart-svg" viewBox="0 0 760 300" role="img" aria-label="Revenue line chart">
+                <defs>
+                  <linearGradient id="payArea" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.28" />
+                    <stop offset="100%" stop-color="#3b82f6" stop-opacity="0" />
+                  </linearGradient>
+                </defs>
+                <g stroke="#e5e7eb" stroke-width="1">
+                  <line x1="46" y1="28" x2="740" y2="28" />
+                  <line x1="46" y1="82" x2="740" y2="82" />
+                  <line x1="46" y1="136" x2="740" y2="136" />
+                  <line x1="46" y1="190" x2="740" y2="190" />
+                  <line x1="46" y1="244" x2="740" y2="244" />
+                </g>
+                <path id="revenue-area" d="M46 244 C160 190 210 212 286 150 C366 84 448 116 520 74 C610 24 660 70 740 42 L740 270 L46 270 Z" fill="url(#payArea)" />
+                <path id="revenue-line" d="M46 244 C160 190 210 212 286 150 C366 84 448 116 520 74 C610 24 660 70 740 42" fill="none" stroke="#102a96" stroke-width="5" stroke-linecap="round" />
+                <g fill="#ff6b00">
+                  <circle cx="46" cy="244" r="5" />
+                  <circle cx="286" cy="150" r="5" />
+                  <circle cx="520" cy="74" r="5" />
+                  <circle cx="740" cy="42" r="5" />
+                </g>
+                <g fill="#64748b" font-size="13" font-weight="700">
+                  <text x="42" y="292">Week 1</text>
+                  <text x="260" y="292">Week 2</text>
+                  <text x="500" y="292">Week 3</text>
+                  <text x="704" y="292">Week 4</text>
+                </g>
+              </svg>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h2 class="panel-title">Collection Mix</h2>
+              <span class="panel-note">Status split</span>
+            </div>
+            <div class="donut-wrap">
+              <div class="donut">
+                <div class="donut-inner">
+                  <div>
+                    <div id="donut-total" style="font-size:1.6rem;">0</div>
+                    <div style="font-size:0.72rem;color:#64748b;">Payments</div>
+                  </div>
+                </div>
+              </div>
+              <div class="legend">
+                <div class="legend-row"><span><i class="dot" style="background:#16a34a;"></i>Paid</span><strong id="legend-paid">0</strong></div>
+                <div class="legend-row"><span><i class="dot" style="background:#f59e0b;"></i>Pending</span><strong id="legend-pending">0</strong></div>
+                <div class="legend-row"><span><i class="dot" style="background:#ef4444;"></i>Overdue</span><strong id="legend-overdue">0</strong></div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="lower-grid">
+          <section class="panel">
+            <div class="panel-head">
+              <h2 class="panel-title">Payment Ledger</h2>
+              <span class="panel-note" id="ledger-count">0 records</span>
+            </div>
+            <div class="table-scroll">
+              <table class="payment-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Client / User</th>
+                    <th>Amount</th>
+                    <th>Method</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody id="payment-rows"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <aside class="panel">
+            <div class="panel-head">
+              <h2 class="panel-title">Add Payment</h2>
+              <span class="panel-note">Fast entry</span>
+            </div>
+            <form class="pay-form" id="payment-form">
+              <input id="pay-user" type="text" placeholder="Client or User ID">
+              <input id="pay-amount" type="number" min="0" step="0.01" placeholder="Amount">
+              <select id="pay-currency" title="Currency">
+                <option value="INR">INR</option>
+                <option value="USD">USD</option>
+              </select>
+              <select id="pay-method" title="Method">
+                <option value="UPI">UPI</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Card">Card</option>
+                <option value="Cash">Cash</option>
+              </select>
+              <select id="pay-status" title="Status">
+                <option value="paid">Paid</option>
+                <option value="pending">Pending</option>
+                <option value="overdue">Overdue</option>
+              </select>
+              <button class="pay-btn" type="submit"><i class="fas fa-check"></i> Record Payment</button>
+            </form>
+
+            <div class="mini-bars">
+              <div class="bar-row"><span>UPI</span><span class="bar-track"><span class="bar-fill" style="width:74%;"></span></span><strong>74%</strong></div>
+              <div class="bar-row"><span>Bank</span><span class="bar-track"><span class="bar-fill" style="width:58%;background:linear-gradient(90deg,#16a34a,#86efac);"></span></span><strong>58%</strong></div>
+              <div class="bar-row"><span>Card</span><span class="bar-track"><span class="bar-fill" style="width:36%;background:linear-gradient(90deg,#ff6b00,#fdba74);"></span></span><strong>36%</strong></div>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const fallbackPayments = [
+      { id: 'PAY-1001', user: 'Mock Client Corp', amount: 25000, currency: 'INR', method: 'UPI', status: 'paid', date: '22 Jun 2026' },
+      { id: 'PAY-1002', user: 'Aero Dynamics', amount: 18000, currency: 'INR', method: 'Bank Transfer', status: 'pending', date: '21 Jun 2026' },
+      { id: 'PAY-1003', user: 'Quantum Leap', amount: 42000, currency: 'INR', method: 'Card', status: 'paid', date: '19 Jun 2026' },
+      { id: 'PAY-1004', user: 'Nexus Studio', amount: 9500, currency: 'INR', method: 'UPI', status: 'overdue', date: '14 Jun 2026' }
+    ];
+
+    let paymentState = [];
+    let activePeriodDays = 30;
+
+    function money(amount, currency = 'INR') {
+      const symbol = currency === 'USD' ? '$' : '₹';
+      return symbol + Number(amount || 0).toLocaleString('en-IN');
+    }
+
+    function normalizePayment(row, index) {
+      return {
+        id: row.id || row.payment_id || `PAY-${String(index + 1).padStart(4, '0')}`,
+        user: row.user_name || row.client_name || row.user || row.client || row.user_id || 'Client',
+        amount: Number(row.amount || row.total || 0),
+        currency: row.currency || 'INR',
+        method: row.method || row.payment_method || 'UPI',
+        status: String(row.status || 'pending').toLowerCase(),
+        date: row.date || row.created_at || new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+      };
+    }
+
+    function parsePaymentDate(value) {
+      if (!value) return new Date();
+      const parsed = new Date(value);
+      if (!Number.isNaN(parsed.getTime())) return parsed;
+
+      const match = String(value).match(/^(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})/);
+      if (!match) return new Date();
+
+      const months = {
+        jan: 0, january: 0,
+        feb: 1, february: 1,
+        mar: 2, march: 2,
+        apr: 3, april: 3,
+        may: 4,
+        jun: 5, june: 5,
+        jul: 6, july: 6,
+        aug: 7, august: 7,
+        sep: 8, sept: 8, september: 8,
+        oct: 9, october: 9,
+        nov: 10, november: 10,
+        dec: 11, december: 11
+      };
+      const month = months[match[2].toLowerCase()];
+      return month === undefined ? new Date() : new Date(Number(match[3]), month, Number(match[1]));
+    }
+
+    function isWithinActivePeriod(payment) {
+      const paymentDate = parsePaymentDate(payment.date);
+      const now = new Date();
+      const cutoff = new Date(now);
+      cutoff.setHours(0, 0, 0, 0);
+      cutoff.setDate(cutoff.getDate() - activePeriodDays + 1);
+      return paymentDate >= cutoff && paymentDate <= now;
+    }
+
+    async function loadPayments() {
+      try {
+        const token = localStorage.getItem('tt_token') || localStorage.getItem('token') || localStorage.getItem('authToken');
+        const res = await fetch('/api/payments', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (!res.ok) throw new Error('Payments API unavailable');
+        const data = await res.json();
+        paymentState = (Array.isArray(data) ? data : data.payments || []).map(normalizePayment);
+        if (!paymentState.length) paymentState = fallbackPayments;
+      } catch {
+        paymentState = fallbackPayments;
+      }
+      renderPayments();
+    }
+
+    function renderPayments() {
+      const search = document.getElementById('payment-search').value.trim().toLowerCase();
+      const rows = paymentState.filter(p => isWithinActivePeriod(p) && [p.id, p.user, p.method, p.status].some(v => String(v).toLowerCase().includes(search)));
+      const paid = rows.filter(p => p.status === 'paid');
+      const pending = rows.filter(p => p.status === 'pending');
+      const overdue = rows.filter(p => p.status === 'overdue');
+      const revenue = paid.reduce((sum, p) => sum + p.amount, 0);
+      const average = rows.length ? revenue / rows.length : 0;
+
+      document.getElementById('metric-revenue').textContent = money(revenue);
+      document.getElementById('metric-paid').textContent = paid.length;
+      document.getElementById('metric-pending').textContent = pending.length;
+      document.getElementById('metric-overdue').textContent = overdue.length;
+      document.getElementById('metric-average').textContent = money(average);
+      document.getElementById('donut-total').textContent = rows.length;
+      document.getElementById('legend-paid').textContent = paid.length;
+      document.getElementById('legend-pending').textContent = pending.length;
+      document.getElementById('legend-overdue').textContent = overdue.length;
+      document.getElementById('ledger-count').textContent = `${rows.length} records`;
+
+      document.getElementById('payment-rows').innerHTML = rows.map(p => `
+        <tr>
+          <td>${p.id}</td>
+          <td>${p.user}</td>
+          <td>${money(p.amount, p.currency)}</td>
+          <td>${p.method}</td>
+          <td><span class="status-pill status-${p.status}">${p.status}</span></td>
+          <td>${String(p.date).slice(0, 12)}</td>
+        </tr>
+      `).join('') || '<tr><td colspan="6" style="text-align:center;color:#94a3b8;">No payments found</td></tr>';
+    }
+
+    document.getElementById('payment-search').addEventListener('input', renderPayments);
+    document.querySelectorAll('.period-tabs button').forEach((button) => {
+      button.addEventListener('click', () => {
+        activePeriodDays = Number(button.dataset.days || 30);
+        document.querySelectorAll('.period-tabs button').forEach((tab) => tab.classList.toggle('active', tab === button));
+        renderPayments();
+      });
+    });
+    document.getElementById('payment-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const payment = {
+        id: `PAY-${Math.floor(1000 + Math.random() * 9000)}`,
+        user: document.getElementById('pay-user').value.trim() || 'Client',
+        amount: Number(document.getElementById('pay-amount').value || 0),
+        currency: document.getElementById('pay-currency').value,
+        method: document.getElementById('pay-method').value,
+        status: document.getElementById('pay-status').value,
+        date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+      };
+
+      try {
+        const token = localStorage.getItem('tt_token') || localStorage.getItem('token') || localStorage.getItem('authToken');
+        await fetch('/api/payments', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify(payment)
+        });
+      } catch { }
+
+      paymentState.unshift(payment);
+      event.target.reset();
+      renderPayments();
+    });
+
+    loadPayments();
+  </script>
+</body>
+
+</html>

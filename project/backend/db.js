@@ -83,6 +83,7 @@ CREATE TABLE IF NOT EXISTS clients (
   satisfaction_score REAL DEFAULT 0,
   retainer_mode INTEGER DEFAULT 0,
   project_key TEXT,
+  stage TEXT DEFAULT 'new_register',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -906,5 +907,109 @@ const roleTemplateSeedStmt = db.prepare(`
 ].forEach(([name, department, primary_role, secondary_roles, description]) => {
   roleTemplateSeedStmt.run(name, department, primary_role, secondary_roles, description);
 });
+
+// Backfill client fields for older databases.
+const clientColumns = db.prepare('PRAGMA table_info(clients)').all().map(c => c.name);
+if (!clientColumns.includes('stage')) {
+  db.exec("ALTER TABLE clients ADD COLUMN stage TEXT DEFAULT 'new_register'");
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// PORTAL INTEGRATION MIGRATIONS — Payments & Messaging unification
+// These idempotent ALTERs add columns required to link Employee Portal
+// and Client Connect Portal to the same underlying data tables.
+// ──────────────────────────────────────────────────────────────────────
+
+// --- Payments: add client_id, status, description, source ---
+const paymentColumns = db.prepare('PRAGMA table_info(payments)').all().map(c => c.name);
+if (!paymentColumns.includes('client_id')) {
+  db.exec('ALTER TABLE payments ADD COLUMN client_id INTEGER REFERENCES clients(id)');
+}
+if (!paymentColumns.includes('status')) {
+  db.exec("ALTER TABLE payments ADD COLUMN status TEXT DEFAULT 'pending'");
+}
+if (!paymentColumns.includes('description')) {
+  db.exec('ALTER TABLE payments ADD COLUMN description TEXT');
+}
+if (!paymentColumns.includes('source')) {
+  db.exec("ALTER TABLE payments ADD COLUMN source TEXT DEFAULT 'employee_portal'");
+}
+db.exec('CREATE INDEX IF NOT EXISTS idx_payments_client_id ON payments(client_id)');
+
+// --- Conversations: add client_id for client-staff thread tagging ---
+const conversationColumns = db.prepare('PRAGMA table_info(conversations)').all().map(c => c.name);
+if (!conversationColumns.includes('client_id')) {
+  db.exec('ALTER TABLE conversations ADD COLUMN client_id INTEGER REFERENCES clients(id)');
+}
+db.exec('CREATE INDEX IF NOT EXISTS idx_conversations_client_id ON conversations(client_id)');
+
+// --- Chat messages: add sender_client_id to identify client-originated messages ---
+const chatMessageColumns = db.prepare('PRAGMA table_info(chat_messages)').all().map(c => c.name);
+if (!chatMessageColumns.includes('sender_client_id')) {
+  db.exec('ALTER TABLE chat_messages ADD COLUMN sender_client_id INTEGER REFERENCES clients(id)');
+}
+
+// --- Tickets: add client_id ---
+const ticketColumns = db.prepare('PRAGMA table_info(tickets)').all().map(c => c.name);
+if (!ticketColumns.includes('client_id')) {
+  db.exec('ALTER TABLE tickets ADD COLUMN client_id INTEGER REFERENCES clients(id)');
+}
+db.exec('CREATE INDEX IF NOT EXISTS idx_tickets_client_id ON tickets(client_id)');
+
+// --- Clients: add login/auth columns for Client Connect Portal ---
+if (!clientColumns.includes('client_login_id')) {
+  db.exec('ALTER TABLE clients ADD COLUMN client_login_id TEXT');
+}
+if (!clientColumns.includes('password_hash')) {
+  db.exec('ALTER TABLE clients ADD COLUMN password_hash TEXT');
+}
+if (!clientColumns.includes('is_active')) {
+  db.exec('ALTER TABLE clients ADD COLUMN is_active INTEGER DEFAULT 1');
+}
+if (!clientColumns.includes('last_login_at')) {
+  db.exec('ALTER TABLE clients ADD COLUMN last_login_at DATETIME');
+}
+// Unique index — use IF NOT EXISTS to be idempotent
+db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_login_id ON clients(client_login_id)');
+
+// --- Meetings table (used by client_portal.routes.js) ---
+db.exec(`
+CREATE TABLE IF NOT EXISTS meetings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  client_id INTEGER REFERENCES clients(id),
+  team_leader_id INTEGER REFERENCES users(id),
+  title TEXT NOT NULL,
+  description TEXT,
+  scheduled_at DATETIME NOT NULL,
+  status TEXT DEFAULT 'pending' CHECK(status IN ('pending','confirmed','completed','cancelled')),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_meetings_client_id ON meetings(client_id);
+`);
+
+// --- Client Reviews table (used by client_portal.routes.js) ---
+db.exec(`
+CREATE TABLE IF NOT EXISTS client_reviews (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id INTEGER REFERENCES projects(id),
+  client_id INTEGER REFERENCES clients(id),
+  rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+  feedback_text TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_client_reviews_client_id ON client_reviews(client_id);
+`);
+
+// --- Client Portal Banners table (used by client_portal.routes.js) ---
+db.exec(`
+CREATE TABLE IF NOT EXISTS client_portal_banners (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  image_url TEXT,
+  link_url TEXT,
+  is_active INTEGER DEFAULT 1,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+`);
 
 module.exports = db;

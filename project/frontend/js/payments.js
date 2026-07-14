@@ -1,15 +1,9 @@
-// File: public/js/payments.js
-// Admin Payment Management UI logic
+(function () {
+  if (window.__techTurfPaymentsDashboardLoader) return;
+  window.__techTurfPaymentsDashboardLoader = true;
 
-const payments = {
-  async list(user_id = null) {
-    return api.get('/payments' + (user_id ? `?user_id=${user_id}` : ''));
-  },
-  async add(payment) {
-    return api.post('/payments', payment);
-  },
-  async delete(id) {
-    return api.delete(`/payments/${id}`);
-  }
-};
-window.payments = payments;
+  const script = document.createElement('script');
+  script.src = '/js/payments.js?v=dashboard-20260622';
+  script.defer = true;
+  document.head.appendChild(script);
+})();

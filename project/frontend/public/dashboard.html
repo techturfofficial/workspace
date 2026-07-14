@@ -677,6 +677,20 @@
 
             setupModal('tickets-link', 'tickets-modal', 'tickets-close');
             setupModal('payments-link', 'payments-modal', 'payments-close');
+            setupModal('courses-link', 'courses-modal', 'courses-close');
+
+            const openPaymentsSide = (event) => {
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                if (window.openPayments) {
+                    window.openPayments();
+                    history.replaceState(null, '', 'dashboard.html?view=payments');
+                }
+            };
+            const paymentsLink = document.getElementById('payments-link');
+            if (paymentsLink) paymentsLink.addEventListener('click', openPaymentsSide);
 
             // Handle tool-specific data loading (placeholders or function calls)
             if (document.getElementById('dbadmin-link')) {
@@ -720,19 +734,6 @@
             };
             if (document.getElementById('tickets-link')) document.getElementById('tickets-link').onclick = loadTickets;
 
-            // Payments Logic
-            const loadPayments = async () => {
-                const list = document.getElementById('payments-list');
-                if (!list) return;
-                try {
-                    const data = await api.get('/payments');
-                    list.innerHTML = `<table class="table-report"><thead><tr><th>ID</th><th>User</th><th>Amount</th><th>Status</th></tr></thead><tbody>
-                        ${data.map(p => `<tr><td>${p.id}</td><td>${p.user_id}</td><td>${p.amount} ${p.currency}</td><td>${p.status}</td></tr>`).join('')}
-                    </tbody></table>`;
-                } catch { }
-            };
-            if (document.getElementById('payments-link')) document.getElementById('payments-link').onclick = loadPayments;
-
             // Courses Logic
             const loadCourses = async () => {
                 const list = document.getElementById('courses-list');
@@ -751,8 +752,13 @@
                 } catch { }
             };
             if (document.getElementById('courses-link')) document.getElementById('courses-link').onclick = loadCourses;
+
+            if (new URLSearchParams(window.location.search).get('view') === 'payments') {
+                openPaymentsSide();
+            }
         }
     </script>
+    <script src="js/payments.js?v=dashboard-20260622" defer></script>
     <script src="js/dbadmin.js" defer></script>
 </body>
 

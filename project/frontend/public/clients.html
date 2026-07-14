@@ -29,20 +29,140 @@
     href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet">
   <style>
-    .clients-grid {
+    .kanban-board {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 24px;
+      grid-template-columns: repeat(5, minmax(220px, 1fr));
+      gap: 16px;
       padding: 0 24px 24px;
+      overflow-x: auto;
+    }
+
+    .kanban-column {
+      min-width: 220px;
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+    }
+
+    .kanban-column.drag-over {
+      border-color: var(--border-hover);
+      box-shadow: 0 12px 28px rgba(16, 42, 150, 0.16);
+      transform: translateY(-2px);
+    }
+
+    .kanban-column-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 12px;
+      min-height: 28px;
+    }
+
+    .kanban-column-title {
+      font-family: var(--font-display);
+      font-size: 0.78rem;
+      font-weight: 800;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .kanban-column-count {
+      min-width: 28px;
+      height: 24px;
+      border-radius: 999px;
+      background: var(--bg-hover);
+      color: var(--text-secondary);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0 8px;
+    }
+
+    .kanban-column-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 180px;
+    }
+
+    .kanban-empty {
+      padding: 14px 10px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      background: var(--bg-hover);
+    }
+
+    .kanban-title-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .kanban-add-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid var(--accent-primary);
+      background: var(--accent-primary);
+      color: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      cursor: pointer;
+      padding: 0;
+      flex: 0 0 auto;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .kanban-add-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(16, 42, 150, 0.24);
     }
 
     .client-card {
-      padding: 24px;
+      padding: 16px;
       text-align: center;
-      cursor: pointer !important;
+      cursor: grab !important;
       position: relative;
       z-index: 10;
+      transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
     }
+
+    .client-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .client-card:active {
+      cursor: grabbing !important;
+    }
+
+    .client-card.dragging {
+      opacity: 0.45;
+      border-style: dashed;
+    }
+
+    .kanban-column[data-stage="new_register"] { border-top: 4px solid var(--accent-primary); }
+    .kanban-column[data-stage="order_confirmed"] { border-top: 4px solid var(--electric-blue); }
+    .kanban-column[data-stage="processing"] { border-top: 4px solid var(--status-pending); }
+    .kanban-column[data-stage="review"] { border-top: 4px solid var(--accent-secondary); }
+    .kanban-column[data-stage="completion"] { border-top: 4px solid var(--status-completed); }
+
+    .kanban-column[data-stage="new_register"] .kanban-column-title { color: var(--accent-primary); }
+    .kanban-column[data-stage="order_confirmed"] .kanban-column-title { color: var(--electric-blue); }
+    .kanban-column[data-stage="processing"] .kanban-column-title { color: var(--status-pending); }
+    .kanban-column[data-stage="review"] .kanban-column-title { color: var(--accent-secondary); }
+    .kanban-column[data-stage="completion"] .kanban-column-title { color: var(--status-completed); }
 
     .client-avatar {
       width: 64px;
@@ -135,6 +255,11 @@
     }
 
     @media (max-width: 600px) {
+      .kanban-board {
+        grid-template-columns: repeat(5, minmax(210px, 78vw));
+        padding: 0 16px 20px;
+      }
+
       .detail-panel {
         width: 100vw;
         right: -100vw;
@@ -600,13 +725,54 @@
           <div class="breadcrumb">Workspace / Clients</div>
           <div class="page-title">CLIENT PORTFOLIO</div>
         </div>
-        <div class="admin-tl-only">
-          <button class="btn-primary" onclick="openModal('new-client-modal')"><i class="fas fa-plus"></i><span>Add
-              Client</span></button>
-        </div>
       </div>
 
-      <div class="clients-grid" id="clients-list"></div>
+      <div class="kanban-board" id="clients-board">
+        <div class="kanban-column" data-stage="new_register">
+          <div class="kanban-column-header">
+            <span class="kanban-title-row">
+              <span class="kanban-column-title">New Register</span>
+              <button type="button" class="kanban-add-btn admin-tl-only" title="New client" onclick="openNewClientEditor()">
+                <i class="fas fa-plus"></i>
+              </button>
+            </span>
+            <span class="kanban-column-count" id="count-new_register">0</span>
+          </div>
+          <div class="kanban-column-cards" id="cards-new_register"></div>
+        </div>
+
+        <div class="kanban-column" data-stage="order_confirmed">
+          <div class="kanban-column-header">
+            <span class="kanban-column-title">Order Confirmed</span>
+            <span class="kanban-column-count" id="count-order_confirmed">0</span>
+          </div>
+          <div class="kanban-column-cards" id="cards-order_confirmed"></div>
+        </div>
+
+        <div class="kanban-column" data-stage="processing">
+          <div class="kanban-column-header">
+            <span class="kanban-column-title">Processing</span>
+            <span class="kanban-column-count" id="count-processing">0</span>
+          </div>
+          <div class="kanban-column-cards" id="cards-processing"></div>
+        </div>
+
+        <div class="kanban-column" data-stage="review">
+          <div class="kanban-column-header">
+            <span class="kanban-column-title">Review</span>
+            <span class="kanban-column-count" id="count-review">0</span>
+          </div>
+          <div class="kanban-column-cards" id="cards-review"></div>
+        </div>
+
+        <div class="kanban-column" data-stage="completion">
+          <div class="kanban-column-header">
+            <span class="kanban-column-title">Completion</span>
+            <span class="kanban-column-count" id="count-completion">0</span>
+          </div>
+          <div class="kanban-column-cards" id="cards-completion"></div>
+        </div>
+      </div>
     </main>
   </div>
 
@@ -875,6 +1041,15 @@
                 <option value="Call">Call</option>
                 <option value="WhatsApp">WhatsApp</option>
                 <option value="Email">Email</option>
+              </select>
+            </div>
+            <div class="form-group"><label for="client-stage">Stage</label>
+              <select title="Stage" class="form-control" id="client-stage">
+                <option value="new_register">New Register</option>
+                <option value="order_confirmed">Order Confirmed</option>
+                <option value="processing">Processing</option>
+                <option value="review">Review</option>
+                <option value="completion">Completion</option>
               </select>
             </div>
           </div>
@@ -1155,6 +1330,15 @@
                 <option value="Call">Call</option>
                 <option value="WhatsApp">WhatsApp</option>
                 <option value="Email">Email</option>
+              </select>
+            </div>
+            <div class="form-group"><label for="edit-client-stage">Stage</label>
+              <select id="edit-client-stage" class="form-control" title="Stage">
+                <option value="new_register">New Register</option>
+                <option value="order_confirmed">Order Confirmed</option>
+                <option value="processing">Processing</option>
+                <option value="review">Review</option>
+                <option value="completion">Completion</option>
               </select>
             </div>
           </div>

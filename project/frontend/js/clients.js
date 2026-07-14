@@ -23,6 +23,7 @@ async function initClients() {
       location: document.getElementById('client-location').value,
       comm_method: document.getElementById('client-comm-method').value,
       project_key: document.getElementById('client-project-key').value,
+      stage: document.getElementById('client-stage')?.value || 'new_register',
 
       // 2. Business Details
       industry: document.getElementById('client-industry').value,
@@ -93,37 +94,129 @@ async function loadClients() {
     const filtered = !search ? clients : clients.filter((client) => {
       return [client.name, client.company, client.email, client.phone].some((value) => (value || '').toLowerCase().includes(search));
     });
-    const container = document.getElementById('clients-list');
-    if (filtered.length === 0) {
-      container.innerHTML = `
-        <div class="empty-state" style="grid-column:1/-1;">
-          <i class="fas fa-users"></i>
-          <div class="empty-title">No clients found</div>
-          <div class="empty-desc">You have not added any clients yet.</div>
-        </div>
-      `;
-      return;
-    }
-    container.innerHTML = filtered.map(c => `
-      <div class="glass-card client-card anim-fade-up" onclick="openClientDetail('${c.id}')">
-        <div class="client-avatar">${c.name.substring(0, 2).toUpperCase()}</div>
-        <div class="client-name">${c.name}</div>
-        <div class="client-company">${c.company || 'Private Client'}</div>
-        <div class="client-stats">
-          <div class="client-stat">
-            <div class="client-stat-val">${c.active_projects}</div>
-            <div class="client-stat-label">Projects</div>
+
+    const stages = ['new_register', 'order_confirmed', 'processing', 'review', 'completion'];
+
+    // Clear all column card containers and counts
+    stages.forEach(stage => {
+      const colCards = document.getElementById(`cards-${stage}`);
+      if (colCards) colCards.innerHTML = '';
+      const colCount = document.getElementById(`count-${stage}`);
+      if (colCount) colCount.textContent = '0';
+    });
+
+    // Group clients by stage
+    const grouped = {};
+    stages.forEach(stage => grouped[stage] = []);
+
+    filtered.forEach(c => {
+      const stage = c.stage || 'new_register';
+      if (grouped[stage]) {
+        grouped[stage].push(c);
+      } else {
+        grouped['new_register'].push(c); // fallback
+      }
+    });
+
+    // Render cards and update counts
+    stages.forEach(stage => {
+      const colCards = document.getElementById(`cards-${stage}`);
+      const colCount = document.getElementById(`count-${stage}`);
+      if (!colCards) return;
+
+      const clientsInStage = grouped[stage];
+      if (colCount) colCount.textContent = clientsInStage.length;
+
+      if (clientsInStage.length === 0) {
+        colCards.innerHTML = `
+          <div style="padding: 12px; text-align: center; color: var(--text-muted); font-size: 0.8rem; border: 1.5px dashed rgba(255,255,255,0.03); border-radius: var(--radius-sm);">
+            No clients in this stage
           </div>
-          <div class="client-stat">
-            <div class="client-stat-val">${c.satisfaction_score || 0}</div>
-            <div class="client-stat-label">Rating</div>
+        `;
+        return;
+      }
+
+      colCards.innerHTML = clientsInStage.map(c => `
+        <div class="glass-card client-card anim-fade-up" draggable="true" data-client-id="${c.id}" onclick="openClientDetail('${c.id}')">
+          <div class="client-avatar">${c.name.substring(0, 2).toUpperCase()}</div>
+          <div class="client-name">${c.name}</div>
+          <div class="client-company">${c.company || 'Private Client'}</div>
+          <div class="client-stats">
+            <div class="client-stat">
+              <div class="client-stat-val">${c.active_projects}</div>
+              <div class="client-stat-label">Projects</div>
+            </div>
+            <div class="client-stat">
+              <div class="client-stat-val">${c.satisfaction_score || 0}</div>
+              <div class="client-stat-label">Rating</div>
+            </div>
           </div>
         </div>
-      </div>
-    `).join('');
+      `).join('');
+    });
+
+    initDragAndDrop();
   } catch (e) {
     showToast('Failed to load clients', 'error');
   }
+}
+
+function initDragAndDrop() {
+  const cards = document.querySelectorAll('.client-card');
+  const columns = document.querySelectorAll('.kanban-column-cards');
+
+  cards.forEach(card => {
+    if (card._dragInit) return;
+    card._dragInit = true;
+
+    card.addEventListener('dragstart', (e) => {
+      card.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', card.dataset.clientId);
+    });
+
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+    });
+  });
+
+  columns.forEach(column => {
+    if (column._dragInit) return;
+    column._dragInit = true;
+
+    column.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      const col = column.closest('.kanban-column');
+      if (col) col.classList.add('drag-over');
+    });
+
+    column.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+    });
+
+    column.addEventListener('dragleave', () => {
+      const col = column.closest('.kanban-column');
+      if (col) col.classList.remove('drag-over');
+    });
+
+    column.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      const col = column.closest('.kanban-column');
+      if (col) col.classList.remove('drag-over');
+
+      const clientId = e.dataTransfer.getData('text/plain');
+      const targetStage = col.dataset.stage;
+
+      if (!clientId || !targetStage) return;
+
+      try {
+        await api.put(`/clients/${clientId}`, { stage: targetStage });
+        showToast('Stage updated successfully', 'success');
+        loadClients();
+      } catch (err) {
+        showToast('Failed to update stage: ' + err.message, 'error');
+      }
+    });
+  });
 }
 
 function initSearch() {
@@ -293,7 +386,7 @@ async function editClient(id) {
     });
 
     // Handle selects separately
-    ['comm-method', 'agreement', 'nda', 'maintenance', 'updates', 'team-leader-id'].forEach(f => {
+    ['comm-method', 'agreement', 'nda', 'maintenance', 'updates', 'team-leader-id', 'stage'].forEach(f => {
       const el = document.getElementById(`edit-client-${f}`);
       if (el) {
         const fieldName = f.replace(/-/g, '_');
@@ -349,7 +442,7 @@ function initEditForm() {
       'content', 'media', 'guidelines', 'credentials',
       'agreement', 'payment_terms', 'ownership', 'nda',
       'maintenance', 'updates', 'marketing',
-      'brand_colors', 'brand_tone', 'goals', 'team_leader_id', 'project_key'
+      'brand_colors', 'brand_tone', 'goals', 'team_leader_id', 'project_key', 'stage'
     ];
 
     const data = {};

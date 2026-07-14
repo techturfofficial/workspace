@@ -1,36 +1,29 @@
 @echo off
 setlocal
 
-
-REM Start the Tech Turf server (development mode)
-cd project\backend
+REM Terminate existing processes on port 3000 and 5000 to prevent collisions
 for /f "tokens=5" %%a in ('netstat -ano ^| findstr /R /C:":3000 .*LISTENING"') do (
     echo Stopping process %%a using port 3000...
     taskkill /F /PID %%a >nul 2>nul
 )
-
-call npm run dev
-
-REM If startup fails (for example after a Node version change),
-REM rebuild native modules and retry once.
-if errorlevel 1 (
-    echo.
-    echo Startup failed. Attempting automatic native module repair...
-    call npm rebuild better-sqlite3
-
-    if errorlevel 1 (
-        echo.
-        echo Automatic repair failed. Run "npm install" and try again.
-        goto :done
-    )
-
-    echo.
-    echo Repair complete. Retrying startup...
-    call npm run dev
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr /R /C:":5000 .*LISTENING"') do (
+    echo Stopping process %%a using port 5000...
+    taskkill /F /PID %%a >nul 2>nul
 )
 
-cd ../..
+echo.
+echo Starting Employee Portal on Port 3000...
+start "Tech Turf Employee Portal (Port 3000)" cmd /k "set PORT=3000&& cd project && node backend/index.js"
 
-:done
+echo Starting Client Connect Portal on Port 5000...
+start "Tech Turf Client Portal (Port 5000)" cmd /k "set PORT=5000&& cd project && node backend/index.js"
+
+echo.
+echo Both servers have been initiated.
+echo - Employee Portal: http://localhost:3000
+echo - Client Connect: http://localhost:5000
+echo.
+
 pause
 endlocal
+

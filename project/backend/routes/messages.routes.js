@@ -51,13 +51,44 @@ function notifyParticipants(conversationId, senderId, message) {
   notifyUsers(participants, message, 'info', 'Tech Turf New Chat Message').catch(() => {});
 }
 
-router.get('/stream', verifyToken, (req, res) => {
+// SSE stream — supports token via query param since EventSource can't send headers
+router.get('/stream', (req, res) => {
+  const jwt = require('jsonwebtoken');
+  const JWT_SECRET = process.env.JWT_SECRET;
+
+  // Try Authorization header first, then fall back to query param
+  let tokenStr = null;
+  const header = req.headers.authorization;
+  if (header && header.startsWith('Bearer ')) {
+    tokenStr = header.split(' ')[1];
+  }
+  if (!tokenStr && req.query.token) {
+    tokenStr = String(req.query.token).trim();
+  }
+  if (!tokenStr) {
+    return res.status(401).json({ message: 'No token provided' });
+  }
+
+  let userId;
+  try {
+    const decoded = jwt.verify(tokenStr, JWT_SECRET);
+    if (decoded.type === 'client') {
+      return res.status(403).json({ message: 'Forbidden — client token not allowed on staff routes' });
+    }
+    const dbUser = db.prepare('SELECT id, name, email, role, is_active FROM users WHERE id=?').get(decoded.id);
+    if (!dbUser || Number(dbUser.is_active) !== 1) {
+      return res.status(401).json({ message: 'Account inactive or not found' });
+    }
+    userId = Number(dbUser.id);
+  } catch (e) {
+    return res.status(401).json({ message: 'Invalid or expired token' });
+  }
+
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
 
-  const userId = Number(req.user.id);
   const onMessage = (payload) => {
     if (!payload || !Array.isArray(payload.participantIds)) return;
     if (!payload.participantIds.includes(userId)) return;
@@ -112,6 +143,8 @@ router.get('/teams', verifyToken, (req, res) => {
 router.get('/conversations', verifyToken, (req, res) => {
   const conversations = db.prepare(`
     SELECT c.*,
+      cl.name as client_name,
+      cl.company as client_company,
       (
         SELECT message
         FROM chat_messages m
@@ -142,15 +175,26 @@ router.get('/conversations', verifyToken, (req, res) => {
         FROM chat_messages m
         WHERE m.conversation_id = c.id
           AND m.sender_id != ?
+          AND m.sender_client_id IS NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM chat_message_reads r
+            WHERE r.message_id = m.id AND r.user_id = ?
+          )
+      ) + (
+        SELECT COUNT(*)
+        FROM chat_messages m
+        WHERE m.conversation_id = c.id
+          AND m.sender_client_id IS NOT NULL
           AND NOT EXISTS (
             SELECT 1 FROM chat_message_reads r
             WHERE r.message_id = m.id AND r.user_id = ?
           )
       ) as unread_count
     FROM conversations c
+    LEFT JOIN clients cl ON cl.id = c.client_id
     JOIN conversation_participants me ON me.conversation_id = c.id AND me.user_id = ?
     ORDER BY COALESCE(last_message_at, c.updated_at) DESC, c.id DESC
-  `).all(req.user.id, req.user.id, req.user.id);
+  `).all(req.user.id, req.user.id, req.user.id, req.user.id);
 
   res.json(conversations);
 });
@@ -209,9 +253,11 @@ router.get('/conversations/:id/messages', verifyToken, (req, res) => {
   }
 
   const messages = db.prepare(`
-    SELECT m.*, u.name as sender_name, u.avatar as sender_avatar, u.role as sender_role
+    SELECT m.*, u.name as sender_name, u.avatar as sender_avatar, u.role as sender_role,
+           cl.name as sender_client_name
     FROM chat_messages m
     LEFT JOIN users u ON u.id = m.sender_id
+    LEFT JOIN clients cl ON cl.id = m.sender_client_id
     WHERE m.conversation_id=?
     ORDER BY m.created_at ASC, m.id ASC
   `).all(req.params.id);

@@ -228,17 +228,28 @@ function renderConversationList(filter = '') {
     return;
   }
 
-  container.innerHTML = filtered.map(conversation => `
+  container.innerHTML = filtered.map(conversation => {
+    const clientBadge = conversation.client_id 
+      ? '<span style="display:inline-flex;align-items:center;gap:3px;font-size:.55rem;font-weight:800;color:#7c3aed;background:#ede9fe;border-radius:999px;padding:2px 7px;margin-left:6px;">🔗 Client</span>' 
+      : '';
+    const displayName = conversation.is_group 
+      ? (conversation.title || 'Group Chat') 
+      : (conversation.participant_names || 'Direct Message');
+    const subtitle = conversation.client_id && conversation.client_name
+      ? `Client: ${escapeHtml(conversation.client_name)} (${escapeHtml(conversation.client_company || '')})`
+      : (escapeHtml(conversation.participant_names || 'Participants'));
+    return `
     <div class="select-item ${Number(conversation.id) === Number(activeConversationId) ? 'active' : ''}" onclick="openConversation(${conversation.id})">
       <div class="select-avatar" style="display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.08);">
-        <i class="fas fa-comment-dots"></i>
+        <i class="fas ${conversation.client_id ? 'fa-user-tie' : 'fa-comment-dots'}"></i>
       </div>
       <div class="select-meta">
-        <div class="select-name">${escapeHtml(conversation.is_group ? (conversation.title || 'Group Chat') : (conversation.participant_names || 'Direct Message'))}</div>
-        <div class="select-subtitle">${escapeHtml(conversation.participant_names || 'Participants')}${conversation.last_message ? ' • ' + escapeHtml(conversation.last_message) : ''}</div>
+        <div class="select-name">${escapeHtml(displayName)}${clientBadge}</div>
+        <div class="select-subtitle">${subtitle}${conversation.last_message ? ' • ' + escapeHtml(conversation.last_message) : ''}</div>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 function renderSelectedSummary() {
@@ -371,14 +382,19 @@ function renderMessages(messages) {
   }
 
   stream.innerHTML = messages.map(message => {
-    const isSelf = Number(message.sender_id) === Number(auth.getUser()?.id);
+    const isClientMessage = message.sender_client_id && !message.sender_id;
+    const isSelf = !isClientMessage && Number(message.sender_id) === Number(auth.getUser()?.id);
+    const senderLabel = isClientMessage
+      ? `Client: ${escapeHtml(message.sender_client_name || 'Client Portal User')}`
+      : escapeHtml(isSelf ? 'You' : message.sender_name || 'Teammate');
     const attachmentHtml = Array.isArray(message.attachments) && message.attachments.length > 0
       ? `<div style="margin-top:8px; display:flex; flex-direction:column; gap:4px;">${message.attachments.map(a => `<a href="${a.file_path}" target="_blank" style="font-size:0.72rem; color:${isSelf ? '#102a96' : 'var(--accent-primary)'}; text-decoration:underline;">📎 ${escapeHtml(a.file_name || 'Attachment')}</a>`).join('')}</div>`
       : '';
     const readCount = Array.isArray(message.read_receipts) ? message.read_receipts.length : 0;
+    const bubbleClass = isClientMessage ? 'other client-message' : (isSelf ? 'self' : 'other');
     return `
-      <div class="message-bubble ${isSelf ? 'self' : 'other'}">
-        <div style="font-weight:700; font-size:0.78rem; margin-bottom:4px;">${escapeHtml(isSelf ? 'You' : message.sender_name || 'Teammate')}</div>
+      <div class="message-bubble ${bubbleClass}">
+        <div style="font-weight:700; font-size:0.78rem; margin-bottom:4px;${isClientMessage ? ' color:#7c3aed;' : ''}">${senderLabel}</div>
         <div>${escapeHtml(message.message)}</div>
         ${attachmentHtml}
         <div class="message-meta">${timeAgo(message.created_at)}${isSelf ? ` • Seen by ${readCount}` : ''}</div>

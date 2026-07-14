@@ -90,6 +90,7 @@ async function startServer() {
     app.use('/api/messages', require('./routes/messages.routes'));
     app.use('/api/workspace', require('./routes/workspace.routes'));
     app.use('/api/client-connect', require('./routes/client_connect.routes'));
+    app.use('/api/client-portal', require('./routes/client_portal.routes'));
     app.use('/api/enterprise', require('./routes/enterprise.routes'));
 
     // --- FRONTEND STUDIO ROUTES ---
@@ -171,16 +172,46 @@ async function startServer() {
     // Serve uploads with no caching so profile pics update immediately
     app.use('/uploads', express.static(uploadsDir, { maxAge: 0, etag: false }));
 
-    // Serve documentation and static UI with 1-hour caching for faster re-loads
-    app.use(express.static(path.join(__dirname, '../frontend/public'), {
-        etag: true,
-        lastModified: true
+    const clientPortalDir = path.join(__dirname, '../frontend/client-portal');
+    const employeePortalDir = path.join(__dirname, '../frontend/public');
+
+    const clientPortalStaticOptions = {
+        etag: false,
+        maxAge: 0,
+        setHeaders: (res) => {
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+        }
+    };
+
+    // Always serve the client-portal at /client-portal route
+    app.use('/client-portal', express.static(clientPortalDir, {
+        ...clientPortalStaticOptions
     }));
 
-    // Fallback to index.html for Single Page Application behavior
-    app.get('*', (req, res) => {
-        res.sendFile(path.join(__dirname, '../frontend/public/index.html'));
-    });
+    if (String(PORT).trim() === '5000') {
+        app.use(express.static(clientPortalDir, {
+            ...clientPortalStaticOptions
+        }));
+
+        // Fallback to client portal index.html for Single Page Application behavior
+        app.get('*', (req, res) => {
+            res.sendFile(path.join(clientPortalDir, 'index.html'));
+        });
+    } else {
+        // Serve documentation and static UI with 1-hour caching for faster re-loads
+        app.use(express.static(employeePortalDir, {
+            etag: true,
+            lastModified: true
+        }));
+
+        // Fallback to employee portal index.html for Single Page Application behavior
+        app.get('*', (req, res) => {
+            res.sendFile(path.join(employeePortalDir, 'index.html'));
+        });
+    }
+
 
     // --- BACKGROUND SERVICES ---
     // Deadline Pulse: Runs periodic checks for task deadlines

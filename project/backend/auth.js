@@ -37,6 +37,10 @@ function verifyToken(req, res, next) {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
 
+    if (decoded.type === 'client') {
+      return res.status(403).json({ message: 'Forbidden — client token not allowed on staff routes' });
+    }
+
     // Always resolve the latest account state from DB so admin role/status updates
     // apply immediately to already logged-in sessions.
     const dbUser = db.prepare('SELECT id,name,email,role,secondary_roles,is_active FROM users WHERE id=?').get(decoded.id);
@@ -129,4 +133,57 @@ function isStrongPassword(password) {
   return hasLength && hasUpper && hasLower && hasNumber && hasSymbol;
 }
 
-module.exports = { hashPassword, comparePassword, generateToken, verifyToken, checkRole, checkPermission, isStrongPassword };
+function verifyClientToken(req, res, next) {
+  const header = req.headers.authorization;
+
+  if (!header) {
+    return res.status(401).json({ message: 'No token provided' });
+  }
+
+  const token = header.startsWith('Bearer ') ? header.split(' ')[1] : null;
+
+  if (!token) {
+    return res.status(401).json({ message: 'Invalid authorization header' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (decoded.type !== 'client') {
+      return res.status(403).json({ message: 'Forbidden — invalid token type' });
+    }
+
+    const client = db.prepare('SELECT id, name, company, is_active FROM clients WHERE id=?').get(decoded.clientId);
+    if (!client || Number(client.is_active) !== 1) {
+      return res.status(401).json({ message: 'Client account inactive or not found' });
+    }
+
+    req.clientId = client.id;
+    req.client = client;
+    next();
+  } catch(e) {
+    console.error('Client token validation failed:', e.message);
+    return res.status(401).json({ message: 'Invalid or expired token' });
+  }
+}
+
+/**
+ * Middleware: requireClientScope
+ * Must be used AFTER verifyClientToken.
+ * Derives client_id from the verified client JWT token (set by verifyClientToken).
+ * Injects req.clientScope = { clientId } into the request.
+ * Rejects if client_id is missing or invalid.
+ * NEVER trusts client_id from req.body or req.query — only from the decoded token.
+ * This middleware is built against the real (non-bypass) auth path, so removing
+ * the dev bypass later requires zero changes to integration code.
+ */
+function requireClientScope(req, res, next) {
+  const clientId = req.clientId; // Set by verifyClientToken from decoded JWT
+  if (!clientId || !Number.isInteger(clientId) || clientId <= 0) {
+    return res.status(403).json({ message: 'Client scope unavailable — invalid or missing client identity' });
+  }
+  req.clientScope = { clientId };
+  next();
+}
+
+module.exports = { hashPassword, comparePassword, generateToken, verifyToken, verifyClientToken, requireClientScope, checkRole, checkPermission, isStrongPassword };

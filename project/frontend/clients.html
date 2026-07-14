@@ -28,20 +28,107 @@
     href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet">
   <style>
-    .clients-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 24px;
+    .kanban-board {
+      display: flex;
+      gap: 20px;
       padding: 0 24px 24px;
+      overflow-x: auto;
+      align-items: flex-start;
+      min-height: calc(100vh - 220px);
+    }
+
+    .kanban-column {
+      flex: 1;
+      min-width: 250px;
+      background: rgba(13, 13, 26, 0.6);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: calc(100vh - 240px);
+      overflow-y: auto;
+      transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
+      backdrop-filter: blur(10px);
+    }
+
+    .kanban-column.drag-over {
+      background: rgba(16, 42, 150, 0.15);
+      border-color: var(--accent-secondary);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .kanban-column-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .kanban-column-title {
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .kanban-column-count {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      background: var(--bg-hover);
+      color: var(--text-secondary);
+      padding: 2px 8px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .kanban-column-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 150px; /* Area to drop */
     }
 
     .client-card {
-      padding: 24px;
+      padding: 16px;
       text-align: center;
-      cursor: pointer !important;
+      cursor: grab !important;
       position: relative;
       z-index: 10;
+      transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
     }
+
+    .client-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .client-card:active {
+      cursor: grabbing !important;
+    }
+
+    .client-card.dragging {
+      opacity: 0.4;
+      border: 1.5px dashed var(--accent-secondary);
+    }
+
+    /* Column Specific Border Highlights */
+    .kanban-column[data-stage="new_register"] { border-top: 3px solid var(--accent-primary); }
+    .kanban-column[data-stage="order_confirmed"] { border-top: 3px solid var(--accent-blue); }
+    .kanban-column[data-stage="processing"] { border-top: 3px solid var(--accent-pink); }
+    .kanban-column[data-stage="review"] { border-top: 3px solid var(--accent-secondary); }
+    .kanban-column[data-stage="completion"] { border-top: 3px solid var(--accent-green); }
+
+    /* Colors for Column Headers text to match */
+    .kanban-column[data-stage="new_register"] .kanban-column-title { color: #8fa0ff; }
+    .kanban-column[data-stage="order_confirmed"] .kanban-column-title { color: var(--accent-blue); }
+    .kanban-column[data-stage="processing"] .kanban-column-title { color: var(--accent-pink); }
+    .kanban-column[data-stage="review"] .kanban-column-title { color: var(--accent-secondary); }
+    .kanban-column[data-stage="completion"] .kanban-column-title { color: var(--accent-green); }
+
 
     .client-avatar {
       width: 64px;
@@ -605,7 +692,53 @@
         </div>
       </div>
 
-      <div class="clients-grid" id="clients-list"></div>
+      <!-- Kanban Board Layout -->
+      <div class="kanban-board" id="clients-board">
+        <!-- New Register Column -->
+        <div class="kanban-column" data-stage="new_register">
+          <div class="kanban-column-header">
+            <span class="kanban-column-title">New Register</span>
+            <span class="kanban-column-count" id="count-new_register">0</span>
+          </div>
+          <div class="kanban-column-cards" id="cards-new_register"></div>
+        </div>
+
+        <!-- Order Confirmed Column -->
+        <div class="kanban-column" data-stage="order_confirmed">
+          <div class="kanban-column-header">
+            <span class="kanban-column-title">Order Confirmed</span>
+            <span class="kanban-column-count" id="count-order_confirmed">0</span>
+          </div>
+          <div class="kanban-column-cards" id="cards-order_confirmed"></div>
+        </div>
+
+        <!-- Processing Column -->
+        <div class="kanban-column" data-stage="processing">
+          <div class="kanban-column-header">
+            <span class="kanban-column-title">Processing</span>
+            <span class="kanban-column-count" id="count-processing">0</span>
+          </div>
+          <div class="kanban-column-cards" id="cards-processing"></div>
+        </div>
+
+        <!-- Review Column -->
+        <div class="kanban-column" data-stage="review">
+          <div class="kanban-column-header">
+            <span class="kanban-column-title">Review</span>
+            <span class="kanban-column-count" id="count-review">0</span>
+          </div>
+          <div class="kanban-column-cards" id="cards-review"></div>
+        </div>
+
+        <!-- Completion Column -->
+        <div class="kanban-column" data-stage="completion">
+          <div class="kanban-column-header">
+            <span class="kanban-column-title">Completion</span>
+            <span class="kanban-column-count" id="count-completion">0</span>
+          </div>
+          <div class="kanban-column-cards" id="cards-completion"></div>
+        </div>
+      </div>
     </main>
   </div>
 
@@ -869,11 +1002,19 @@
             <div class="form-group"><label for="client-location">Location (City, Country)</label><input type="text"
                 class="form-control" id="client-location"></div>
             <div class="form-group"><label for="client-comm-method">Preferred Communication Method</label>
-              <select title="comm method" class="form-control" id="client-comm-method" title="comm method"
-                title="Communication Method">
+              <select title="comm method" class="form-control" id="client-comm-method" title="Communication Method">
                 <option value="Call">Call</option>
                 <option value="WhatsApp">WhatsApp</option>
                 <option value="Email">Email</option>
+              </select>
+            </div>
+            <div class="form-group"><label for="client-stage">Stage</label>
+              <select title="Stage" class="form-control" id="client-stage">
+                <option value="new_register">New Register</option>
+                <option value="order_confirmed">Order Confirmed</option>
+                <option value="processing">Processing</option>
+                <option value="review">Review</option>
+                <option value="completion">Completion</option>
               </select>
             </div>
           </div>
@@ -1154,6 +1295,15 @@
                 <option value="Call">Call</option>
                 <option value="WhatsApp">WhatsApp</option>
                 <option value="Email">Email</option>
+              </select>
+            </div>
+            <div class="form-group"><label for="edit-client-stage">Stage</label>
+              <select id="edit-client-stage" class="form-control" title="Stage">
+                <option value="new_register">New Register</option>
+                <option value="order_confirmed">Order Confirmed</option>
+                <option value="processing">Processing</option>
+                <option value="review">Review</option>
+                <option value="completion">Completion</option>
               </select>
             </div>
           </div>
