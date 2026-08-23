@@ -140,11 +140,41 @@ router.get('/teams', verifyToken, (req, res) => {
   res.json(teams);
 });
 
+router.get('/clients', verifyToken, (req, res) => {
+  const clients = db.prepare(`
+    SELECT id, name, company, email, phone, avatar
+    FROM clients
+    ORDER BY name ASC
+  `).all();
+  res.json(clients);
+});
+
 router.get('/conversations', verifyToken, (req, res) => {
   const conversations = db.prepare(`
     SELECT c.*,
       cl.name as client_name,
       cl.company as client_company,
+      (
+        SELECT u.avatar
+        FROM conversation_participants cp
+        JOIN users u ON u.id = cp.user_id
+        WHERE cp.conversation_id = c.id AND cp.user_id != ?
+        LIMIT 1
+      ) as other_avatar,
+      (
+        SELECT u.name
+        FROM conversation_participants cp
+        JOIN users u ON u.id = cp.user_id
+        WHERE cp.conversation_id = c.id AND cp.user_id != ?
+        LIMIT 1
+      ) as other_name,
+      (
+        SELECT u.role
+        FROM conversation_participants cp
+        JOIN users u ON u.id = cp.user_id
+        WHERE cp.conversation_id = c.id AND cp.user_id != ?
+        LIMIT 1
+      ) as other_role,
       (
         SELECT message
         FROM chat_messages m
@@ -175,16 +205,6 @@ router.get('/conversations', verifyToken, (req, res) => {
         FROM chat_messages m
         WHERE m.conversation_id = c.id
           AND m.sender_id != ?
-          AND m.sender_client_id IS NULL
-          AND NOT EXISTS (
-            SELECT 1 FROM chat_message_reads r
-            WHERE r.message_id = m.id AND r.user_id = ?
-          )
-      ) + (
-        SELECT COUNT(*)
-        FROM chat_messages m
-        WHERE m.conversation_id = c.id
-          AND m.sender_client_id IS NOT NULL
           AND NOT EXISTS (
             SELECT 1 FROM chat_message_reads r
             WHERE r.message_id = m.id AND r.user_id = ?
@@ -194,9 +214,64 @@ router.get('/conversations', verifyToken, (req, res) => {
     LEFT JOIN clients cl ON cl.id = c.client_id
     JOIN conversation_participants me ON me.conversation_id = c.id AND me.user_id = ?
     ORDER BY COALESCE(last_message_at, c.updated_at) DESC, c.id DESC
-  `).all(req.user.id, req.user.id, req.user.id, req.user.id);
+  `).all(req.user.id, req.user.id, req.user.id, req.user.id, req.user.id, req.user.id);
+
+  conversations.forEach(c => {
+    if (c.client_id || c.client_name) {
+      c.category = 'clients';
+      c.display_title = c.client_name || (c.title && c.title !== 'Client Chat Thread' ? c.title : 'Client');
+    } else if (c.is_group || c.team_id || c.participant_count > 2) {
+      c.category = 'teams';
+      c.display_title = (c.title && c.title !== 'Group Chat' && c.title !== 'Client Chat Thread') ? c.title : 'Team Group';
+    } else {
+      c.category = 'employees';
+      c.display_title = c.other_name || (c.title && c.title !== 'Direct Message' && c.title !== 'Client Chat Thread' ? c.title : 'Direct Message');
+    }
+  });
 
   res.json(conversations);
+});
+
+router.post('/conversations/client/:clientId', verifyToken, (req, res) => {
+  const clientId = Number(req.params.clientId);
+  const client = db.prepare('SELECT * FROM clients WHERE id=?').get(clientId);
+  if (!client) return res.status(404).json({ message: 'Client not found' });
+
+  let conv = db.prepare('SELECT * FROM conversations WHERE client_id=? LIMIT 1').get(clientId);
+  if (!conv) {
+    const title = client.name || 'Client';
+    const info = db.prepare('INSERT INTO conversations (title, is_group, client_id, created_by) VALUES (?, 0, ?, ?)').run(title, clientId, req.user.id);
+    conv = { id: info.lastInsertRowid };
+  } else {
+    db.prepare('UPDATE conversations SET title=? WHERE id=?').run(client.name, conv.id);
+  }
+
+  db.prepare('INSERT OR IGNORE INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)').run(conv.id, req.user.id);
+
+  const fullConv = loadConversation(conv.id);
+  res.json({ message: 'Client conversation ready', conversation: fullConv });
+});
+
+router.post('/conversations/team/:teamId', verifyToken, (req, res) => {
+  const teamId = Number(req.params.teamId);
+  const team = db.prepare('SELECT * FROM teams WHERE id=?').get(teamId);
+  if (!team) return res.status(404).json({ message: 'Team not found' });
+
+  let conv = db.prepare('SELECT * FROM conversations WHERE team_id=? LIMIT 1').get(teamId);
+  if (!conv) {
+    const title = `${team.name} Channel`;
+    const info = db.prepare('INSERT INTO conversations (title, is_group, team_id, created_by) VALUES (?, 1, ?, ?)').run(title, teamId, req.user.id);
+    conv = { id: info.lastInsertRowid };
+  }
+
+  const members = db.prepare('SELECT user_id FROM team_members WHERE team_id=?').all(teamId);
+  const insertP = db.prepare('INSERT OR IGNORE INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)');
+  insertP.run(conv.id, req.user.id);
+  if (team.leader_id) insertP.run(conv.id, team.leader_id);
+  members.forEach(m => insertP.run(conv.id, m.user_id));
+
+  const fullConv = loadConversation(conv.id);
+  res.json({ message: 'Team conversation ready', conversation: fullConv });
 });
 
 router.post('/conversations', verifyToken, (req, res) => {
@@ -386,6 +461,43 @@ router.post('/conversations/:id/messages', verifyToken, (req, res) => {
     res.status(500).json({ message: 'Failed to send message: ' + err.message });
   }
   });
+});
+
+router.delete('/conversations/:id/clear', verifyToken, (req, res) => {
+  const convId = Number(req.params.id);
+  const conv = db.prepare('SELECT * FROM conversations WHERE id=?').get(convId);
+  if (!conv) return res.status(404).json({ message: 'Conversation not found' });
+
+  const messages = db.prepare('SELECT id FROM chat_messages WHERE conversation_id=?').all(convId);
+  messages.forEach(m => {
+    try {
+      db.prepare('DELETE FROM chat_attachments WHERE message_id=?').run(m.id);
+      db.prepare('DELETE FROM chat_message_reads WHERE message_id=?').run(m.id);
+    } catch (_) {}
+  });
+
+  db.prepare('DELETE FROM chat_messages WHERE conversation_id=?').run(convId);
+  res.json({ message: 'Chat history cleared successfully' });
+});
+
+router.delete('/conversations/:id', verifyToken, (req, res) => {
+  const convId = Number(req.params.id);
+  const conv = db.prepare('SELECT * FROM conversations WHERE id=?').get(convId);
+  if (!conv) return res.status(404).json({ message: 'Conversation not found' });
+
+  const messages = db.prepare('SELECT id FROM chat_messages WHERE conversation_id=?').all(convId);
+  messages.forEach(m => {
+    try {
+      db.prepare('DELETE FROM chat_attachments WHERE message_id=?').run(m.id);
+      db.prepare('DELETE FROM chat_message_reads WHERE message_id=?').run(m.id);
+    } catch (_) {}
+  });
+
+  db.prepare('DELETE FROM chat_messages WHERE conversation_id=?').run(convId);
+  db.prepare('DELETE FROM conversation_participants WHERE conversation_id=?').run(convId);
+  db.prepare('DELETE FROM conversations WHERE id=?').run(convId);
+
+  res.json({ message: 'Conversation deleted successfully' });
 });
 
 module.exports = router;

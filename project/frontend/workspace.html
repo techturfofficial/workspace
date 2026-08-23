@@ -4,12 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tech Turf | Tech-Turf Workspace</title>
+    <title>Tech Turf | Creative Workspace</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/workspace.css">
+    <link rel="stylesheet" href="css/responsive.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link
         href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
@@ -18,7 +19,6 @@
 
 <body>
     <div class="workspace-container">
-        <!-- Top Navigation -->
         <header class="workspace-header">
             <div class="header-left">
                 <div class="header-bubble btn-back" onclick="window.location.href='dashboard.html'"
@@ -30,7 +30,7 @@
             <div class="header-bubble workspace-title-area">
                 <div class="workspace-title" id="wb-title">UNTITLED</div>
                 <i class="fas fa-edit workspace-title-edit-icon" title="Edit Title"></i>
-                <div class="saved-status">
+                <div class="saved-status" id="save-status">
                     <div class="status-dot"></div>
                     <span>Saved</span>
                 </div>
@@ -49,19 +49,27 @@
             </div>
         </header>
 
-        <!-- Canvas Area -->
         <main id="canvas-wrapper">
             <canvas id="whiteboard-canvas"></canvas>
         </main>
 
-        <!-- Floating Toolbar -->
         <div class="toolbar-container">
             <div class="glass-toolbar">
+                <button class="tool-btn" id="tool-undo" title="Undo (Ctrl+Z)" disabled>
+                    <i class="fas fa-undo"></i>
+                </button>
+                <button class="tool-btn" id="tool-redo" title="Redo (Ctrl+Shift+Z)" disabled>
+                    <i class="fas fa-redo"></i>
+                </button>
+                <div class="tool-divider"></div>
                 <button class="tool-btn active" id="tool-select" title="Select (V)">
                     <i class="fas fa-mouse-pointer"></i>
                 </button>
                 <button class="tool-btn" id="tool-pencil" title="Pencil (P)">
                     <i class="fas fa-pencil-alt"></i>
+                </button>
+                <button class="tool-btn" id="tool-sticky" title="Sticky Note (S)">
+                    <i class="fas fa-sticky-note"></i>
                 </button>
                 <button class="tool-btn" id="tool-rect" title="Rectangle (R)">
                     <i class="fas fa-square"></i>
@@ -69,11 +77,11 @@
                 <button class="tool-btn" id="tool-circle" title="Circle (O)">
                     <i class="fas fa-circle"></i>
                 </button>
-                <button class="tool-btn" id="tool-text" title="Text (T)">
-                    <i class="fas fa-font"></i>
-                </button>
                 <button class="tool-btn" id="tool-arrow" title="Arrow (A)">
                     <i class="fas fa-long-arrow-alt-right"></i>
+                </button>
+                <button class="tool-btn" id="tool-text" title="Text (T)">
+                    <i class="fas fa-font"></i>
                 </button>
                 <button class="tool-btn" id="tool-image" title="Upload Image (I)">
                     <i class="fas fa-image"></i>
@@ -81,122 +89,82 @@
                 <button class="tool-btn" id="tool-eraser" title="Eraser (E)">
                     <i class="fas fa-eraser"></i>
                 </button>
-                <button class="tool-btn" id="tool-clear" title="Clear Canvas">
+                <button class="tool-btn tool-danger" id="tool-clear" title="Clear Canvas">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
         </div>
 
-        <!-- Unified Sidebar -->
-        <aside id="sidebar-main" class="glass-card sidebar-collapsed">
-            <div class="sidebar-tabs">
-                <div class="sidebar-tab active" data-tab="nav" title="Navigation">
-                    <i class="fas fa-route"></i>
-                </div>
-                <div class="sidebar-tab" data-tab="shortcuts" title="Shortcuts">
-                    <i class="fas fa-keyboard"></i>
-                </div>
-                <div class="sidebar-tab" data-tab="links" title="Quick Links">
-                    <i class="fas fa-globe"></i>
-                </div>
-                <div class="sidebar-tab" data-tab="layers" title="Layers">
-                    <i class="fas fa-layer-group"></i>
-                </div>
-                <div class="sidebar-tab" data-tab="templates" title="Templates">
-                    <i class="fas fa-puzzle-piece"></i>
-                </div>
+        <!-- Unified left dock -->
+        <aside id="side-dock" class="glass-card">
+            <div class="dock-tabs">
+                <button class="dock-tab active" data-tab="shortcuts" title="Shortcuts"><i
+                        class="fas fa-keyboard"></i></button>
+                <button class="dock-tab" data-tab="nav" title="Navigation"><i class="fas fa-route"></i></button>
+                <button class="dock-tab" data-tab="links" title="Quick Links"><i class="fas fa-globe"></i></button>
+                <button class="dock-tab" data-tab="layers" title="Layers"><i class="fas fa-layer-group"></i></button>
             </div>
-
-            <div class="sidebar-content-wrapper">
-                <!-- Navigation Tab -->
-                <div class="sidebar-tab-content active" id="tab-nav">
+            <div class="dock-body">
+                <div class="dock-panel active" id="dock-shortcuts">
+                    <h3>Shortcuts</h3>
+                    <ul class="dock-list">
+                        <li><span>Select</span><kbd>V</kbd></li>
+                        <li><span>Pencil</span><kbd>P</kbd></li>
+                        <li><span>Sticky Note</span><kbd>S</kbd></li>
+                        <li><span>Rectangle</span><kbd>R</kbd></li>
+                        <li><span>Circle</span><kbd>O</kbd></li>
+                        <li><span>Arrow</span><kbd>A</kbd></li>
+                        <li><span>Text</span><kbd>T</kbd></li>
+                        <li><span>Image</span><kbd>I</kbd></li>
+                        <li><span>Eraser</span><kbd>E</kbd></li>
+                        <li><span>Undo / Redo</span><kbd>Ctrl+Z</kbd></li>
+                        <li><span>Save</span><kbd>Ctrl+S</kbd></li>
+                        <li><span>Delete</span><kbd>Del</kbd></li>
+                        <li><span>Pan</span><kbd>Space+Drag</kbd></li>
+                    </ul>
+                </div>
+                <div class="dock-panel" id="dock-nav">
                     <h3>Navigation</h3>
-                    <ul class="nav-links-list">
+                    <ul class="dock-list nav-links-list">
                         <li><a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
                         <li><a href="projects.html"><i class="fas fa-project-diagram"></i> Projects</a></li>
                         <li><a href="tasks.html"><i class="fas fa-tasks"></i> Tasks</a></li>
                         <li><a href="drive.html"><i class="fas fa-hdd"></i> Drive</a></li>
+                        <li><a href="design_vault.html"><i class="fas fa-palette"></i> Design Vault</a></li>
                         <li><a href="clients.html"><i class="fas fa-users"></i> Clients</a></li>
                     </ul>
                 </div>
-
-                <!-- Templates Tab -->
-                <div class="sidebar-tab-content" id="tab-templates">
-                    <h3>Templates</h3>
-                    <div class="templates-grid">
-                        <div class="template-item" data-template="brainstorm">
-                            <i class="fas fa-brain"></i>
-                            <span>Brainstorm</span>
-                        </div>
-                        <div class="template-item" data-template="kanban">
-                            <i class="fas fa-columns"></i>
-                            <span>Kanban</span>
-                        </div>
-                        <div class="template-item" data-template="flowchart">
-                            <i class="fas fa-project-diagram"></i>
-                            <span>Flowchart</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Layers Tab -->
-                <div class="sidebar-tab-content" id="tab-layers">
-                    <h3>Layers</h3>
-                    <div id="layers-list" class="layers-container">
-                        <!-- Populated by JS -->
-                        <div class="no-layers">No objects on canvas</div>
-                    </div>
-                </div>
-
-                <!-- Shortcuts Tab -->
-                <div class="sidebar-tab-content" id="tab-shortcuts">
-                    <h3>Shortcuts</h3>
-                    <ul class="shortcuts-list">
-                        <li><span>Select</span><kbd>V</kbd></li>
-                        <li><span>Pencil</span><kbd>P</kbd></li>
-                        <li><span>Rectangle</span><kbd>R</kbd></li>
-                        <li><span>Circle</span><kbd>O</kbd></li>
-                        <li><span>Text</span><kbd>T</kbd></li>
-                        <li><span>Image</span><kbd>I</kbd></li>
-                        <li><span>Eraser</span><kbd>E</kbd></li>
-                        <li><span>Delete</span><kbd>BS</kbd></li>
-                        <li><span>Clear</span><kbd>DEL</kbd></li>
-                    </ul>
-                </div>
-
-                <!-- Quick Links Tab -->
-                <div class="sidebar-tab-content" id="tab-links">
+                <div class="dock-panel" id="dock-links">
                     <h3>Quick Links</h3>
-                    <ul id="custom-links-container">
-                        <!-- Populated by JS -->
-                    </ul>
+                    <ul id="custom-links-container" class="dock-list links-list"></ul>
                     <button id="add-custom-link-btn" class="btn-primary btn-sm"><i class="fas fa-plus"></i> Add
                         Link</button>
                 </div>
-            </div>
-
-            <div id="sidebar-toggle-handle">
-                <i class="fas fa-chevron-right"></i>
-            </div>
+                <div class="dock-panel" id="dock-layers">
+                    <h3>Layers</h3>
+                    <ul id="layers-list" class="dock-list layers-list">
+                        <li class="layers-empty">No objects yet</li>
+                    </ul>
+                </div>
         </aside>
+        <div id="dock-handle" title="Toggle panel">
+            <i class="fas fa-chevron-right"></i>
+        </div>
 
-        <!-- Right Chat Panel -->
         <aside class="nexus-chat-panel glass-card">
             <div class="chat-header">
                 <h3><i class="fas fa-brain"></i> NEXUS CHAT</h3>
                 <i class="fas fa-minus minimize-chat"></i>
             </div>
-
             <div class="chat-messages" id="chat-messages">
                 <div class="no-messages">
                     <i class="fas fa-brain chat-empty-icon"></i>
                     <p>Ask Nexus for creative ideas, copy suggestions, or layout help for your board.</p>
                 </div>
             </div>
-
             <div class="chat-input-area">
                 <div class="chat-input-wrapper">
-                    <textarea id="chat-textarea" placeholder="Brainstorm with Nexus..."></textarea>
+                    <textarea id="chat-textarea" placeholder="Brainstorm with Nexus…"></textarea>
                     <div class="chat-input-footer">
                         <div class="chat-input-hint">Enter to send</div>
                         <button class="chat-btn-send" id="chat-send" title="Send message">
@@ -207,15 +175,13 @@
             </div>
         </aside>
 
-        <!-- Zoom Controls -->
         <div class="zoom-controls">
+            <span class="zoom-btn" id="zoom-fit" title="Fit to screen"><i class="fas fa-compress-arrows-alt"></i></span>
             <span class="zoom-btn" id="zoom-out"><i class="fas fa-minus"></i></span>
             <span id="zoom-level">100%</span>
             <span class="zoom-btn" id="zoom-in"><i class="fas fa-plus"></i></span>
-            <div class="tool-divider"></div>
-            <span class="zoom-btn" id="grid-toggle" title="Toggle Grid"><i class="fas fa-th"></i></span>
         </div>
-    </div> <!-- End workspace-container -->
+    </div>
 
     <input type="file" id="image-upload" accept="image/*" aria-label="Upload Image">
 
@@ -230,11 +196,11 @@
                 <div class="setting-group">
                     <label>Brush Color</label>
                     <div class="color-picker-grid">
-                        <div class="color-swatch active swatch-white" data-color="#ffffff"></div>
+                        <div class="color-swatch swatch-white active" data-color="#ffffff"></div>
+                        <div class="color-swatch swatch-blue" data-color="#102a96"></div>
                         <div class="color-swatch swatch-red" data-color="#ff4d4d"></div>
                         <div class="color-swatch swatch-green" data-color="#4dff4d"></div>
-                        <div class="color-swatch swatch-blue" data-color="#4d4dff"></div>
-                        <div class="color-swatch swatch-yellow" data-color="#ffff4d"></div>
+                        <div class="color-swatch swatch-yellow" data-color="#ffd54f"></div>
                         <div class="color-swatch swatch-magenta" data-color="#ff4dff"></div>
                     </div>
                 </div>
@@ -243,6 +209,16 @@
                     <input type="range" id="brush-size" min="1" max="50" value="3" aria-label="Brush Size">
                     <span id="brush-size-val">3px</span>
                 </div>
+                <div class="setting-group">
+                    <label>Sticky Note Color</label>
+                    <div class="color-picker-grid sticky-colors">
+                        <div class="color-swatch sticky-swatch active swatch-sticky-yellow" data-sticky="#fff59d"></div>
+                        <div class="color-swatch sticky-swatch swatch-sticky-orange" data-sticky="#ffcc80"></div>
+                        <div class="color-swatch sticky-swatch swatch-sticky-green" data-sticky="#a5d6a7"></div>
+                        <div class="color-swatch sticky-swatch swatch-sticky-blue" data-sticky="#90caf9"></div>
+                        <div class="color-swatch sticky-swatch swatch-sticky-pink" data-sticky="#f48fb1"></div>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn-primary" id="save-settings">Apply</button>
@@ -250,7 +226,48 @@
         </div>
     </div>
 
-    <!-- Image Studio (Photo Editor) Modal -->
+    <!-- My Boards Modal -->
+    <div id="boards-modal" class="modal-overlay">
+        <div class="glass-card modal-content boards-modal-content">
+            <div class="modal-header">
+                <h3>MY BOARDS</h3>
+                <i class="fas fa-times close-modal" id="close-boards"></i>
+            </div>
+            <div class="modal-body">
+                <div class="boards-toolbar">
+                    <button class="btn-primary btn-sm" id="btn-new-board"><i class="fas fa-plus"></i> New Board</button>
+                </div>
+                <div id="boards-grid" class="boards-grid">
+                    <div class="boards-loading">Loading boards…</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Link Modal -->
+    <div id="link-modal" class="modal-overlay">
+        <div class="glass-card modal-content">
+            <div class="modal-header">
+                <h3>ADD QUICK LINK</h3>
+                <i class="fas fa-times close-modal" id="close-link"></i>
+            </div>
+            <div class="modal-body">
+                <div class="setting-group">
+                    <label for="link-name">Name</label>
+                    <input type="text" id="link-name" placeholder="e.g. ChatGPT" class="workspace-input">
+                </div>
+                <div class="setting-group">
+                    <label for="link-url">URL</label>
+                    <input type="url" id="link-url" placeholder="https://…" class="workspace-input">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" id="save-link">Add Link</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Studio Modal -->
     <div id="editor-modal" class="modal-overlay">
         <div class="glass-card modal-content">
             <div class="modal-header">
@@ -261,7 +278,6 @@
                 <div class="editor-preview-container">
                     <img id="editor-preview-img" alt="Preview">
                 </div>
-
                 <div class="setting-group">
                     <label>Adjustments</label>
                     <div class="adjustment-item">
@@ -275,7 +291,6 @@
                             class="full-width-range" aria-label="Contrast">
                     </div>
                 </div>
-
                 <div class="setting-group">
                     <label>Presets</label>
                     <div class="filter-preset-grid">
@@ -295,28 +310,25 @@
         </div>
     </div>
 
-    <!-- Image Context Toolbar -->
     <div id="image-toolbar" class="floating-context-toolbar">
         <button class="context-btn" id="ctx-border" title="Border Color"><i class="far fa-circle"></i></button>
         <button class="context-btn" id="ctx-resize" title="Reset Size"><i class="fas fa-expand-arrows-alt"></i></button>
         <button class="context-btn" id="ctx-send-back" title="Send to Back"><i class="fas fa-layer-group"></i></button>
+        <button class="context-btn" id="ctx-bring-front" title="Bring to Front"><i class="fas fa-arrow-up"></i></button>
         <button class="context-btn" id="ctx-tag" title="Add Tag"><i class="fas fa-tag"></i></button>
         <button class="context-btn" id="ctx-edit" title="Filter/Edit"><i class="fas fa-pencil-alt"></i></button>
         <button class="context-btn" id="ctx-crop" title="Crop"><i class="fas fa-crop-alt"></i></button>
         <button class="context-btn" id="ctx-download" title="Download Image"><i class="fas fa-download"></i></button>
-        <button class="context-btn" id="ctx-info" title="Image Info"><i class="fas fa-info-circle"></i></button>
-        <button class="context-btn" id="ctx-lock" title="Lock/Unlock"><i class="fas fa-lock"></i></button>
     </div>
 
-    <!-- Feedback UI -->
     <div id="toast-container"></div>
 
-    <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fabric-eraser-brush@1.0.1/dist/index.browser.js"></script>
     <script src="js/utils.js" defer></script>
     <script src="js/api.js" defer></script>
     <script src="js/auth.js" defer></script>
+    <script src="js/sidebar.js" defer></script>
     <script src="js/workspace.js" defer></script>
 </body>
 

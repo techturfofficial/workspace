@@ -1,9 +1,166 @@
+// ============================================================
+// DRAGGABLE MODAL SYSTEM — Universal drag-to-reposition
+// ============================================================
+
+/**
+ * Makes a modal's inner content panel freely draggable by its header.
+ * Automatically called for every .modal on the page.
+ * @param {HTMLElement} modal - The outer .modal overlay element
+ */
+function makeDraggableModal(modal) {
+  if (modal.classList.contains('modal-drawer')) return;
+  const panel = modal.querySelector('.modal-content');
+  if (!panel || panel._draggable) return; // already applied
+  panel._draggable = true;
+
+  // Find or create a drag handle (the modal-header)
+  let handle = panel.querySelector('.modal-header');
+  if (!handle) {
+    // Fallback: make the whole top 48px the handle
+    handle = document.createElement('div');
+    handle.className = 'modal-drag-handle-fallback';
+    handle.style.cssText = 'height:48px; width:100%; position:absolute; top:0; left:0; cursor:grab;';
+    panel.style.position = 'relative';
+    panel.prepend(handle);
+  }
+
+  // Style the handle
+  handle.style.cursor = 'grab';
+  handle.title = 'Drag to move';
+
+  let isDragging = false;
+  let startX, startY, startLeft, startTop;
+
+  function onMouseDown(e) {
+    // Ignore clicks on close buttons or form elements
+    if (e.target.closest('.close-modal') || e.target.tagName === 'BUTTON' ||
+      e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+    e.preventDefault();
+    isDragging = true;
+
+    // Switch modal to absolute-position mode (detach from flex centering)
+    if (!panel._positionInit) {
+      const rect = panel.getBoundingClientRect();
+      // Remove from flex flow, place absolutely at current position
+      modal.style.alignItems = 'flex-start';
+      modal.style.justifyContent = 'flex-start';
+      panel.style.position = 'fixed';
+      panel.style.left = rect.left + 'px';
+      panel.style.top = rect.top + 'px';
+      panel.style.margin = '0';
+      panel._positionInit = true;
+    }
+
+    startX = e.clientX;
+    startY = e.clientY;
+    startLeft = parseInt(panel.style.left) || 0;
+    startTop = parseInt(panel.style.top) || 0;
+
+    handle.style.cursor = 'grabbing';
+    document.body.style.userSelect = 'none';
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }
+
+  function onMouseMove(e) {
+    if (!isDragging) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    // Clamp to viewport so panel can't go off-screen
+    const newLeft = Math.max(0, Math.min(window.innerWidth - panel.offsetWidth, startLeft + dx));
+    const newTop = Math.max(0, Math.min(window.innerHeight - panel.offsetHeight, startTop + dy));
+
+    panel.style.left = newLeft + 'px';
+    panel.style.top = newTop + 'px';
+  }
+
+  function onMouseUp() {
+    isDragging = false;
+    handle.style.cursor = 'grab';
+    document.body.style.userSelect = '';
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+  }
+
+  // Touch support
+  function onTouchStart(e) {
+    if (e.target.closest('.close-modal') || e.target.tagName === 'BUTTON') return;
+    const touch = e.touches[0];
+    if (!panel._positionInit) {
+      const rect = panel.getBoundingClientRect();
+      modal.style.alignItems = 'flex-start';
+      modal.style.justifyContent = 'flex-start';
+      panel.style.position = 'fixed';
+      panel.style.left = rect.left + 'px';
+      panel.style.top = rect.top + 'px';
+      panel.style.margin = '0';
+      panel._positionInit = true;
+    }
+    startX = touch.clientX;
+    startY = touch.clientY;
+    startLeft = parseInt(panel.style.left) || 0;
+    startTop = parseInt(panel.style.top) || 0;
+    isDragging = true;
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend', onTouchEnd);
+  }
+
+  function onTouchMove(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const dx = touch.clientX - startX;
+    const dy = touch.clientY - startY;
+    const newLeft = Math.max(0, Math.min(window.innerWidth - panel.offsetWidth, startLeft + dx));
+    const newTop = Math.max(0, Math.min(window.innerHeight - panel.offsetHeight, startTop + dy));
+    panel.style.left = newLeft + 'px';
+    panel.style.top = newTop + 'px';
+  }
+
+  function onTouchEnd() {
+    isDragging = false;
+    document.removeEventListener('touchmove', onTouchMove);
+    document.removeEventListener('touchend', onTouchEnd);
+  }
+
+  // Reset position when modal is closed and re-opened
+  const observer = new MutationObserver(() => {
+    if (modal.style.display === 'none' || modal.style.display === '') {
+      // Reset to center for next open
+      panel.style.position = '';
+      panel.style.left = '';
+      panel.style.top = '';
+      panel.style.margin = '';
+      panel._positionInit = false;
+      modal.style.alignItems = '';
+      modal.style.justifyContent = '';
+    }
+  });
+  observer.observe(modal, { attributes: true, attributeFilter: ['style'] });
+
+  handle.addEventListener('mousedown', onMouseDown);
+  handle.addEventListener('touchstart', onTouchStart, { passive: true });
+}
+
+/**
+ * Apply draggable to all .modal elements currently in the DOM
+ */
+function initAllDraggableModals() {
+  document.querySelectorAll('.modal').forEach(makeDraggableModal);
+}
+
 // Modal utility functions
 function openModal(id) {
   const modal = document.getElementById(id);
   if (modal) {
     modal.style.display = 'flex';
-    setTimeout(() => { modal.classList.add('show'); }, 10);
+    setTimeout(() => {
+      modal.classList.add('show');
+      makeDraggableModal(modal); // ensure drag is applied
+    }, 10);
     document.body.style.overflow = 'hidden';
   }
 }
@@ -12,10 +169,12 @@ function closeModal(id) {
   const modal = document.getElementById(id);
   if (modal) {
     modal.classList.remove('show');
-    setTimeout(() => { modal.style.display = 'none'; }, 200);
+    const delay = modal.classList.contains('modal-drawer') ? 350 : 200;
+    setTimeout(() => { modal.style.display = 'none'; }, delay);
     document.body.style.overflow = '';
   }
 }
+
 function showToast(message, type = 'info') {
   const container = document.getElementById('toast-container');
   if (!container) return;
@@ -27,16 +186,9 @@ function showToast(message, type = 'info') {
     type === 'error' ? 'fa-exclamation-circle' :
       type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
 
-  const safeMessage = String(message ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/\"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-
   toast.innerHTML = `
     <i class="fas ${icon}"></i>
-    <div class="toast-message">${safeMessage}</div>
+    <div class="toast-message">${message}</div>
     <i class="fas fa-times toast-close" style="margin-left:auto; cursor:pointer; opacity:0.5;"></i>
   `;
 
@@ -52,35 +204,31 @@ function showToast(message, type = 'info') {
   setTimeout(removeToast, 3500);
 }
 
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/\"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+function getInitialsAvatar(name, size = 120) {
+  const initials = String(name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+  const colors = ['102a96', 'ff6584', '43e97b', 'f9a825', '38b2f5', 'e05cff', 'ff9f43', '00d2ff'];
+  const color = colors[String(name || 'U').charCodeAt(0) % colors.length];
 
-function safeUrl(value) {
-  const url = String(value || '').trim();
-  if (!url) return '#';
-  if (url.startsWith('/')) return escapeHtml(url);
-  if (url.startsWith('http://') || url.startsWith('https://')) return escapeHtml(url);
-  return '#';
-}
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas not supported');
 
-function getInitialsAvatar(name, size = 40) {
-  const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-  const colors = ['#102a96', '#ff6584', '#43e97b', '#f9a825', '#38b2f5', '#e05cff', '#ff9f43', '#00d2ff'];
-  const color = colors[name.charCodeAt(0) % colors.length];
+    ctx.fillStyle = '#' + color;
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${size * 0.4}px "Orbitron", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(initials, size / 2, size / 2);
 
-  const svg = `
-    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
-      <rect width="100%" height="100%" fill="${color}" />
-      <text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" fill="white" font-family="Orbitron" font-size="${size * 0.4}" font-weight="700">${initials}</text>
-    </svg>
-  `;
-  return `data:image/svg+xml;base64,${btoa(svg)}`;
+    return canvas.toDataURL('image/png');
+  } catch (e) {
+    // Ultimate fallback: Cloud avatar service
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=${color}&color=fff&size=${size}&font-size=0.4&bold=true`;
+  }
 }
 
 function formatDate(dateStr) {
@@ -114,27 +262,17 @@ function getRoleColor(role) {
     admin: '#e05cff',
     team_leader: '#f9a825',
     writer: '#38b2f5',
-    designer: '#102a96',
+    designer: '#ffffff',
     rnd: '#43e97b',
     creator: '#ff6584',
     media_manager: '#aaaacc',
-    client_handler: '#00d2ff'
+    client_handler: '#00d2ff',
+    frontend: '#0ea5e9',
+    backend: '#10b981',
+    frontend_backend: '#6366f1',
+    production: '#f59e0b'
   };
   return map[role] || '#8888aa';
-}
-
-function openModal(id) {
-  const modal = document.getElementById(id);
-  if (modal) modal.style.display = 'flex';
-}
-
-function closeModal(id) {
-  const modal = document.getElementById(id);
-  if (modal) {
-    modal.style.display = 'none';
-    const form = modal.querySelector('form');
-    if (form) form.reset();
-  }
 }
 
 function debounce(fn, delay = 300) {
@@ -143,6 +281,26 @@ function debounce(fn, delay = 300) {
     clearTimeout(timeout);
     timeout = setTimeout(() => fn(...args), delay);
   };
+}
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function safeUrl(url) {
+  if (!url) return '#';
+  try {
+    const u = new URL(url, window.location.href);
+    if (u.protocol === 'http:' || u.protocol === 'https:') return url;
+  } catch { }
+  if (url.startsWith('/')) return url;
+  return '#';
 }
 
 function initSharedToolForms() {
@@ -188,11 +346,7 @@ function initSharedToolForms() {
       }
     });
   }
-
 }
-
-window.escapeHtml = escapeHtml;
-window.safeUrl = safeUrl;
 
 async function loadSharedTickets() {
   const list = document.getElementById('tickets-list');
@@ -245,7 +399,7 @@ async function loadSharedCourses() {
     list.innerHTML = data.map(c => {
       const previewUrl = safeUrl(c.video_url || '');
       const courseUrl = safeUrl(c.link || '');
-      const videoFrame = previewUrl ? `
+      const videoFrame = previewUrl && previewUrl !== '#' ? `
         <div style="margin-top:12px; border-radius:12px; overflow:hidden; border:1px solid var(--border); background:#000;">
           <iframe
             src="${previewUrl}"
@@ -264,7 +418,7 @@ async function loadSharedCourses() {
             <div style="font-weight:700;">${escapeHtml(c.title)}</div>
             <div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">${escapeHtml(c.description || '')}</div>
           </div>
-          <a href="${courseUrl}" target="_blank" rel="noopener" class="btn-secondary" style="padding:5px 15px; white-space:nowrap;">Open Link</a>
+          ${courseUrl && courseUrl !== '#' ? `<a href="${courseUrl}" target="_blank" rel="noopener" class="btn-secondary" style="padding:5px 15px; white-space:nowrap;">Open Link</a>` : ''}
         </div>
         ${videoFrame}
       </div>
@@ -277,7 +431,6 @@ async function loadSharedCourses() {
 
 function initSharedToolLinks() {
   const linkConfigs = [
-    { id: 'tickets-link', loader: loadSharedTickets },
     { id: 'payments-link', loader: loadSharedPayments }
   ];
 
@@ -300,8 +453,21 @@ window.getRoleColor = getRoleColor;
 window.openModal = openModal;
 window.closeModal = closeModal;
 window.debounce = debounce;
+window.escapeHtml = escapeHtml;
+window.safeUrl = safeUrl;
 
 document.addEventListener('DOMContentLoaded', () => {
   initSharedToolForms();
   initSharedToolLinks();
+  // Apply draggable to all modals present at page load
+  initAllDraggableModals();
+
+  // Watch for dynamically injected modals (e.g. from JS render)
+  const bodyObserver = new MutationObserver(() => {
+    initAllDraggableModals();
+  });
+  bodyObserver.observe(document.body, { childList: true, subtree: true });
 });
+
+window.makeDraggableModal = makeDraggableModal;
+window.initAllDraggableModals = initAllDraggableModals;

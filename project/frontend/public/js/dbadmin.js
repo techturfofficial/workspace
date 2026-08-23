@@ -105,23 +105,14 @@ const dbadmin = {
 
 window.dbadmin = dbadmin;
 
-// Open Event Hook
+// Open Event Hook - Redirects cleanly to database_viewer.html
 document.addEventListener('DOMContentLoaded', () => {
   const dbLinks = document.querySelectorAll('#dbadmin-link, [onclick*="dbadmin-modal"]');
   dbLinks.forEach(link => {
-    link.addEventListener('click', () => {
-      // Show the modal
-      const modal = document.getElementById('dbadmin-modal');
-      if (modal) modal.style.display = 'flex';
-      dbadmin.renderViewer();
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      window.location.href = 'database_viewer.html';
     });
   });
-  // Close modal on close button click
-  const closeBtn = document.getElementById('dbadmin-close');
-  if (closeBtn) {
-    closeBtn.onclick = () => {
-      const modal = document.getElementById('dbadmin-modal');
-      if (modal) modal.style.display = 'none';
-    };
-  }
 });

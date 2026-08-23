@@ -109,25 +109,42 @@
     }
 
     .kanban-add-btn {
-      width: 24px;
-      height: 24px;
+      width: 22px;
+      height: 22px;
+      min-width: 22px;
+      min-height: 22px;
+      max-width: 22px;
+      max-height: 22px;
+      aspect-ratio: 1 / 1;
       border-radius: 50%;
-      border: 2px solid var(--accent-primary);
-      background: var(--accent-primary);
+      border: none;
+      background: var(--accent-primary, #102a96);
       color: #ffffff;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       cursor: pointer;
       padding: 0;
-      flex: 0 0 auto;
-      transition: transform 0.2s, box-shadow 0.2s;
+      margin: 0;
+      flex: 0 0 22px;
+      box-sizing: border-box;
+      line-height: 1;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 6px rgba(16, 42, 150, 0.25);
     }
 
     .kanban-add-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 8px 18px rgba(16, 42, 150, 0.24);
+      background: #0d227a;
+      transform: scale(1.12);
+      box-shadow: 0 4px 12px rgba(16, 42, 150, 0.35);
+    }
+
+    .kanban-add-btn i {
+      display: inline-block;
+      line-height: 1;
+      margin: 0;
+      padding: 0;
     }
 
     .client-card {
@@ -217,24 +234,23 @@
       color: var(--text-muted);
     }
 
-    /* Detail Panel Styles */
+    /* Detail Panel Styles (Side Drawer) */
     .detail-panel {
       position: fixed;
       top: 0;
-      right: -500px;
+      right: -520px;
       width: 500px;
+      max-width: 92vw;
       height: 100vh;
-      background: var(--bg-card);
+      background: #ffffff;
       z-index: 9999;
-      padding: 32px;
-      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+      padding: 32px 28px;
+      box-shadow: -10px 0 35px rgba(16, 42, 150, 0.18);
       transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       overflow-y: auto;
-      border-left:  2px solid var(--border);
-      -webkit-backdrop-filter: blur(20px);
-      backdrop-filter: blur(20px);
+      border-left: 1px solid var(--border);
       display: block;
-      /* Ensure it's not hidden */
+      box-sizing: border-box;
     }
 
     .detail-panel.open {
@@ -247,7 +263,7 @@
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(255, 255, 255, 0.6);
+      background: rgba(15, 23, 42, 0.45);
       z-index: 9990;
       display: none;
       -webkit-backdrop-filter: blur(4px);
@@ -609,67 +625,80 @@
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="sidebar-logo">TECH TURF</div>
-        <div class="sidebar-logo-short">TT</div>
+        <div class="sidebar-logo-short"><img src="assets/techturf-logo.png" alt="TT" class="sidebar-logo-img-short" /></div>
       </div>
 
-      <nav class="sidebar-menu">
-        <div class="menu-item" data-nav="dashboard.html">
-          <i class="fas fa-th-large"></i>
-          <span class="menu-text">Dashboard</span>
+      <nav class="sidebar-menu" id="main-sidebar-nav">
+        <div class="menu-item" data-nav="dashboard.html" onclick="window.location.href='dashboard.html'">
+          <i class="fas fa-th-large"></i><span class="menu-text">Dashboard</span>
         </div>
-        <div class="menu-item" data-nav="projects.html">
-          <i class="fas fa-project-diagram"></i>
-          <span class="menu-text">Projects</span>
+        <div class="menu-item" data-nav="projects.html" onclick="window.location.href='projects.html'">
+          <i class="fas fa-project-diagram"></i><span class="menu-text">Projects</span>
         </div>
-        <div class="menu-item" data-nav="tasks.html">
-          <i class="fas fa-tasks"></i>
-          <span class="menu-text">Tasks</span>
+        <div class="menu-item" data-nav="tasks.html" onclick="window.location.href='tasks.html'">
+          <i class="fas fa-tasks"></i><span class="menu-text">Tasks</span>
         </div>
-        <div class="menu-item" data-nav="submissions.html">
-          <i class="fas fa-file-upload"></i>
-          <span class="menu-text">Submissions</span>
+        <div class="menu-item" data-nav="submissions.html" onclick="window.location.href='submissions.html'">
+          <i class="fas fa-file-upload"></i><span class="menu-text">Submissions</span>
         </div>
-        <div class="menu-item active" data-nav="clients.html">
-          <i class="fas fa-user-tie"></i>
-          <span class="menu-text">Clients</span>
+        <div class="menu-item" data-nav="clients.html" onclick="window.location.href='clients.html'">
+          <i class="fas fa-user-tie"></i><span class="menu-text">Clients</span>
         </div>
-        <div class="menu-item" data-nav="announcements.html">
-          <i class="fas fa-bullhorn"></i>
-          <span class="menu-text">Announcements</span>
+        <div class="menu-item" data-nav="announcements.html" onclick="window.location.href='announcements.html'">
+          <i class="fas fa-bullhorn"></i><span class="menu-text">Announcements</span>
         </div>
-        <div class="menu-item admin-only" data-nav="users.html">
-          <i class="fas fa-users-cog"></i>
-          <span class="menu-text">User Management</span>
+        <div class="menu-item" data-nav="drive.html" onclick="window.location.href='drive.html'">
+          <i class="fas fa-hdd"></i><span class="menu-text">Secure Drive</span>
         </div>
-        <div class="menu-item" data-nav="drive.html">
-          <i class="fas fa-hdd"></i>
-          <span class="menu-text">Secure Drive</span>
+        <div class="menu-item" data-nav="messages.html" onclick="window.location.href='messages.html'">
+          <i class="fas fa-comments messenger-icon"></i><span class="menu-text">Team Messenger</span>
+        </div>
+        <div class="menu-item" data-nav="nexus_chat.html" onclick="window.location.href='nexus_chat.html'">
+          <i class="fas fa-robot nexus-icon"></i><span class="menu-text">Nexus AI Terminal</span>
         </div>
 
-        <hr class="client-auto-1">
+        <hr class="sidebar-divider">
 
-        <div class="menu-item admin-only" id="dbadmin-link">
-          <i class="fas fa-database"></i>
-          <span class="menu-text">Database Viewer</span>
+        <!-- Role-Based Control Centers -->
+        <div class="sidebar-section admin-only">
+          <div class="sidebar-section-title">USER MANAGEMENT</div>
+          <div class="sidebar-submenu">
+            <div class="menu-item admin-only" data-nav="users.html" onclick="window.location.href='users.html'">
+              <i class="fas fa-users-cog"></i><span class="menu-text">User Management</span>
+            </div>
+            <div class="menu-item admin-only" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
+              <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
+            </div>
+          </div>
         </div>
-        <div class="menu-item" id="tickets-link">
-          <i class="fas fa-ticket-alt"></i>
-          <span class="menu-text">Tickets</span>
+        <div class="menu-item rnd-only" data-nav="nexus_lab.html" onclick="window.location.href='nexus_lab.html'">
+          <i class="fas fa-flask"></i><span class="menu-text">Nexus Lab</span>
         </div>
-        <div class="menu-item admin-only" id="payments-link">
-          <i class="fas fa-money-check-alt"></i>
-          <span class="menu-text">Payments</span>
+        <div class="menu-item handler-only" data-nav="client_connect.html" onclick="window.location.href='client_connect.html'">
+          <i class="fas fa-handshake"></i><span class="menu-text">Client Connect</span>
         </div>
-        <div class="menu-item" data-nav="learning_hub.html" id="courses-link">
-          <i class="fas fa-graduation-cap"></i>
-          <span class="menu-text">Learning Hub</span>
+        <div class="menu-item" data-nav="learning_hub.html" id="courses-link-global" onclick="window.location.href='learning_hub.html'">
+          <i class="fas fa-graduation-cap"></i><span class="menu-text">Learning Hub</span>
         </div>
 
-        <hr class="client-auto-2">
+        <hr class="sidebar-divider">
+        
+        <div class="menu-item" data-nav="workspace.html" onclick="window.location.href='workspace.html'">
+          <i class="fas fa-paint-brush"></i><span class="menu-text">Creative Workspace</span>
+        </div>
+        
+        <div class="menu-item admin-only" data-nav="database_viewer.html" id="dbadmin-link" onclick="window.location.href='database_viewer.html'">
+          <i class="fas fa-database"></i><span class="menu-text">Database Viewer</span>
+        </div>
 
-        <div class="menu-item" data-nav="profile.html">
-          <i class="fas fa-user-circle"></i>
-          <span class="menu-text">My Profile</span>
+        <div class="menu-item admin-only" data-nav="payments.html" id="payments-link" onclick="window.location.href='payments.html'">
+          <i class="fas fa-money-check-alt"></i><span class="menu-text">Payments</span>
+        </div>
+
+        <hr class="sidebar-divider">
+        
+        <div class="menu-item" data-nav="profile.html" onclick="window.location.href='profile.html'">
+          <i class="fas fa-user-circle"></i><span class="menu-text">My Profile</span>
         </div>
       </nav>
 
@@ -686,36 +715,34 @@
     </aside>
 
     <main class="main-content">
-      <header class="navbar">
+            <header class="navbar">
         <div class="nav-left">
-          <button id="mobile-toggle" class="mobile-hamburger" title="Toggle Mobile Navigation"><i
-              class="fas fa-bars"></i></button>
+          <button id="mobile-toggle" class="mobile-hamburger"><i class="fas fa-bars"></i></button>
           <div class="nav-search">
             <i class="fas fa-search"></i>
-            <input type="text" id="client-search" placeholder="Search clients...">
+            <input type="text" placeholder="Search...">
           </div>
         </div>
-
         <div class="nav-actions">
           <div class="notification-bell" id="notification-bell">
             <i class="fas fa-bell"></i>
-            <span class="notification-badge" id="notification-badge">0</span>
-            <div class="client-auto-3 notification-dropdown glass-card" id="notification-dropdown">
-              <div class="client-auto-4">
-                <span class="client-auto-5">Notifications</span>
-                <span class="client-auto-6" onclick="api.put('/notifications/read-all').then(loadNotifications)">Mark
-                  all read</span>
+            <span class="notification-badge" id="notification-badge" style="display:none;">0</span>
+            <div class="notification-dropdown glass-card" id="notification-dropdown">
+              <div class="notification-header">
+                <span class="notification-title">Notifications</span>
+                <span class="notification-mark-read" onclick="markAllNotificationsRead()">Mark all read</span>
               </div>
-              <div id="notification-list" class="client-auto-7"></div>
+              <div id="notification-list" class="notification-list-scroll"></div>
             </div>
           </div>
 
           <div class="user-profile-nav" data-nav="profile.html">
-            <div class="client-auto-8">
-              <div id="nav-user-name" class="client-auto-9">User Name</div>
-              <div id="nav-user-role" class="client-auto-10">Role</div>
+            <div class="user-nav-text">
+              <div id="nav-user-name" class="user-nav-name">Admin</div>
+              <div id="nav-user-role" class="user-nav-role">Admin</div>
             </div>
-            <img id="nav-avatar" class="user-avatar" src="" alt="Avatar">
+            <img id="nav-avatar" class="user-avatar" src="" alt="Avatar" style="display:none;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+            <div class="avatar-fallback-badge" id="nav-avatar-badge">A</div>
           </div>
         </div>
       </header>
@@ -1022,6 +1049,9 @@
                 id="client-name" required></div>
             <div class="form-group"><label for="client-company">Company Name</label><input type="text"
                 class="form-control" id="client-company"></div>
+            <div class="form-group"><label for="client-login-id">Client Access ID (Portal Username)</label>
+              <input type="text" class="form-control" id="client-login-id" placeholder="e.g. TT-CLI-00012">
+            </div>
             <div class="form-group"><label for="client-project-key">Project Key (Unique ID)</label>
               <input type="text" class="form-control" id="client-project-key" placeholder="e.g. LUXE-2024">
             </div>
@@ -1531,14 +1561,7 @@
 
 
   <!-- Unified Modals Section -->
-  <div id="dbadmin-modal" class="client-auto-17">
-    <div class="client-auto-18 glass-card">
-      <div class="client-auto-19">
-        <span><i class="fas fa-database"></i> Database Viewer</span>
-        <i title="Close" class="client-auto-20 fas fa-times" id="dbadmin-close"></i>
-      </div>
-      <div id="dbadmin-content" class="client-auto-21"></div>
-    </div>
+  
   </div>
   <div id="tickets-modal" class="client-auto-22">
     <div class="client-auto-23 glass-card">
@@ -1625,12 +1648,12 @@
       setupModal('payments-link', 'payments-modal', 'payments-close');
     }
   </script>
-  <!-- Detail Panel (Fixed Position) -->
-  <div class="detail-panel-overlay" id="detail-panel-overlay"></div>
+  <!-- Detail Panel (Fixed Position Side Drawer) -->
+  <div class="detail-panel-overlay" id="detail-panel-overlay" onclick="closeDetailPanel()"></div>
   <div class="detail-panel" id="detail-panel">
-    <div class="client-auto-14">
-      <div id="panel-title" class="client-auto-15"></div>
-      <i title="Close" class="client-auto-16 fas fa-times" onclick="closeDetailPanel()"></i>
+    <div class="modal-header" style="padding-bottom: 16px; margin-bottom: 20px; border-bottom: 1.5px solid rgba(16, 42, 150, 0.08); display:flex; align-items:center; justify-content:space-between;">
+      <div id="panel-title" class="modal-title" style="font-family: var(--font-display, 'Orbitron', sans-serif); font-size: 1.15rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-primary);">NEW CLIENT</div>
+      <i title="Close" class="fas fa-times close-modal" onclick="closeDetailPanel()" style="cursor: pointer; font-size: 1.15rem; color: var(--text-muted); padding: 6px; transition: all 0.2s;"></i>
     </div>
     <div id="panel-body"></div>
   </div>

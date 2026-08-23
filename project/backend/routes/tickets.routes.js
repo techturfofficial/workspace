@@ -1,6 +1,26 @@
 const router = require('express').Router();
 const db = require('../db');
 const { verifyToken } = require('../auth');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+const ticketsUploadDir = path.join(__dirname, '../../storage/uploads/tickets');
+if (!fs.existsSync(ticketsUploadDir)) fs.mkdirSync(ticketsUploadDir, { recursive: true });
+
+const ticketStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, ticketsUploadDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase() || '.png';
+    const safeExt = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'].includes(ext) ? ext : '.png';
+    cb(null, `ticket_${Date.now()}_${Math.round(Math.random() * 1E6)}${safeExt}`);
+  }
+});
+
+const ticketUpload = multer({
+  storage: ticketStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }
+});
 
 // List all tickets (admin: all, user: own)
 router.get('/', verifyToken, (req, res) => {
@@ -15,13 +35,14 @@ router.get('/', verifyToken, (req, res) => {
 });
 
 // Add a new ticket
-router.post('/', verifyToken, (req, res) => {
+router.post('/', verifyToken, ticketUpload.single('image'), (req, res) => {
   const { title, description, priority, category } = req.body;
   if (!title) return res.status(400).json({ error: 'Title required' });
   const created_by = req.user?.id || 1;
-  const stmt = db.prepare('INSERT INTO tickets (title, description, priority, category, created_by) VALUES (?, ?, ?, ?, ?)');
-  const info = stmt.run(title, description || '', priority || 'normal', category || '', created_by);
-  res.json({ id: info.lastInsertRowid });
+  const image = req.file ? `/uploads/tickets/${req.file.filename}` : (req.body.image || null);
+  const stmt = db.prepare('INSERT INTO tickets (title, description, priority, category, image, created_by) VALUES (?, ?, ?, ?, ?, ?)');
+  const info = stmt.run(title, description || '', priority || 'normal', category || '', image, created_by);
+  res.json({ id: info.lastInsertRowid, image });
 });
 
 // Update ticket status/assignment

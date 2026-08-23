@@ -6,29 +6,6 @@
 let allSubmissions = [];
 let manualFilesQueue = [];
 
-function escapeHtml(value) {
-  const str = String(value ?? '');
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/\"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-function safeText(value, fallback = '') {
-  const v = value === null || value === undefined || value === '' ? fallback : value;
-  return escapeHtml(v);
-}
-
-function safeUrl(value) {
-  const url = String(value || '').trim();
-  if (!url) return '#';
-  if (url.startsWith('/')) return escapeHtml(url);
-  if (url.startsWith('http://') || url.startsWith('https://')) return escapeHtml(url);
-  return '#';
-}
-
 async function initSubmissions() {
   loadSubmissions();
   initManualUpload();
@@ -41,8 +18,8 @@ async function loadSubmissions() {
 
   let url = '/submissions';
   let params = [];
-  if (status) params.push(`status=${encodeURIComponent(status)}`);
-  if (clientId) params.push(`client_id=${encodeURIComponent(clientId)}`);
+  if (status) params.push(`status=${status}`);
+  if (clientId) params.push(`client_id=${clientId}`);
 
   if (params.length > 0) url += `?${params.join('&')}`;
 
@@ -63,17 +40,60 @@ async function loadSubmissions() {
       return;
     }
 
-    const isAdminOrTL = ['admin', 'team_leader'].includes(auth.getUser().role);
+    const currentRole = auth.getUser().role;
+    const isTeamLeader = currentRole === 'team_leader';
+    const isAdmin = currentRole === 'admin';
+
+    const getWorkflowState = (s) => {
+      if (s.leader_status === 'rejected' || s.admin_status === 'rejected') return 'rejected';
+      if (s.leader_status === 'rework' || s.admin_status === 'rework') return 'rework';
+      if (s.leader_status === 'approved' && s.admin_status === 'approved') return 'approved';
+      if (s.leader_status === 'approved' && s.admin_status === 'pending') return 'awaiting_admin';
+      return 'pending';
+    };
+
+    const getBadgeLabel = (s) => {
+      const state = getWorkflowState(s);
+      if (state === 'awaiting_admin') return 'AWAITING ADMIN';
+      if (state === 'approved') return 'APPROVED';
+      if (state === 'rework') return 'REWORK';
+      if (state === 'rejected') return 'REJECTED';
+      return 'PENDING LEADER';
+    };
 
     container.innerHTML = subs.map(s => {
       const feedback = s.nexus_feedback || {};
-      const statusClass = s.leader_status === 'approved' ? 'success' :
-        s.leader_status === 'rework' ? 'warning' :
-          s.leader_status === 'rejected' ? 'danger' : 'pending';
+      const workflowState = getWorkflowState(s);
+      const statusClass = workflowState === 'approved' ? 'success' :
+        workflowState === 'awaiting_admin' ? 'warning' :
+          workflowState === 'rework' ? 'warning' :
+            workflowState === 'rejected' ? 'danger' : 'pending';
 
       let actionsHtml = '';
-      if (isAdminOrTL) {
-        if (s.leader_status === 'pending') {
+      if (isTeamLeader && s.leader_status === 'pending') {
+        actionsHtml = `
+          <div class="submission-actions">
+            <button class="btn-primary" style="background:var(--accent-green); flex:1;" onclick="event.stopPropagation(); reviewSubmission(${s.id}, 'approved')">APPROVE</button>
+            <button class="btn-secondary" style="background:var(--accent-orange); flex:1;" onclick="event.stopPropagation(); reviewSubmission(${s.id}, 'rework')">REWORK</button>
+            <button class="btn-danger" style="flex:1;" onclick="event.stopPropagation(); reviewSubmission(${s.id}, 'rejected')">REJECT</button>
+          </div>
+        `;
+      } else if (isAdmin && s.leader_status === 'approved' && s.admin_status !== 'approved') {
+        actionsHtml = `
+          <div class="submission-actions">
+            <button class="btn-primary" style="background:var(--accent-green); flex:1;" onclick="event.stopPropagation(); adminReviewSubmission(${s.id}, 'approved')">FINAL APPROVE</button>
+            <button class="btn-secondary" style="background:var(--accent-orange); flex:1;" onclick="event.stopPropagation(); adminReviewSubmission(${s.id}, 'rework')">SEND BACK</button>
+            <button class="btn-danger" style="flex:1;" onclick="event.stopPropagation(); adminReviewSubmission(${s.id}, 'rejected')">REJECT</button>
+          </div>
+        `;
+      } else if (isAdmin || isTeamLeader) {
+        if (workflowState === 'awaiting_admin' && isAdmin) {
+          actionsHtml = `
+            <div class="submission-actions" style="opacity:0.8;">
+              <button class="btn-secondary" style="flex:1;" disabled>Awaiting final admin decision</button>
+            </div>
+          `;
+        } else if (workflowState === 'pending' && isTeamLeader) {
           actionsHtml = `
             <div class="submission-actions">
               <button class="btn-primary" style="background:var(--accent-green); flex:1;" onclick="event.stopPropagation(); reviewSubmission(${s.id}, 'approved')">APPROVE</button>
@@ -84,8 +104,8 @@ async function loadSubmissions() {
         } else {
           actionsHtml = `
             <div class="submission-actions" style="opacity:0.8;">
-              <button class="btn-secondary" style="flex:1;" onclick="event.stopPropagation(); reEvaluateSubmission(${s.id})">RE-EVALUATE</button>
-              ${auth.getUser().role === 'admin' ? `<button class="btn-danger" style="flex:0.3;" onclick="event.stopPropagation(); deleteSubmission(${s.id})"><i class="fas fa-trash"></i></button>` : ''}
+              <button class="btn-secondary" style="flex:1;" disabled>${workflowState === 'approved' ? 'Approved' : 'In review'}</button>
+              ${isAdmin ? `<button class="btn-danger" style="flex:0.3;" onclick="event.stopPropagation(); deleteSubmission(${s.id})"><i class="fas fa-trash"></i></button>` : ''}
             </div>
           `;
         }
@@ -95,17 +115,17 @@ async function loadSubmissions() {
         <div class="glass-card submission-card anim-fade-up sub-card-clickable" onclick="viewSubmissionDetails(${s.id})">
           <div class="submission-header">
             <div>
-              <div class="submission-title">${safeText(s.task_title, 'Untitled Task')}</div>
-              <div class="submission-project">${safeText(s.project_title, 'General')} • Version ${safeText(s.version, '1')}</div>
+              <div class="submission-title">${s.task_title}</div>
+              <div class="submission-project">${s.project_title || 'General'} • Version ${s.version}</div>
             </div>
-            <div class="badge badge-${statusClass}">${safeText((s.leader_status || 'pending').toUpperCase())}</div>
+            <div class="badge badge-${statusClass}">${getBadgeLabel(s)}</div>
           </div>
 
           <div class="submitter-info">
-            <img src="${safeText(getInitialsAvatar(s.submitter_name || '?', 32))}" style="width:32px; height:32px; border-radius:50%; border:1px solid var(--border);">
+            <img src="${getInitialsAvatar(s.submitter_name || '?', 32)}" style="width:32px; height:32px; border-radius:50%; border:2px solid var(--border);">
             <div>
-              <div style="font-weight:700; font-size:0.85rem;">${safeText(s.submitter_name, 'Unknown')}</div>
-              <div style="font-size:0.65rem; color:var(--text-muted);">${safeText(formatRole(s.submitter_role || 'member'))} • ${safeText(timeAgo(s.submitted_at))}</div>
+              <div style="font-weight:700; font-size:0.85rem;">${s.submitter_name || 'Unknown'}</div>
+              <div style="font-size:0.65rem; color:var(--text-muted);">${formatRole(s.submitter_role || 'member')} • ${timeAgo(s.submitted_at)}</div>
             </div>
           </div>
 
@@ -114,18 +134,18 @@ async function loadSubmissions() {
           <div class="feedback-box">
             <div class="feedback-item">
               <span class="feedback-label" style="color:var(--accent-green);">✅ NEXUS: WHAT WORKED</span>
-              <div style="font-size:0.8rem;">${safeText(feedback.what_worked, 'Processing evaluation...')}</div>
+              <div style="font-size:0.8rem;">${feedback.what_worked || 'Processing evaluation...'}</div>
             </div>
             <div class="feedback-item">
               <span class="feedback-label" style="color:var(--accent-orange);">⚠️ NEXUS: IMPROVEMENTS</span>
-              <div style="font-size:0.8rem;">${safeText(feedback.improvements, 'No critical issues found.')}</div>
+              <div style="font-size:0.8rem;">${feedback.improvements || 'No critical issues found.'}</div>
             </div>
           </div>
 
           ${s.content_text ? `
-            <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:8px; font-size:0.8rem; border:1px solid var(--border);">
+            <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:8px; font-size:0.8rem; border:2px solid var(--border);">
               <div style="font-size:0.6rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px;">Submitted Content:</div>
-              <div style="white-space:pre-wrap;">${safeText(s.content_text)}</div>
+              <div style="white-space:pre-wrap;">${s.content_text}</div>
             </div>
           ` : ''}
 
@@ -159,7 +179,20 @@ async function reviewSubmission(id, status) {
 
   try {
     await api.put(`/submissions/${id}/leader-review`, { status, note });
-    showToast(`Work ${status} successfully`, 'success');
+    showToast(`Team leader review ${status} successfully`, 'success');
+    loadSubmissions();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function adminReviewSubmission(id, status) {
+  const note = prompt(`Admin ${status.toUpperCase()} review note (optional):`, '');
+  if (note === null) return;
+
+  try {
+    await api.put(`/submissions/${id}/admin-review`, { status, note });
+    showToast(`Admin review ${status} successfully`, 'success');
     loadSubmissions();
   } catch (err) {
     showToast(err.message, 'error');
@@ -171,28 +204,76 @@ async function reEvaluateSubmission(id) {
   reviewSubmission(id, 'pending');
 }
 
+let cachedManualTasks = [];
+let cachedManualClients = [];
+
+async function loadManualFormOptions() {
+  const taskSelect = document.getElementById('manual-task-id');
+  const clientSelect = document.getElementById('manual-client-id');
+  if (!taskSelect) return;
+
+  taskSelect.innerHTML = '<option value="">Loading tasks...</option>';
+
+  try {
+    const [tasks, clients] = await Promise.all([
+      api.get('/tasks'),
+      api.get('/clients').catch(() => [])
+    ]);
+
+    cachedManualTasks = tasks || [];
+    cachedManualClients = clients || [];
+
+    if (cachedManualTasks.length === 0) {
+      taskSelect.innerHTML = '<option value="">No tasks found (Optional)</option>';
+    } else {
+      taskSelect.innerHTML = '<option value="">Select a task...</option>' +
+        cachedManualTasks.map(t => `<option value="${t.id}">${t.title} [${t.project_title || 'General'}]</option>`).join('');
+    }
+
+    if (clientSelect) {
+      if (cachedManualClients.length === 0) {
+        clientSelect.innerHTML = '<option value="">No clients found</option>';
+      } else {
+        clientSelect.innerHTML = '<option value="">Select a client...</option>' +
+          cachedManualClients.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+      }
+    }
+  } catch (e) {
+    console.error('Error loading manual upload form options:', e);
+    taskSelect.innerHTML = '<option value="">Failed to load tasks</option>';
+  }
+}
+
+async function openManualSubmissionModal() {
+  const form = document.getElementById('manual-submission-form');
+  if (form) form.reset();
+  clearManualQueue();
+  await loadManualFormOptions();
+  openModal('manual-submission-modal');
+}
+
 async function initManualUpload() {
   const form = document.getElementById('manual-submission-form');
   const taskSelect = document.getElementById('manual-task-id');
   if (!form || !taskSelect) return;
 
-  // Load active tasks for manual upload
-  try {
-    const tasks = await api.get('/tasks?status=pending,in_progress,rework');
-    taskSelect.innerHTML = '<option value="">Select a task...</option>' +
-      tasks.map(t => `<option value="${Number(t.id)}">${safeText(t.title)} [${safeText(t.project_title, 'General')}]</option>`).join('');
-  } catch (e) {
-    taskSelect.innerHTML = '<option value="">Failed to load tasks</option>';
-  }
+  await loadManualFormOptions();
 
-  const clientSelect = document.getElementById('manual-client-id');
-  if (clientSelect) {
-    try {
-      const clients = await api.get('/clients');
-      clientSelect.innerHTML = '<option value="">Select a client...</option>' +
-        clients.map(c => `<option value="${Number(c.id)}">${safeText(c.name)}</option>`).join('');
-    } catch (e) { }
-  }
+  taskSelect.onchange = () => {
+    const selectedId = Number(taskSelect.value);
+    if (!selectedId) return;
+    const task = cachedManualTasks.find(t => t.id === selectedId);
+    if (task) {
+      const projInput = document.getElementById('manual-project-name');
+      if (projInput && task.project_title && !projInput.value) {
+        projInput.value = task.project_title;
+      }
+      if (task.client_id) {
+        const clientSelect = document.getElementById('manual-client-id');
+        if (clientSelect) clientSelect.value = task.client_id;
+      }
+    }
+  };
 
   form.onsubmit = async (e) => {
     e.preventDefault();
@@ -273,7 +354,7 @@ function updateManualQueueUI() {
   preview.style.padding = '12px';
   preview.style.borderRadius = '10px';
   preview.style.marginTop = '10px';
-  preview.style.border = '1px solid var(--border)';
+  preview.style.border = '2px solid var(--border)';
 
   preview.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -282,9 +363,9 @@ function updateManualQueueUI() {
         </div>
         <div style="max-height:120px; overflow-y:auto; overflow-x:hidden; padding-right:5px;">
             ${manualFilesQueue.map((f, i) => `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; background:rgba(255,255,255,0.03); padding:6px 10px; border-radius:5px; border:1px solid rgba(255,255,255,0.05);">
-                <div style="font-size:0.7rem; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:85%;">📎 ${safeText(f.name)}</div>
-                    <i class="fas fa-times" onclick="removeFromManualQueue(${i})" style="color:var(--accent-pink); font-size:0.7rem; cursor:pointer; opacity:0.7; transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'" title="Remove file"></i>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; background:rgba(255,255,255,0.03); padding:6px 10px; border-radius:5px; border:2px solid rgba(255,255,255,0.05);">
+                    <div style="font-size:0.7rem; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:85%;">📎 ${f.name}</div>
+                    <i class="fas fa-times" onclick="removeFromManualQueue(${i})" style="color:var(--accent-secondary); font-size:0.7rem; cursor:pointer; opacity:0.7; transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'" title="Remove file"></i>
                 </div>
             `).join('')}
         </div>
@@ -302,19 +383,23 @@ async function viewSubmissionDetails(id) {
     <div class="detail-grid">
       <div class="detail-meta-box">
         <div class="detail-meta-title">Submitted By</div>
-        <div class="detail-meta-value">${safeText(s.submitter_name, 'Unknown')}</div>
+        <div class="detail-meta-value">${s.submitter_name}</div>
       </div>
       <div class="detail-meta-box">
         <div class="detail-meta-title">Task / Project</div>
-        <div class="detail-meta-value">${safeText(s.task_title, 'Untitled Task')}</div>
+        <div class="detail-meta-value">${s.task_title}</div>
       </div>
       <div class="detail-meta-box">
-        <div class="detail-meta-title">Status</div>
-        <div class="detail-meta-value">${safeText((s.leader_status || 'pending').toUpperCase())}</div>
+        <div class="detail-meta-title">Leader Status</div>
+        <div class="detail-meta-value">${s.leader_status.toUpperCase()}</div>
+      </div>
+      <div class="detail-meta-box">
+        <div class="detail-meta-title">Admin Status</div>
+        <div class="detail-meta-value">${(s.admin_status || 'pending').toUpperCase()}</div>
       </div>
       <div class="detail-meta-box">
         <div class="detail-meta-title">Time Reference</div>
-        <div class="detail-meta-value">${safeText(timeAgo(s.submitted_at))}</div>
+        <div class="detail-meta-value">${timeAgo(s.submitted_at)}</div>
       </div>
     </div>
 
@@ -323,18 +408,18 @@ async function viewSubmissionDetails(id) {
       <div class="feedback-box" style="display:block; margin-bottom:15px;">
         <div class="feedback-item">
           <span class="feedback-label" style="color:var(--accent-green);">WHAT WORKED</span>
-          <div style="font-size:0.85rem;">${safeText(feedback.what_worked, 'Evaluation in progress...')}</div>
+          <div style="font-size:0.85rem;">${feedback.what_worked || 'Evaluation in progress...'}</div>
         </div>
         <div class="feedback-item" style="margin-top:10px;">
           <span class="feedback-label" style="color:var(--accent-orange);">AREAS FOR IMPROVEMENT</span>
-          <div style="font-size:0.85rem;">${safeText(feedback.improvements, 'No critical issues.')}</div>
+          <div style="font-size:0.85rem;">${feedback.improvements || 'No critical issues.'}</div>
         </div>
       </div>
     </div>
 
     <div class="detail-section">
       <span class="detail-label">Work Summary / Content</span>
-      <div class="detail-bubble" style="white-space:pre-wrap;">${safeText(s.content_text, 'No text content provided.')}</div>
+      <div class="detail-bubble" style="white-space:pre-wrap;">${s.content_text || 'No text content provided.'}</div>
     </div>
 
     <div class="detail-section">
@@ -409,23 +494,23 @@ async function viewWorkAssets(id) {
                 <div class="asset-item-main">
                   <i class="fas ${item.icon} asset-item-icon"></i>
                   <div class="asset-item-info">
-                    <div class="asset-item-name">${safeText(item.name)}</div>
+                    <div class="asset-item-name">${item.name}</div>
                     <div class="asset-item-meta">${type === 'links' ? 'Cloud Resource' : 'Local Archive'}</div>
                   </div>
                 </div>
-                <a href="${safeUrl(item.url)}" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="padding: 6px 12px; font-size: 0.7rem;">
+                <a href="${item.url}" target="_blank" class="btn-secondary" style="padding: 6px 12px; font-size: 0.7rem;">
                   <i class="fas ${type === 'links' ? 'fa-link' : 'fa-download'}"></i> ${type === 'links' ? 'OPEN' : 'GET'}
                 </a>
               </div>
               ${type === 'images' ? `
                 <div class="asset-preview-container">
-                  <img src="${safeUrl(item.url)}" class="asset-preview" alt="Preview">
+                  <img src="${item.url}" class="asset-preview" alt="Preview">
                 </div>
               ` : ''}
               ${type === 'videos' ? `
                 <div class="asset-preview-container">
                   <video controls class="asset-video-preview">
-                    <source src="${safeUrl(item.url)}" type="video/mp4">
+                    <source src="${item.url}" type="video/mp4">
                     Your browser does not support the video tag.
                   </video>
                 </div>
@@ -470,3 +555,5 @@ window.viewWorkAssets = viewWorkAssets;
 window.addFilesToManualQueue = addFilesToManualQueue;
 window.clearManualQueue = clearManualQueue;
 window.removeFromManualQueue = removeFromManualQueue;
+window.openManualSubmissionModal = openManualSubmissionModal;
+window.loadManualFormOptions = loadManualFormOptions;

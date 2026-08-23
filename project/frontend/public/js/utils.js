@@ -8,6 +8,7 @@
  * @param {HTMLElement} modal - The outer .modal overlay element
  */
 function makeDraggableModal(modal) {
+  if (modal.classList.contains('modal-drawer')) return;
   const panel = modal.querySelector('.modal-content');
   if (!panel || panel._draggable) return; // already applied
   panel._draggable = true;
@@ -168,7 +169,8 @@ function closeModal(id) {
   const modal = document.getElementById(id);
   if (modal) {
     modal.classList.remove('show');
-    setTimeout(() => { modal.style.display = 'none'; }, 200);
+    const delay = modal.classList.contains('modal-drawer') ? 350 : 200;
+    setTimeout(() => { modal.style.display = 'none'; }, delay);
     document.body.style.overflow = '';
   }
 }
@@ -429,7 +431,6 @@ async function loadSharedCourses() {
 
 function initSharedToolLinks() {
   const linkConfigs = [
-    { id: 'tickets-link', loader: loadSharedTickets },
     { id: 'payments-link', loader: loadSharedPayments }
   ];
 

@@ -4,6 +4,26 @@ async function initProfile() {
   loadProfileData();
 }
 
+function openProfileUrl(inputId, defaultPrefix) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  let val = (input.value || '').trim();
+  if (!val) {
+    showToast('Please enter or paste your profile link first', 'info');
+    input.focus();
+    return;
+  }
+  if (val.startsWith('@')) {
+    val = val.substring(1);
+  }
+  let url = val;
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    url = defaultPrefix + val;
+  }
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+window.openProfileUrl = openProfileUrl;
+
 function setupAvatarFallbacks() {
   const setInitials = (id, name) => {
     const el = document.getElementById(id);
@@ -21,7 +41,6 @@ function setupAvatarFallbacks() {
 
 function getAvatarUrl(user, size = 120) {
   if (user && user.avatar && String(user.avatar).trim() !== '' && user.avatar !== 'null') {
-    // If it's a relative path, ensure it has a leading slash or handle appropriately
     return user.avatar;
   }
   const name = (user && user.name) ? user.name : 'User';
@@ -48,7 +67,7 @@ function bindProfileEditForm() {
           URL.revokeObjectURL(avatarPreview.dataset.prevUrl);
         }
         avatarPreview.dataset.prevUrl = previewUrl;
-        avatarPreview.classList.add('loaded'); // Make it visible via CSS
+        avatarPreview.classList.add('loaded');
       };
     });
   }
@@ -65,6 +84,8 @@ function bindProfileEditForm() {
       payload.append('name', document.getElementById('edit-profile-name').value || '');
       payload.append('mobile', document.getElementById('edit-profile-mobile').value || '');
       payload.append('github_link', document.getElementById('edit-profile-github').value || '');
+      payload.append('linkedin_link', document.getElementById('edit-profile-linkedin').value || '');
+      payload.append('instagram_link', document.getElementById('edit-profile-instagram').value || '');
       payload.append('bio', document.getElementById('edit-profile-bio').value || '');
 
       const avatarFile = document.getElementById('profile-avatar-input').files[0];
@@ -101,7 +122,7 @@ async function loadProfileData() {
     }
     document.getElementById('profile-name').textContent = user.name;
     document.getElementById('profile-email').textContent = user.email;
-    document.getElementById('profile-points').textContent = user.points;
+    document.getElementById('profile-points').textContent = user.points || 0;
     document.getElementById('profile-role-badge').innerHTML = `<div class="badge" style="background:rgba(16,42,150,0.1); color:var(--accent-primary); border:2px solid var(--accent-primary)44;">${formatRole(user.role)}</div>`;
 
     const navAvatar = document.getElementById('nav-avatar');
@@ -119,11 +140,37 @@ async function loadProfileData() {
     const nameInput = document.getElementById('edit-profile-name');
     const mobileInput = document.getElementById('edit-profile-mobile');
     const githubInput = document.getElementById('edit-profile-github');
+    const linkedinInput = document.getElementById('edit-profile-linkedin');
+    const instagramInput = document.getElementById('edit-profile-instagram');
     const bioInput = document.getElementById('edit-profile-bio');
+
     if (nameInput) nameInput.value = user.name || '';
     if (mobileInput) mobileInput.value = user.mobile || '';
     if (githubInput) githubInput.value = user.github_link || '';
+    if (linkedinInput) linkedinInput.value = user.linkedin_link || '';
+    if (instagramInput) instagramInput.value = user.instagram_link || '';
     if (bioInput) bioInput.value = user.bio || '';
+
+    // Render clickable Social Badges on Left Card
+    const socialLinksEl = document.getElementById('profile-social-links');
+    if (socialLinksEl) {
+      let socialHtml = '';
+      if (user.github_link) {
+        const ghUrl = user.github_link.startsWith('http') ? user.github_link : `https://github.com/${user.github_link}`;
+        socialHtml += `<a href="${ghUrl}" target="_blank" rel="noopener noreferrer" class="profile-social-btn github" title="Visit GitHub Profile"><i class="fab fa-github"></i></a>`;
+      }
+      if (user.linkedin_link) {
+        const liUrl = user.linkedin_link.startsWith('http') ? user.linkedin_link : `https://linkedin.com/in/${user.linkedin_link}`;
+        socialHtml += `<a href="${liUrl}" target="_blank" rel="noopener noreferrer" class="profile-social-btn linkedin" title="Visit LinkedIn Profile"><i class="fab fa-linkedin"></i></a>`;
+      }
+      if (user.instagram_link) {
+        const igUser = user.instagram_link.replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//, '').replace(/\/$/, '');
+        const igUrl = user.instagram_link.startsWith('http') ? user.instagram_link : `https://instagram.com/${igUser}`;
+        socialHtml += `<a href="${igUrl}" target="_blank" rel="noopener noreferrer" class="profile-social-btn instagram" title="Visit Instagram Profile"><i class="fab fa-instagram"></i></a>`;
+      }
+      socialLinksEl.innerHTML = socialHtml;
+      socialLinksEl.style.display = socialHtml ? 'flex' : 'none';
+    }
 
     if (user.badge) {
       document.getElementById('profile-badge-display').innerHTML = `
@@ -133,33 +180,37 @@ async function loadProfileData() {
     }
 
     // Stats
-    document.getElementById('stat-total').textContent = perf.stats.total || 0;
-    document.getElementById('stat-approved').textContent = perf.stats.approved || 0;
-    document.getElementById('stat-avg').textContent = Math.round(perf.stats.avg_score || 0);
+    document.getElementById('stat-total').textContent = (perf && perf.stats) ? (perf.stats.total || 0) : 0;
+    document.getElementById('stat-approved').textContent = (perf && perf.stats) ? (perf.stats.approved || 0) : 0;
+    document.getElementById('stat-avg').textContent = (perf && perf.stats) ? Math.round(perf.stats.avg_score || 0) : 0;
 
-    const sorted = allUsers.sort((a, b) => b.points - a.points);
-    const rank = sorted.findIndex(u => u.id === user.id) + 1;
-    document.getElementById('stat-rank').textContent = `#${rank}`;
+    if (Array.isArray(allUsers)) {
+      const sorted = allUsers.sort((a, b) => (b.points || 0) - (a.points || 0));
+      const rank = sorted.findIndex(u => u.id === user.id) + 1;
+      document.getElementById('stat-rank').textContent = rank > 0 ? `#${rank}` : '#—';
+    }
 
     // Activity
     const activityList = document.getElementById('profile-activity-list');
-    if (perf.logs.length === 0) {
-      activityList.innerHTML = '<div style="color:var(--text-muted); font-size:0.8rem;">No recent activity</div>';
-    } else {
-      activityList.innerHTML = perf.logs.map(l => `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; border-bottom:2px solid var(--border);">
-          <div style="font-size:0.85rem;">
-            <span style="color:var(--text-primary); font-weight:700;">${l.action}</span>
-            ${l.score ? `<span style="color:var(--accent-green); margin-left:8px;">+${l.score} pts</span>` : ''}
+    if (activityList) {
+      if (!perf || !perf.logs || perf.logs.length === 0) {
+        activityList.innerHTML = '<div style="color:var(--text-muted); font-size:0.8rem;">No recent activity</div>';
+      } else {
+        activityList.innerHTML = perf.logs.map(l => `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; border-bottom:2px solid var(--border);">
+            <div style="font-size:0.85rem;">
+              <span style="color:var(--text-primary); font-weight:700;">${l.action}</span>
+              ${l.score ? `<span style="color:var(--accent-green); margin-left:8px;">+${l.score} pts</span>` : ''}
+            </div>
+            <div style="font-size:0.7rem; color:var(--text-muted);">${timeAgo(l.logged_at)}</div>
           </div>
-          <div style="font-size:0.7rem; color:var(--text-muted);">${timeAgo(l.logged_at)}</div>
-        </div>
-      `).join('');
+        `).join('');
+      }
     }
 
     // Score History Chart
     const chartCanvas = document.getElementById('profile-score-chart');
-    if (chartCanvas && perf.score_history && perf.score_history.length > 0) {
+    if (chartCanvas && perf && perf.score_history && perf.score_history.length > 0) {
       const labels = perf.score_history.map(e => formatDate(e.date));
       const data = perf.score_history.map(e => e.score);
       if (window.profileScoreChart) window.profileScoreChart.destroy();
@@ -181,30 +232,35 @@ async function loadProfileData() {
         options: {
           responsive: true,
           plugins: { legend: { display: false } },
-          scales: { y: { beginAtZero: true } }
+          scales: {
+            y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+            x: { grid: { display: false } }
+          }
         }
       });
     }
 
     // Submissions
     const subsList = document.getElementById('profile-subs-list');
-    if (perf.submissions.length === 0) {
-      subsList.innerHTML = '<div style="color:var(--text-muted); font-size:0.8rem;">No submissions yet</div>';
-    } else {
-      subsList.innerHTML = perf.submissions.map(s => `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; background:var(--bg-hover); border-radius:var(--radius-sm);">
-          <div>
-            <div style="font-weight:700; font-size:0.85rem;">${s.task_title}</div>
-            <div style="font-size:0.65rem; color:var(--text-muted);">Score: ${s.nexus_score || '—'} • ${formatDate(s.submitted_at)}</div>
+    if (subsList) {
+      if (!perf || !perf.submissions || perf.submissions.length === 0) {
+        subsList.innerHTML = '<div style="color:var(--text-muted); font-size:0.8rem;">No submissions yet</div>';
+      } else {
+        subsList.innerHTML = perf.submissions.map(s => `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; border-bottom:2px solid var(--border);">
+            <div>
+              <div style="font-weight:700; font-size:0.9rem;">${s.task_title || 'Untitled Task'}</div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">${s.notes || 'No notes'}</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="badge badge-${s.status}">${s.status}</div>
+              <div style="font-size:0.65rem; color:var(--text-muted); margin-top:4px;">${timeAgo(s.submitted_at)}</div>
+            </div>
           </div>
-          <div class="badge badge-${s.leader_status}">${s.leader_status}</div>
-        </div>
-      `).join('');
+        `).join('');
+      }
     }
-
-  } catch (e) {
-    showToast('Failed to load profile data', 'error');
+  } catch (err) {
+    console.error('Error loading profile:', err);
   }
 }
-
-window.initProfile = initProfile;

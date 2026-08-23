@@ -204,28 +204,76 @@ async function reEvaluateSubmission(id) {
   reviewSubmission(id, 'pending');
 }
 
+let cachedManualTasks = [];
+let cachedManualClients = [];
+
+async function loadManualFormOptions() {
+  const taskSelect = document.getElementById('manual-task-id');
+  const clientSelect = document.getElementById('manual-client-id');
+  if (!taskSelect) return;
+
+  taskSelect.innerHTML = '<option value="">Loading tasks...</option>';
+
+  try {
+    const [tasks, clients] = await Promise.all([
+      api.get('/tasks'),
+      api.get('/clients').catch(() => [])
+    ]);
+
+    cachedManualTasks = tasks || [];
+    cachedManualClients = clients || [];
+
+    if (cachedManualTasks.length === 0) {
+      taskSelect.innerHTML = '<option value="">No tasks found (Optional)</option>';
+    } else {
+      taskSelect.innerHTML = '<option value="">Select a task...</option>' +
+        cachedManualTasks.map(t => `<option value="${t.id}">${t.title} [${t.project_title || 'General'}]</option>`).join('');
+    }
+
+    if (clientSelect) {
+      if (cachedManualClients.length === 0) {
+        clientSelect.innerHTML = '<option value="">No clients found</option>';
+      } else {
+        clientSelect.innerHTML = '<option value="">Select a client...</option>' +
+          cachedManualClients.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+      }
+    }
+  } catch (e) {
+    console.error('Error loading manual upload form options:', e);
+    taskSelect.innerHTML = '<option value="">Failed to load tasks</option>';
+  }
+}
+
+async function openManualSubmissionModal() {
+  const form = document.getElementById('manual-submission-form');
+  if (form) form.reset();
+  clearManualQueue();
+  await loadManualFormOptions();
+  openModal('manual-submission-modal');
+}
+
 async function initManualUpload() {
   const form = document.getElementById('manual-submission-form');
   const taskSelect = document.getElementById('manual-task-id');
   if (!form || !taskSelect) return;
 
-  // Load active tasks for manual upload
-  try {
-    const tasks = await api.get('/tasks?status=pending,in_progress,rework');
-    taskSelect.innerHTML = '<option value="">Select a task...</option>' +
-      tasks.map(t => `<option value="${t.id}">${t.title} [${t.project_title || 'General'}]</option>`).join('');
-  } catch (e) {
-    taskSelect.innerHTML = '<option value="">Failed to load tasks</option>';
-  }
+  await loadManualFormOptions();
 
-  const clientSelect = document.getElementById('manual-client-id');
-  if (clientSelect) {
-    try {
-      const clients = await api.get('/clients');
-      clientSelect.innerHTML = '<option value="">Select a client...</option>' +
-        clients.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-    } catch (e) { }
-  }
+  taskSelect.onchange = () => {
+    const selectedId = Number(taskSelect.value);
+    if (!selectedId) return;
+    const task = cachedManualTasks.find(t => t.id === selectedId);
+    if (task) {
+      const projInput = document.getElementById('manual-project-name');
+      if (projInput && task.project_title && !projInput.value) {
+        projInput.value = task.project_title;
+      }
+      if (task.client_id) {
+        const clientSelect = document.getElementById('manual-client-id');
+        if (clientSelect) clientSelect.value = task.client_id;
+      }
+    }
+  };
 
   form.onsubmit = async (e) => {
     e.preventDefault();
@@ -507,3 +555,5 @@ window.viewWorkAssets = viewWorkAssets;
 window.addFilesToManualQueue = addFilesToManualQueue;
 window.clearManualQueue = clearManualQueue;
 window.removeFromManualQueue = removeFromManualQueue;
+window.openManualSubmissionModal = openManualSubmissionModal;
+window.loadManualFormOptions = loadManualFormOptions;

@@ -61,10 +61,10 @@ router.get('/:id/tasks', verifyToken, (req, res) => {
 router.post('/', verifyToken, checkRole('admin', 'team_leader'), (req, res) => {
   const { title, description, priority, deadline, team_leader_id, client_id, team_members } = req.body;
   if (!title) return res.status(400).json({ message: 'Title required' });
-  const effectiveLeaderId = req.user.role === 'team_leader' ? req.user.id : (team_leader_id || null);
+  const effectiveLeaderId = team_leader_id ? Number(team_leader_id) : (req.user.role === 'team_leader' ? req.user.id : null);
   const result = db.prepare(
     'INSERT INTO projects(title,description,priority,deadline,team_leader_id,client_id,created_by) VALUES(?,?,?,?,?,?,?)'
-  ).run(title, description, priority || 'normal', deadline, effectiveLeaderId, client_id || null, req.user.id);
+  ).run(title, description, priority || 'normal', deadline, effectiveLeaderId, client_id ? Number(client_id) : null, req.user.id);
 
   let addedMemberIds = [];
   if (team_members && Array.isArray(team_members)) {

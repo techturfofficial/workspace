@@ -17,6 +17,7 @@ async function initClients() {
       // 1. Basic Client Information
       name: document.getElementById('client-name').value,
       company: document.getElementById('client-company').value,
+      client_login_id: document.getElementById('client-login-id')?.value || '',
       phone: document.getElementById('client-phone').value,
       phone_alt: document.getElementById('client-phone-alt').value,
       email: document.getElementById('client-email').value,
@@ -224,57 +225,49 @@ function openNewClientEditor() {
   }
 
   panel.style.display = 'block';
-  document.getElementById('panel-title').textContent = 'New Client';
+  document.getElementById('panel-title').textContent = 'NEW CLIENT';
   document.getElementById('panel-body').innerHTML = `
     <div style="display:flex; flex-direction:column; gap:16px;">
-      <div style="padding:16px; background:var(--bg-hover); border-radius:12px; border-left:3px solid var(--accent-primary);">
-        <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:12px;">Client Identity</div>
-        <div class="form-group">
-          <label for="quick-client-name">Full Name</label>
-          <input id="quick-client-name" class="form-control" type="text" placeholder="Client name">
-        </div>
-        <div class="form-group">
-          <label for="quick-client-company">Company Name</label>
-          <input id="quick-client-company" class="form-control" type="text" placeholder="Company or brand">
-        </div>
-        <div class="form-group">
-          <label for="quick-client-project-key">Project Key</label>
-          <input id="quick-client-project-key" class="form-control" type="text" placeholder="e.g. LUXE-2024">
-        </div>
+      <div class="form-group">
+        <label for="quick-client-name">Full Name *</label>
+        <input id="quick-client-name" class="form-control" type="text" placeholder="Enter client full name">
+      </div>
+      <div class="form-group">
+        <label for="quick-client-company">Company Name</label>
+        <input id="quick-client-company" class="form-control" type="text" placeholder="Company or brand">
+      </div>
+      <div class="form-group">
+        <label for="quick-client-login-id">Client Access ID (Portal Username)</label>
+        <input id="quick-client-login-id" class="form-control" type="text" placeholder="e.g. TT-CLI-00012">
+      </div>
+      <div class="form-group">
+        <label for="quick-client-project-key">Project Key</label>
+        <input id="quick-client-project-key" class="form-control" type="text" placeholder="e.g. LUXE-2024">
       </div>
 
-      <div style="padding:16px; background:var(--bg-hover); border-radius:12px;">
-        <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:12px;">Contact</div>
-        <div class="form-group">
-          <label for="quick-client-email">Email Address</label>
-          <input id="quick-client-email" class="form-control" type="email" placeholder="client@example.com">
-        </div>
-        <div class="form-group">
-          <label for="quick-client-phone">Contact Number</label>
-          <input id="quick-client-phone" class="form-control" type="text" placeholder="Primary phone">
-        </div>
-        <div class="form-group">
-          <label for="quick-client-location">Location</label>
-          <input id="quick-client-location" class="form-control" type="text" placeholder="City, Country">
-        </div>
+      <div class="form-group">
+        <label for="quick-client-email">Email Address</label>
+        <input id="quick-client-email" class="form-control" type="email" placeholder="client@example.com">
+      </div>
+      <div class="form-group">
+        <label for="quick-client-phone">Contact Number</label>
+        <input id="quick-client-phone" class="form-control" type="text" placeholder="Primary phone number">
+      </div>
+      <div class="form-group">
+        <label for="quick-client-location">Location</label>
+        <input id="quick-client-location" class="form-control" type="text" placeholder="City, Country">
       </div>
 
-      <div style="padding:16px; background:var(--bg-hover); border-radius:12px;">
-        <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:12px;">Project Brief</div>
-        <div class="form-group">
-          <label for="quick-client-service-type">Service Type</label>
-          <input id="quick-client-service-type" class="form-control" type="text" placeholder="Website / Branding / Marketing">
-        </div>
-        <div class="form-group">
-          <label for="quick-client-project-desc">Project Description</label>
-          <textarea id="quick-client-project-desc" class="form-control" rows="4" placeholder="Short project note"></textarea>
-        </div>
+      <div class="form-group">
+        <label for="quick-client-service-type">Service Type</label>
+        <input id="quick-client-service-type" class="form-control" type="text" placeholder="Website / Branding / Marketing">
+      </div>
+      <div class="form-group">
+        <label for="quick-client-project-desc">Project Description</label>
+        <textarea id="quick-client-project-desc" class="form-control" rows="3" placeholder="Describe project details..."></textarea>
       </div>
 
-      <button class="btn-primary" style="width:100%; margin-top:8px;" onclick="createQuickClient()">
-        <i class="fas fa-check"></i> CREATE CLIENT
-      </button>
-      <button class="btn-danger" style="width:100%;" onclick="closeDetailPanel()">CANCEL</button>
+      <button class="btn-drawer-submit" onclick="createQuickClient()">Create Client</button>
     </div>
   `;
 
@@ -294,6 +287,7 @@ async function createQuickClient() {
   const data = {
     name,
     company: document.getElementById('quick-client-company')?.value.trim() || '',
+    client_login_id: document.getElementById('quick-client-login-id')?.value.trim() || '',
     project_key: document.getElementById('quick-client-project-key')?.value.trim() || '',
     email: document.getElementById('quick-client-email')?.value.trim() || '',
     phone: document.getElementById('quick-client-phone')?.value.trim() || '',
@@ -332,7 +326,7 @@ async function openClientDetail(id) {
 
     document.getElementById('panel-title').textContent = c.name;
     document.getElementById('panel-body').innerHTML = `
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
         <div>
           <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">Company</div>
           <div style="font-weight:700;">${c.company || '—'}</div>
@@ -341,6 +335,11 @@ async function openClientDetail(id) {
           <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">Project Key</div>
           <div style="font-weight:700; color:var(--accent-primary);">${c.project_key || '—'}</div>
         </div>
+      </div>
+
+      <div style="margin-bottom:24px;">
+        <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">Client Access ID</div>
+        <div style="font-weight:700; color:var(--accent-secondary); font-family:var(--font-mono);">${c.client_login_id || '—'}</div>
       </div>
       
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px;">

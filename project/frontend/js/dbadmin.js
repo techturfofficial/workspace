@@ -19,7 +19,7 @@ const dbadmin = {
       
       let html = `
         <div style="display:flex; height:100%; gap: 16px;">
-          <div style="width:200px; border-right:1px solid var(--border-color); padding-right:16px; display:flex; flex-direction:column; gap:8px; overflow-y:auto;">
+          <div style="width:200px; border-right:2px solid var(--border-color); padding-right:16px; display:flex; flex-direction:column; gap:8px; overflow-y:auto;">
             <div style="font-size:0.75rem; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px; font-weight:bold;">Tables</div>
             ${tables.map(t => `<div class="db-table-btn" style="padding:10px; border-radius:8px; cursor:pointer; background:var(--bg-hover); color:var(--text-primary); transition:all 0.2s;" onclick="dbadmin.loadTable('${t}')"><i class="fas fa-table" style="color:var(--accent-primary); width:20px;"></i> ${t}</div>`).join('')}
           </div>
@@ -52,8 +52,8 @@ const dbadmin = {
     document.querySelectorAll('.db-table-btn').forEach(b => {
       if(b.textContent.trim() === name) {
         b.style.background = 'var(--accent-primary)';
-        b.style.color = '#fff';
-        b.querySelector('i').style.color = '#fff';
+        b.style.color = '#102a96';
+        b.querySelector('i').style.color = '#102a96';
       } else {
         b.style.background = 'var(--bg-hover)';
         b.style.color = 'var(--text-primary)';
@@ -65,7 +65,7 @@ const dbadmin = {
       const data = await this.table(name);
       if(!data || data.length === 0) {
         container.innerHTML = `
-          <div style="padding-bottom:16px; border-bottom:1px solid var(--border-color); margin-bottom:16px;">
+          <div style="padding-bottom:16px; border-bottom:2px solid var(--border-color); margin-bottom:16px;">
             <h3 style="margin:0; font-family:var(--font-display);">${name}</h3>
           </div>
           <div style="flex:1; display:flex; align-items:center; justify-content:center; color:var(--text-muted);">Table is empty</div>
@@ -76,19 +76,19 @@ const dbadmin = {
       const columns = Object.keys(data[0]);
       
       let html = `
-        <div style="padding-bottom:16px; border-bottom:1px solid var(--border-color); margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="padding-bottom:16px; border-bottom:2px solid var(--border-color); margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
           <h3 style="margin:0; font-family:var(--font-display);">${name} <span style="font-size:0.7rem; background:var(--bg-hover); padding:2px 8px; border-radius:10px; color:var(--text-muted); vertical-align:middle; margin-left:8px;">${data.length} records</span></h3>
         </div>
-        <div style="flex:1; overflow:auto; border-radius:8px; border:1px solid var(--border-color);">
+        <div style="flex:1; overflow:auto; border-radius:8px; border:2px solid var(--border-color);">
           <table style="width:100%; border-collapse:collapse; text-align:left; font-size:0.85rem;">
             <thead style="background:var(--bg-hover); position:sticky; top:0; z-index:10;">
               <tr>
-                ${columns.map(c => `<th style="padding:12px; border-bottom:1px solid var(--border-color); color:var(--text-muted); font-weight:600; white-space:nowrap;">${c}</th>`).join('')}
+                ${columns.map(c => `<th style="padding:12px; border-bottom:2px solid var(--border-color); color:var(--text-muted); font-weight:600; white-space:nowrap;">${c}</th>`).join('')}
               </tr>
             </thead>
             <tbody>
               ${data.map(row => `
-                <tr style="border-bottom:1px solid var(--border-color);">
+                <tr style="border-bottom:2px solid var(--border-color);">
                   ${columns.map(c => `<td style="padding:12px; white-space:nowrap; max-width:200px; overflow:hidden; text-overflow:ellipsis;" title="${String(row[c]).replace(/"/g, '&quot;')}">${row[c] !== null ? String(row[c]).replace(/</g, '&lt;').replace(/>/g, '&gt;') : '<i style="color:var(--text-muted)">NULL</i>'}</td>`).join('')}
                 </tr>
               `).join('')}
@@ -105,23 +105,14 @@ const dbadmin = {
 
 window.dbadmin = dbadmin;
 
-// Open Event Hook
+// Open Event Hook - Redirects cleanly to database_viewer.html
 document.addEventListener('DOMContentLoaded', () => {
   const dbLinks = document.querySelectorAll('#dbadmin-link, [onclick*="dbadmin-modal"]');
   dbLinks.forEach(link => {
-    link.addEventListener('click', () => {
-      // Show the modal
-      const modal = document.getElementById('dbadmin-modal');
-      if (modal) modal.style.display = 'flex';
-      dbadmin.renderViewer();
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      window.location.href = 'database_viewer.html';
     });
   });
-  // Close modal on close button click
-  const closeBtn = document.getElementById('dbadmin-close');
-  if (closeBtn) {
-    closeBtn.onclick = () => {
-      const modal = document.getElementById('dbadmin-modal');
-      if (modal) modal.style.display = 'none';
-    };
-  }
 });

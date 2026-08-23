@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <style>
+    .mobile-hamburger{display:none;background:none;color:var(--text-primary);font-size:1.2rem;}
+    @media(max-width:768px){.mobile-hamburger{display:flex;}}
+  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tech Turf | Database Viewer</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Database Viewer Master Layout */
+    .page-header {
+      padding: 0 24px;
+      margin-top: 14px;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .db-studio-container {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      margin: 0 24px 24px;
+      height: calc(100vh - 160px);
+      min-height: 560px;
+      max-height: 880px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+      background: var(--bg-surface, #ffffff);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.02);
+      position: relative;
+    }
+
+    /* Left Tables Panel */
+    .db-sidebar {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      background: var(--bg-surface-2, rgba(255, 255, 255, 0.7));
+      min-width: 0;
+      height: 100%;
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+    }
+
+    .db-sidebar-header {
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-surface, #ffffff);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .db-sidebar-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .db-sidebar-title {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 900;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .db-badge-count {
+      font-size: 0.72rem;
+      font-weight: 800;
+      background: rgba(59, 130, 246, 0.15);
+      color: #3b82f6;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-family: var(--font-mono);
+    }
+
+    .db-search-input {
+      width: 100%;
+      border: 1.5px solid var(--border);
+      background: var(--bg-surface-2, rgba(255, 255, 255, 0.06));
+      color: var(--text-primary);
+      border-radius: 10px;
+      padding: 8px 12px 8px 34px;
+      font-size: 0.82rem;
+      outline: none;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .db-search-input:focus {
+      border-color: #3b82f6;
+      background: var(--bg-surface, #ffffff);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+    .db-tables-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .db-table-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      border-left: 3px solid transparent;
+      transition: all 0.15s ease;
+      color: var(--text-primary);
+    }
+
+    .db-table-item:hover {
+      background: rgba(59, 130, 246, 0.08);
+      transform: translateX(2px);
+    }
+
+    .db-table-item.active {
+      background: linear-gradient(90deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.03) 100%);
+      border-left-color: #3b82f6;
+      font-weight: 800;
+      color: #3b82f6;
+    }
+
+    .db-table-item-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.84rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 600;
+    }
+
+    .db-table-rows-tag {
+      font-size: 0.68rem;
+      font-weight: 800;
+      background: rgba(0, 0, 0, 0.06);
+      color: var(--text-secondary);
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      flex-shrink: 0;
+    }
+
+    body.dark-mode .db-table-rows-tag {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .db-table-item.active .db-table-rows-tag {
+      background: #3b82f6;
+      color: #ffffff;
+    }
+
+    /* Main Data View */
+    .db-main {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-width: 0;
+      background: var(--bg-surface, #ffffff);
+      overflow: hidden;
+    }
+
+    .db-main-header {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-surface, #ffffff);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .db-tab-pills {
+      display: flex;
+      gap: 6px;
+      background: var(--bg-surface-2, #f1f5f9);
+      border: 1px solid var(--border);
+      padding: 4px;
+      border-radius: 12px;
+    }
+
+    .db-tab-pill {
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .db-tab-pill.active {
+      background: linear-gradient(135deg, #102a96 0%, #2563eb 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .db-actions-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Sub Toolbar */
+    .db-toolbar {
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-surface-2, rgba(255, 255, 255, 0.5));
+      flex-shrink: 0;
+    }
+
+    .db-table-info-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .db-current-title {
+      font-size: 1.05rem;
+      font-weight: 900;
+      color: var(--text-primary);
+      font-family: var(--font-display);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .db-stats-badge {
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(59, 130, 246, 0.12);
+      color: #3b82f6;
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      font-family: var(--font-mono);
+    }
+
+    .db-search-rows-box {
+      position: relative;
+      width: 220px;
+    }
+
+    .db-search-rows-input {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: var(--bg-surface, #ffffff);
+      color: var(--text-primary);
+      border-radius: 8px;
+      padding: 6px 10px 6px 28px;
+      font-size: 0.8rem;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .db-search-rows-input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+    }
+
+    .db-select-limit {
+      border: 1px solid var(--border);
+      background: var(--bg-surface, #ffffff);
+      color: var(--text-primary);
+      border-radius: 8px;
+      padding: 5px 8px;
+      font-size: 0.8rem;
+      outline: none;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .db-btn {
+      border: 1px solid var(--border);
+      background: var(--bg-surface, #ffffff);
+      color: var(--text-primary);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .db-btn:hover {
+      background: rgba(59, 130, 246, 0.12);
+      border-color: rgba(59, 130, 246, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .db-btn-primary {
+      background: linear-gradient(135deg, #102a96 0%, #2563eb 100%);
+      color: #ffffff;
+      border-color: transparent;
+    }
+
+    .db-btn-primary:hover {
+      background: #1d4ed8;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    /* Grid Area & SOLID STICKY HEADERS (Prevents Overlap Glitch) */
+    .db-grid-container {
+      flex: 1;
+      overflow: auto;
+      min-height: 0;
+      position: relative;
+      background: var(--bg-surface, #ffffff);
+    }
+
+    .db-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+      text-align: left;
+    }
+
+    .db-table thead {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .db-table thead th {
+      position: sticky;
+      top: 0;
+      background: #ffffff !important;
+      border-bottom: 2px solid var(--border);
+      padding: 12px 18px;
+      font-family: var(--font-display);
+      font-size: 0.76rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+      z-index: 50;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    }
+
+    body.dark-mode .db-table thead th {
+      background: #0f172a !important;
+    }
+
+    .db-table thead th:hover {
+      background: #f1f5f9 !important;
+      color: #3b82f6;
+    }
+
+    body.dark-mode .db-table thead th:hover {
+      background: #1e293b !important;
+    }
+
+    .db-table thead th i.sort-icon {
+      font-size: 0.68rem;
+      margin-left: 4px;
+      color: var(--text-muted);
+    }
+
+    .db-table tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.12s ease;
+    }
+
+    .db-table tbody tr:hover {
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    .db-table tbody td {
+      padding: 11px 18px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      max-width: 320px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 0.84rem;
+      font-weight: 500;
+      vertical-align: middle;
+      background: transparent;
+    }
+
+    .db-table tbody td.action-cell {
+      width: 50px;
+      text-align: center;
+      padding: 6px;
+    }
+
+    .db-inspect-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: #3b82f6;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      font-size: 0.8rem;
+    }
+
+    .db-inspect-btn:hover {
+      background: #3b82f6;
+      color: #ffffff;
+      transform: scale(1.1);
+    }
+
+    .db-null-value {
+      color: var(--text-muted);
+      font-style: italic;
+      opacity: 0.6;
+    }
+
+    .db-pk-badge {
+      display: inline-block;
+      font-size: 0.6rem;
+      font-weight: 800;
+      background: #f59e0b;
+      color: #000;
+      padding: 1px 4px;
+      border-radius: 3px;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+
+    /* Footer Pagination */
+    .db-footer {
+      padding: 10px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-surface, #ffffff);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .db-pagination-info {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-weight: 600;
+    }
+
+    .db-pagination-nav {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* SQL Console View */
+    .db-sql-view {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+      padding: 20px;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    .db-sql-view.active {
+      display: flex;
+    }
+
+    .db-sql-editor-wrap {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .db-sql-textarea {
+      width: 100%;
+      height: 120px;
+      background: transparent;
+      border: none;
+      color: #38bdf8;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      line-height: 1.5;
+      resize: vertical;
+      outline: none;
+    }
+
+    .db-sql-presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .db-sql-preset-btn {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .db-sql-preset-btn:hover {
+      background: rgba(59, 130, 246, 0.15);
+      color: #3b82f6;
+    }
+
+    .db-sql-results-wrap {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-surface, #ffffff);
+      min-height: 250px;
+    }
+
+    /* Schema View */
+    .db-schema-view {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+      padding: 20px;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    .db-schema-view.active {
+      display: flex;
+    }
+
+    .db-schema-sql-box {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 14px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: #38bdf8;
+      white-space: pre-wrap;
+      max-height: 180px;
+      overflow-y: auto;
+      line-height: 1.5;
+    }
+
+    /* Row Detail Modal */
+    .db-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .db-modal-overlay.active {
+      display: flex;
+    }
+
+    .db-modal-card {
+      width: 100%;
+      max-width: 680px;
+      max-height: 85vh;
+      border-radius: 20px;
+      background: var(--bg-surface, #0f172a);
+      border: 1px solid var(--border);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: modalSpringIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .db-modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .db-modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .db-record-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+    }
+
+    .db-record-table th {
+      width: 30%;
+      padding: 8px 12px;
+      text-align: left;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      font-weight: 700;
+    }
+
+    .db-record-table td {
+      padding: 8px 12px;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border);
+      word-break: break-all;
+    }
+
+    .avatar-fallback-badge {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #102a96, #2563eb);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.88rem;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    @media (max-width: 992px) {
+      .db-studio-container {
+        grid-template-columns: 1fr;
+        height: auto;
+        max-height: none;
+      }
+      .db-sidebar {
+        height: 280px;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="three-bg"></canvas>
+  <div class="toast-container" id="toast-container"></div>
+
+  <div class="dashboard-container">
+    
+    <!-- Unified Standard Tech Turf Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">TECH TURF</div>
+        <div class="sidebar-logo-short"><img src="assets/techturf-logo.png" alt="TT" class="sidebar-logo-img-short" /></div>
+      </div>
+
+      <nav class="sidebar-menu" id="main-sidebar-nav">
+        <div class="menu-item" data-nav="dashboard.html" onclick="window.location.href='dashboard.html'">
+          <i class="fas fa-th-large"></i><span class="menu-text">Dashboard</span>
+        </div>
+        <div class="menu-item" data-nav="projects.html" onclick="window.location.href='projects.html'">
+          <i class="fas fa-project-diagram"></i><span class="menu-text">Projects</span>
+        </div>
+        <div class="menu-item" data-nav="tasks.html" onclick="window.location.href='tasks.html'">
+          <i class="fas fa-tasks"></i><span class="menu-text">Tasks</span>
+        </div>
+        <div class="menu-item" data-nav="submissions.html" onclick="window.location.href='submissions.html'">
+          <i class="fas fa-file-upload"></i><span class="menu-text">Submissions</span>
+        </div>
+        <div class="menu-item" data-nav="clients.html" onclick="window.location.href='clients.html'">
+          <i class="fas fa-user-tie"></i><span class="menu-text">Clients</span>
+        </div>
+        <div class="menu-item" data-nav="announcements.html" onclick="window.location.href='announcements.html'">
+          <i class="fas fa-bullhorn"></i><span class="menu-text">Announcements</span>
+        </div>
+        <div class="menu-item" data-nav="drive.html" onclick="window.location.href='drive.html'">
+          <i class="fas fa-hdd"></i><span class="menu-text">Secure Drive</span>
+        </div>
+        <div class="menu-item" data-nav="messages.html" onclick="window.location.href='messages.html'">
+          <i class="fas fa-comments messenger-icon"></i><span class="menu-text">Team Messenger</span>
+        </div>
+        <div class="menu-item" data-nav="nexus_chat.html" onclick="window.location.href='nexus_chat.html'">
+          <i class="fas fa-robot nexus-icon"></i><span class="menu-text">Nexus AI Terminal</span>
+        </div>
+
+        <hr class="sidebar-divider">
+
+        <!-- Role-Based Control Centers -->
+        <div class="sidebar-section admin-only">
+          <div class="sidebar-section-title">USER MANAGEMENT</div>
+          <div class="sidebar-submenu">
+            <div class="menu-item admin-only" data-nav="users.html" onclick="window.location.href='users.html'">
+              <i class="fas fa-users-cog"></i><span class="menu-text">User Management</span>
+            </div>
+            <div class="menu-item admin-only" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
+              <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
+            </div>
+          </div>
+        </div>
+        <div class="menu-item rnd-only" data-nav="nexus_lab.html" onclick="window.location.href='nexus_lab.html'">
+          <i class="fas fa-flask"></i><span class="menu-text">Nexus Lab</span>
+        </div>
+        <div class="menu-item handler-only" data-nav="client_connect.html" onclick="window.location.href='client_connect.html'">
+          <i class="fas fa-handshake"></i><span class="menu-text">Client Connect</span>
+        </div>
+        <div class="menu-item" data-nav="learning_hub.html" id="courses-link-global" onclick="window.location.href='learning_hub.html'">
+          <i class="fas fa-graduation-cap"></i><span class="menu-text">Learning Hub</span>
+        </div>
+
+        <hr class="sidebar-divider">
+        
+        <div class="menu-item" data-nav="workspace.html" onclick="window.location.href='workspace.html'">
+          <i class="fas fa-paint-brush"></i><span class="menu-text">Creative Workspace</span>
+        </div>
+        
+        <div class="menu-item admin-only" data-nav="database_viewer.html" id="dbadmin-link" onclick="window.location.href='database_viewer.html'">
+          <i class="fas fa-database"></i><span class="menu-text">Database Viewer</span>
+        </div>
+
+        <div class="menu-item admin-only" data-nav="payments.html" id="payments-link" onclick="window.location.href='payments.html'">
+          <i class="fas fa-money-check-alt"></i><span class="menu-text">Payments</span>
+        </div>
+
+        <hr class="sidebar-divider">
+        
+        <div class="menu-item" data-nav="profile.html" onclick="window.location.href='profile.html'">
+          <i class="fas fa-user-circle"></i><span class="menu-text">My Profile</span>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="menu-item" id="logout-btn">
+          <i class="fas fa-sign-out-alt"></i>
+          <span class="menu-text">Logout</span>
+        </div>
+      </div>
+
+      <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" title="Expand/Collapse Sidebar">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+    </aside>
+
+    <main class="main-content">
+            <header class="navbar">
+        <div class="nav-left">
+          <button id="mobile-toggle" class="mobile-hamburger"><i class="fas fa-bars"></i></button>
+          <div class="nav-search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search...">
+          </div>
+        </div>
+        <div class="nav-actions">
+          <div class="notification-bell" id="notification-bell">
+            <i class="fas fa-bell"></i>
+            <span class="notification-badge" id="notification-badge" style="display:none;">0</span>
+            <div class="notification-dropdown glass-card" id="notification-dropdown">
+              <div class="notification-header">
+                <span class="notification-title">Notifications</span>
+                <span class="notification-mark-read" onclick="markAllNotificationsRead()">Mark all read</span>
+              </div>
+              <div id="notification-list" class="notification-list-scroll"></div>
+            </div>
+          </div>
+
+          <div class="user-profile-nav" data-nav="profile.html">
+            <div class="user-nav-text">
+              <div id="nav-user-name" class="user-nav-name">Admin</div>
+              <div id="nav-user-role" class="user-nav-role">Admin</div>
+            </div>
+            <img id="nav-avatar" class="user-avatar" src="" alt="Avatar" style="display:none;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+            <div class="avatar-fallback-badge" id="nav-avatar-badge">A</div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Header -->
+      <div class="page-header">
+        <div>
+          <div class="breadcrumb">Administration / Core System</div>
+          <div class="page-title">DATABASE VIEWER & STUDIO</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="db-stats-badge" id="db-engine-badge"><i class="fas fa-database"></i> SQLite 3 Engine</span>
+          <span class="db-stats-badge" style="background:rgba(16,185,129,0.12); color:#10b981; border-color:rgba(16,185,129,0.25);" id="db-total-tables-badge">0 Tables</span>
+        </div>
+      </div>
+
+      <!-- Main Database Studio Container -->
+      <div class="db-studio-container">
+        
+        <!-- Left Sidebar: Tables Explorer -->
+        <aside class="db-sidebar">
+          <div class="db-sidebar-header">
+            <div class="db-sidebar-title-row">
+              <div class="db-sidebar-title">
+                <i class="fas fa-table-list" style="color:#3b82f6;"></i>
+                <span>Tables Explorer</span>
+              </div>
+              <button class="db-btn" id="refresh-tables-btn" style="padding:4px 8px; font-size:0.7rem;" title="Refresh Tables">
+                <i class="fas fa-rotate"></i>
+              </button>
+            </div>
+            <div style="position:relative;">
+              <i class="fas fa-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:0.75rem; color:var(--text-muted);"></i>
+              <input type="text" id="tables-search-input" class="db-search-input" placeholder="Search tables...">
+            </div>
+          </div>
+
+          <div class="db-tables-list" id="db-tables-list">
+            <div style="padding:30px 10px; text-align:center; color:var(--text-muted); font-size:0.8rem;">
+              <i class="fas fa-spinner fa-spin"></i> Loading tables...
+            </div>
+          </div>
+        </aside>
+
+        <!-- Right Main: Data View & Query Console -->
+        <section class="db-main">
+          
+          <!-- Top View Mode Header -->
+          <div class="db-main-header">
+            <div class="db-tab-pills">
+              <button type="button" class="db-tab-pill active" data-tab="data">
+                <i class="fas fa-table"></i> Table Data
+              </button>
+              <button type="button" class="db-tab-pill" data-tab="schema">
+                <i class="fas fa-code-branch"></i> Schema & Structure
+              </button>
+              <button type="button" class="db-tab-pill" data-tab="sql">
+                <i class="fas fa-terminal"></i> SQL Query Console
+              </button>
+            </div>
+
+            <div class="db-actions-row">
+              <button class="db-btn" id="export-csv-btn" title="Export Current Table to CSV">
+                <i class="fas fa-file-csv" style="color:#10b981;"></i> CSV
+              </button>
+              <button class="db-btn" id="export-json-btn" title="Export Current Table to JSON">
+                <i class="fas fa-file-code" style="color:#3b82f6;"></i> JSON
+              </button>
+              <button class="db-btn" id="refresh-data-btn" title="Refresh Table Data">
+                <i class="fas fa-arrows-rotate"></i> Refresh
+              </button>
+            </div>
+          </div>
+
+          <!-- 1. Table Data View -->
+          <div id="view-data" class="db-data-view" style="display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden;">
+            <div class="db-toolbar">
+              <div class="db-table-info-left">
+                <div class="db-current-title" id="active-table-name">Select a Table</div>
+                <span class="db-stats-badge" id="active-table-records">0 records</span>
+                <span class="db-stats-badge" style="background:rgba(139,92,246,0.12); color:#8b5cf6; border-color:rgba(139,92,246,0.25);" id="active-table-columns">0 cols</span>
+              </div>
+
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div class="db-search-rows-box">
+                  <i class="fas fa-filter" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:0.7rem; color:var(--text-muted);"></i>
+                  <input type="text" id="rows-search-input" class="db-search-rows-input" placeholder="Filter rows in table...">
+                </div>
+
+                <div style="display:flex; align-items:center; gap:4px; font-size:0.75rem; color:var(--text-muted);">
+                  <span>Show:</span>
+                  <select id="limit-select" class="db-select-limit">
+                    <option value="25">25</option>
+                    <option value="50" selected>50</option>
+                    <option value="100">100</option>
+                    <option value="250">250</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Table Grid -->
+            <div class="db-grid-container" id="db-grid-wrap">
+              <div style="padding:60px 20px; text-align:center; color:var(--text-muted);">
+                <i class="fas fa-database fa-3x" style="opacity:0.2; margin-bottom:12px; display:block;"></i>
+                <div style="font-weight:700; font-size:0.95rem;">Select a table from the left explorer</div>
+                <div style="font-size:0.78rem; margin-top:4px;">Browse records, sort columns, or inspect schemas in real time.</div>
+              </div>
+            </div>
+
+            <!-- Table Pagination Footer -->
+            <div class="db-footer" id="db-footer-pagination">
+              <div class="db-pagination-info" id="pagination-info">Showing 0 to 0 of 0 records</div>
+              <div class="db-pagination-nav">
+                <button class="db-btn" id="btn-page-first" style="padding:4px 8px;" title="First Page"><i class="fas fa-angles-left"></i></button>
+                <button class="db-btn" id="btn-page-prev" style="padding:4px 8px;" title="Previous Page"><i class="fas fa-angle-left"></i></button>
+                <span style="font-size:0.76rem; font-family:var(--font-mono); padding:0 8px; font-weight:700;" id="current-page-label">Page 1 of 1</span>
+                <button class="db-btn" id="btn-page-next" style="padding:4px 8px;" title="Next Page"><i class="fas fa-angle-right"></i></button>
+                <button class="db-btn" id="btn-page-last" style="padding:4px 8px;" title="Last Page"><i class="fas fa-angles-right"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Schema & Structure View -->
+          <div id="view-schema" class="db-schema-view">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <h3 style="margin:0; font-family:var(--font-display); font-size:1.1rem; color:var(--text-primary);" id="schema-table-title">Table Schema</h3>
+            </div>
+
+            <div>
+              <div style="font-size:0.75rem; font-weight:800; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; letter-spacing:0.5px;">
+                Raw SQLite CREATE Definition
+              </div>
+              <div class="db-schema-sql-box" id="schema-sql-definition">-- Select a table to view schema</div>
+            </div>
+
+            <div>
+              <div style="font-size:0.75rem; font-weight:800; color:var(--text-muted); text-transform:uppercase; margin-bottom:8px; letter-spacing:0.5px;">
+                Column Structure & Constraints
+              </div>
+              <div style="border:1px solid var(--border); border-radius:12px; overflow:hidden; background:var(--bg-surface, #ffffff);">
+                <table class="db-table" id="schema-columns-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Column Name</th>
+                      <th>Data Type</th>
+                      <th>Not Null</th>
+                      <th>Default Value</th>
+                      <th>Primary Key</th>
+                    </tr>
+                  </thead>
+                  <tbody id="schema-columns-tbody">
+                    <tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-muted);">No schema loaded</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. SQL Query Console View -->
+          <div id="view-sql" class="db-sql-view">
+            <div class="db-sql-editor-wrap">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.78rem; font-weight:800; color:#38bdf8; text-transform:uppercase; font-family:var(--font-mono);">
+                  <i class="fas fa-terminal"></i> Interactive SQL Query Console
+                </span>
+                <button class="db-btn db-btn-primary" id="run-sql-btn" style="padding:6px 14px;">
+                  <i class="fas fa-play"></i> Execute Query (Ctrl+Enter)
+                </button>
+              </div>
+
+              <textarea id="sql-query-input" class="db-sql-textarea" placeholder="SELECT * FROM users ORDER BY id DESC LIMIT 20;"></textarea>
+
+              <div>
+                <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:6px; font-weight:700;">Query Templates:</div>
+                <div class="db-sql-presets">
+                  <button type="button" class="db-sql-preset-btn" onclick="setSqlQuery('SELECT * FROM users ORDER BY id DESC LIMIT 20;')">All Users</button>
+                  <button type="button" class="db-sql-preset-btn" onclick="setSqlQuery('SELECT * FROM projects ORDER BY created_at DESC;')">Recent Projects</button>
+                  <button type="button" class="db-sql-preset-btn" onclick="setSqlQuery('SELECT * FROM clients ORDER BY name ASC;')">Clients List</button>
+                  <button type="button" class="db-sql-preset-btn" onclick="setSqlQuery('SELECT * FROM tasks WHERE status=\'pending\' LIMIT 50;')">Pending Tasks</button>
+                  <button type="button" class="db-sql-preset-btn" onclick="setSqlQuery('SELECT * FROM payments ORDER BY id DESC LIMIT 20;')">Payments Log</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- SQL Query Results -->
+            <div class="db-sql-results-wrap">
+              <div style="padding:10px 16px; border-bottom:1px solid var(--border); background:rgba(255,255,255,0.02); display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.8rem; font-weight:800; color:var(--text-primary);" id="sql-results-meta">Query Results</span>
+                <button class="db-btn" id="export-sql-results-btn" style="display:none; padding:3px 8px; font-size:0.72rem;">
+                  <i class="fas fa-download"></i> Export Results
+                </button>
+              </div>
+              <div style="flex:1; overflow:auto;" id="sql-results-grid">
+                <div style="padding:40px; text-align:center; color:var(--text-muted); font-size:0.82rem;">
+                  Type a SQL query above and click <strong>Execute Query</strong> to view live records.
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Row Detail Inspector Modal -->
+  <div class="db-modal-overlay" id="row-detail-modal">
+    <div class="db-modal-card">
+      <div class="db-modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <i class="fas fa-file-lines" style="color:#3b82f6;"></i>
+          <span style="font-weight:800; font-family:var(--font-display); font-size:1rem; color:var(--text-primary);" id="modal-record-title">Record Inspector</span>
+        </div>
+        <button type="button" class="wa-icon-btn" id="close-row-modal-btn" style="width:30px; height:30px;">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="db-modal-body">
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
+          <button class="db-btn" id="copy-json-btn" style="font-size:0.72rem; padding:3px 8px;">
+            <i class="fas fa-copy"></i> Copy JSON
+          </button>
+        </div>
+        <table class="db-record-table">
+          <tbody id="modal-record-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script src="js/database_viewer.js"></script>
+</body>
+</html>

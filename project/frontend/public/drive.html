@@ -98,7 +98,7 @@
         }
 
         .action-btn {
-            background: rgba(0, 0, 0, 0.8);
+            background: #102a96;
             width: 32px;
             height: 32px;
             border-radius: 8px;
@@ -106,20 +106,33 @@
             align-items: center;
             justify-content: center;
             font-size: 0.9rem;
-            color: var(--text-primary);
+            color: #ffffff !important;
             cursor: pointer;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            transition: 0.2s;
+            border: 1.5px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 10px rgba(16, 42, 150, 0.25);
         }
 
         .action-btn:hover {
-            background: var(--accent-primary);
-            border-color: var(--text-primary);
-            scale: 1.1;
+            background: #2563eb;
+            color: #ffffff !important;
+            border-color: #ffffff;
+            transform: scale(1.1);
+        }
+
+        .action-btn.delete {
+            background: #ff6b00 !important;
+            color: #ffffff !important;
+            border: 1.5px solid rgba(255, 255, 255, 0.25) !important;
+            box-shadow: 0 4px 10px rgba(255, 107, 0, 0.35) !important;
         }
 
         .action-btn.delete:hover {
-            background: var(--accent-secondary);
+            background: #e65100 !important;
+            color: #ffffff !important;
+            border-color: #ffffff !important;
+            transform: scale(1.12) !important;
+            box-shadow: 0 6px 14px rgba(255, 107, 0, 0.5) !important;
         }
 
         .drive-breadcrumb {
@@ -285,6 +298,23 @@
             font-size: 1.2rem;
         }
 
+        .btn-text-sm {
+            background: none;
+            border: none;
+            color: var(--accent-primary);
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: all 0.15s ease;
+        }
+
+        .btn-text-sm:hover {
+            color: var(--text-primary);
+            text-decoration: underline;
+        }
+
         .form-label-premium {
             display: block;
             margin-bottom: 10px;
@@ -300,10 +330,9 @@
 
         .share-info-box {
             margin-bottom: 20px;
-            font-weight: 700;
-            color: var(--accent-primary);
-            background: rgba(16, 42, 150, 0.1);
-            padding: 12px;
+            background: rgba(16, 42, 150, 0.06);
+            border: 1.5px solid rgba(16, 42, 150, 0.12);
+            padding: 12px 14px;
             border-radius: 8px;
         }
 
@@ -317,11 +346,48 @@
         }
 
         .active-perms-list {
-            max-height: 180px;
+            max-height: 220px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 8px;
+        }
+
+        .perm-user-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
+            border: 1.5px solid rgba(16, 42, 150, 0.1);
+            padding: 10px 12px;
+            border-radius: 8px;
+            transition: all 0.15s ease;
+        }
+
+        .perm-user-item:hover {
+            border-color: rgba(16, 42, 150, 0.25);
+            box-shadow: 0 2px 8px rgba(16, 42, 150, 0.05);
+        }
+
+        .perm-revoke-btn {
+            background: rgba(239, 68, 68, 0.08);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 6px;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s ease;
+        }
+
+        .perm-revoke-btn:hover {
+            background: #ef4444;
+            color: #ffffff;
+            transform: scale(1.08);
         }
 
         .preview-modal-body {
@@ -384,69 +450,82 @@
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-logo">TECH TURF</div>
-                <div class="sidebar-logo-short">TT</div>
+                <div class="sidebar-logo-short"><img src="assets/techturf-logo.png" alt="TT" class="sidebar-logo-img-short" /></div>
             </div>
 
-            <nav class="sidebar-menu">
-                <div class="menu-item" data-nav="dashboard.html">
-                    <i class="fas fa-th-large"></i>
-                    <span class="menu-text">Dashboard</span>
-                </div>
-                <div class="menu-item" data-nav="projects.html">
-                    <i class="fas fa-project-diagram"></i>
-                    <span class="menu-text">Projects</span>
-                </div>
-                <div class="menu-item" data-nav="tasks.html">
-                    <i class="fas fa-tasks"></i>
-                    <span class="menu-text">Tasks</span>
-                </div>
-                <div class="menu-item" data-nav="submissions.html">
-                    <i class="fas fa-file-upload"></i>
-                    <span class="menu-text">Submissions</span>
-                </div>
-                <div class="menu-item" data-nav="clients.html">
-                    <i class="fas fa-user-tie"></i>
-                    <span class="menu-text">Clients</span>
-                </div>
-                <div class="menu-item" data-nav="announcements.html">
-                    <i class="fas fa-bullhorn"></i>
-                    <span class="menu-text">Announcements</span>
-                </div>
-                <div class="menu-item admin-only" data-nav="users.html">
-                    <i class="fas fa-users-cog"></i>
-                    <span class="menu-text">User Management</span>
-                </div>
-                <div class="menu-item active" data-nav="drive.html">
-                    <i class="fas fa-hdd"></i>
-                    <span class="menu-text">Secure Drive</span>
-                </div>
+            <nav class="sidebar-menu" id="main-sidebar-nav">
+        <div class="menu-item" data-nav="dashboard.html" onclick="window.location.href='dashboard.html'">
+          <i class="fas fa-th-large"></i><span class="menu-text">Dashboard</span>
+        </div>
+        <div class="menu-item" data-nav="projects.html" onclick="window.location.href='projects.html'">
+          <i class="fas fa-project-diagram"></i><span class="menu-text">Projects</span>
+        </div>
+        <div class="menu-item" data-nav="tasks.html" onclick="window.location.href='tasks.html'">
+          <i class="fas fa-tasks"></i><span class="menu-text">Tasks</span>
+        </div>
+        <div class="menu-item" data-nav="submissions.html" onclick="window.location.href='submissions.html'">
+          <i class="fas fa-file-upload"></i><span class="menu-text">Submissions</span>
+        </div>
+        <div class="menu-item" data-nav="clients.html" onclick="window.location.href='clients.html'">
+          <i class="fas fa-user-tie"></i><span class="menu-text">Clients</span>
+        </div>
+        <div class="menu-item" data-nav="announcements.html" onclick="window.location.href='announcements.html'">
+          <i class="fas fa-bullhorn"></i><span class="menu-text">Announcements</span>
+        </div>
+        <div class="menu-item" data-nav="drive.html" onclick="window.location.href='drive.html'">
+          <i class="fas fa-hdd"></i><span class="menu-text">Secure Drive</span>
+        </div>
+        <div class="menu-item" data-nav="messages.html" onclick="window.location.href='messages.html'">
+          <i class="fas fa-comments messenger-icon"></i><span class="menu-text">Team Messenger</span>
+        </div>
+        <div class="menu-item" data-nav="nexus_chat.html" onclick="window.location.href='nexus_chat.html'">
+          <i class="fas fa-robot nexus-icon"></i><span class="menu-text">Nexus AI Terminal</span>
+        </div>
 
-                <hr class="sidebar-hr-premium">
+        <hr class="sidebar-divider">
 
-                <div class="menu-item admin-only" id="dbadmin-link">
-                    <i class="fas fa-database"></i>
-                    <span class="menu-text">Database Viewer</span>
-                </div>
-                <div class="menu-item" id="tickets-link">
-                    <i class="fas fa-ticket-alt"></i>
-                    <span class="menu-text">Tickets</span>
-                </div>
-                <div class="menu-item admin-only" id="payments-link">
-                    <i class="fas fa-money-check-alt"></i>
-                    <span class="menu-text">Payments</span>
-                </div>
-                <div class="menu-item" id="courses-link">
-                    <i class="fas fa-graduation-cap"></i>
-                    <span class="menu-text">Learning Hub</span>
-                </div>
+        <!-- Role-Based Control Centers -->
+        <div class="sidebar-section admin-only">
+          <div class="sidebar-section-title">USER MANAGEMENT</div>
+          <div class="sidebar-submenu">
+            <div class="menu-item admin-only" data-nav="users.html" onclick="window.location.href='users.html'">
+              <i class="fas fa-users-cog"></i><span class="menu-text">User Management</span>
+            </div>
+            <div class="menu-item admin-only" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
+              <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
+            </div>
+          </div>
+        </div>
+        <div class="menu-item rnd-only" data-nav="nexus_lab.html" onclick="window.location.href='nexus_lab.html'">
+          <i class="fas fa-flask"></i><span class="menu-text">Nexus Lab</span>
+        </div>
+        <div class="menu-item handler-only" data-nav="client_connect.html" onclick="window.location.href='client_connect.html'">
+          <i class="fas fa-handshake"></i><span class="menu-text">Client Connect</span>
+        </div>
+        <div class="menu-item" data-nav="learning_hub.html" id="courses-link-global" onclick="window.location.href='learning_hub.html'">
+          <i class="fas fa-graduation-cap"></i><span class="menu-text">Learning Hub</span>
+        </div>
 
-                <hr class="sidebar-hr-premium">
+        <hr class="sidebar-divider">
+        
+        <div class="menu-item" data-nav="workspace.html" onclick="window.location.href='workspace.html'">
+          <i class="fas fa-paint-brush"></i><span class="menu-text">Creative Workspace</span>
+        </div>
+        
+        <div class="menu-item admin-only" data-nav="database_viewer.html" id="dbadmin-link" onclick="window.location.href='database_viewer.html'">
+          <i class="fas fa-database"></i><span class="menu-text">Database Viewer</span>
+        </div>
 
-                <div class="menu-item" data-nav="profile.html">
-                    <i class="fas fa-user-circle"></i>
-                    <span class="menu-text">My Profile</span>
-                </div>
-            </nav>
+        <div class="menu-item admin-only" data-nav="payments.html" id="payments-link" onclick="window.location.href='payments.html'">
+          <i class="fas fa-money-check-alt"></i><span class="menu-text">Payments</span>
+        </div>
+
+        <hr class="sidebar-divider">
+        
+        <div class="menu-item" data-nav="profile.html" onclick="window.location.href='profile.html'">
+          <i class="fas fa-user-circle"></i><span class="menu-text">My Profile</span>
+        </div>
+      </nav>
 
             <div class="sidebar-footer">
                 <div class="menu-item" id="logout-btn">
@@ -462,40 +541,37 @@
         </aside>
 
         <main class="main-content">
-            <header class="navbar">
-                <div class="nav-left">
-                    <button id="mobile-toggle" class="mobile-hamburger" title="Toggle Menu" aria-label="Toggle Menu"><i
-                            class="fas fa-bars"></i></button>
-                    <div class="nav-search">
-                        <i class="fas fa-search"></i>
-                        <input type="text" placeholder="Search files, folders...">
-                    </div>
-                </div>
+                  <header class="navbar">
+        <div class="nav-left">
+          <button id="mobile-toggle" class="mobile-hamburger"><i class="fas fa-bars"></i></button>
+          <div class="nav-search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search files, folders...">
+          </div>
+        </div>
+        <div class="nav-actions">
+          <div class="notification-bell" id="notification-bell">
+            <i class="fas fa-bell"></i>
+            <span class="notification-badge" id="notification-badge" style="display:none;">0</span>
+            <div class="notification-dropdown glass-card" id="notification-dropdown">
+              <div class="notification-header">
+                <span class="notification-title">Notifications</span>
+                <span class="notification-mark-read" onclick="markAllNotificationsRead()">Mark all read</span>
+              </div>
+              <div id="notification-list" class="notification-list-scroll"></div>
+            </div>
+          </div>
 
-                <div class="nav-actions">
-                    <div class="notification-bell" id="notification-bell">
-                        <i class="fas fa-bell"></i>
-                        <span class="notification-badge" id="notification-badge">0</span>
-                        <div class="notification-dropdown glass-card hidden" id="notification-dropdown">
-                            <div class="flex-between-mb12">
-                                <span class="font-bold">Notifications</span>
-                                <span class="text-accent-pointer-sm"
-                                    onclick="api.put('/notifications/read-all').then(loadNotifications)">Mark all
-                                    read</span>
-                            </div>
-                            <div id="notification-list" class="scroll-v-300"></div>
-                        </div>
-                    </div>
-
-                    <div class="user-profile-nav" data-nav="profile.html">
-                        <div class="text-right">
-                            <div id="nav-user-name" class="font-bold-9">User Name</div>
-                            <div id="nav-user-role" class="text-muted-7">Role</div>
-                        </div>
-                        <img id="nav-avatar" class="user-avatar" src="" alt="Avatar">
-                    </div>
-                </div>
-            </header>
+          <div class="user-profile-nav" data-nav="profile.html">
+            <div class="user-nav-text">
+              <div id="nav-user-name" class="user-nav-name">Admin</div>
+              <div id="nav-user-role" class="user-nav-role">Admin</div>
+            </div>
+            <img id="nav-avatar" class="user-avatar" src="" alt="Avatar" style="display:none;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+            <div class="avatar-fallback-badge" id="nav-avatar-badge">A</div>
+          </div>
+        </div>
+      </header>
 
             <div class="page-header">
                 <div>
@@ -507,7 +583,7 @@
                         <i class="fas fa-cloud-upload-alt"></i><span>Upload File</span>
                     </button>
                     <button class="btn-secondary"
-                        onclick="document.getElementById('folder-modal').style.display='flex'">
+                        onclick="openModal('folder-modal')">
                         <i class="fas fa-folder-plus"></i><span>New Folder</span>
                     </button>
                     <input type="file" id="file-upload-input" class="hidden" onchange="handleFileUpload(event)">
@@ -538,54 +614,65 @@
         </main>
     </div>
 
-    <!-- Modals -->
-    <div class="modal" id="folder-modal" onclick="if(event.target===this){this.style.display='none'}">
-        <div class="glass-card modal-content" onclick="event.stopPropagation()">
-            <div class="modal-header modal-header-premium">
-                <div class="modal-title modal-title-premium">
-                    CREATE FOLDER</div>
+    <!-- Folder Modal (Side Drawer) -->
+    <div class="modal modal-drawer" id="folder-modal" onclick="if(event.target===this) closeModal('folder-modal')">
+        <div class="modal-content side-drawer-panel" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">CREATE FOLDER</div>
                 <i class="fas fa-times close-modal" title="Close Modal" aria-label="Close Modal"
-                    onclick="document.getElementById('folder-modal').style.display='none'"></i>
+                    onclick="closeModal('folder-modal')"></i>
             </div>
             <form id="create-folder-form">
                 <div class="form-group">
-                    <label class="form-label-premium">FOLDER NAME</label>
+                    <label>FOLDER NAME</label>
                     <input type="text" class="form-control" id="folder-name" required placeholder="Enter folder name..."
                         title="Folder Name" aria-label="Folder Name">
                 </div>
-                <button type="submit" class="btn-primary form-btn-full">CREATE FOLDER</button>
+                <button type="submit" class="btn-primary btn-drawer-submit">CREATE FOLDER</button>
             </form>
         </div>
     </div>
 
-    <div class="modal" id="share-modal" onclick="if(event.target===this){this.style.display='none'}">
-        <div class="glass-card modal-content" onclick="event.stopPropagation()">
-            <div class="modal-header modal-header-premium">
-                <div class="modal-title modal-title-premium">
-                    SHARE ACCESS</div>
+    <!-- Share Modal (Side Drawer) -->
+    <div class="modal modal-drawer" id="share-modal" onclick="if(event.target===this) closeModal('share-modal')">
+        <div class="modal-content side-drawer-panel" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">SHARE ACCESS</div>
                 <i class="fas fa-times close-modal" title="Close Modal" aria-label="Close Modal"
-                    onclick="document.getElementById('share-modal').style.display='none'"></i>
+                    onclick="closeModal('share-modal')"></i>
             </div>
             <div id="share-item-info" class="share-info-box">
             </div>
             <form id="share-form">
                 <div class="form-group">
-                    <label class="form-label-premium">EMPLOYEE</label>
-                    <select class="form-control" id="share-user-id" required title="Select Employee"
-                        aria-label="Select Employee"></select>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <label style="margin:0; font-size:0.8rem; font-weight:700; color:var(--text-muted);">SELECT EMPLOYEES (<span id="selected-share-count">0</span>)</label>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button type="button" class="btn-text-sm" onclick="drive.selectAllUsers(true)">Select All</button>
+                            <span style="color:var(--text-muted); font-size:0.75rem;">|</span>
+                            <button type="button" class="btn-text-sm" onclick="drive.selectAllUsers(false)">Clear</button>
+                        </div>
+                    </div>
+                    <div style="position:relative; margin-bottom:8px;">
+                        <input type="text" id="share-member-search" class="form-control" placeholder="Search employees by name or role..." oninput="drive.filterUsers(this.value)" style="padding-left:34px; font-size:0.85rem;">
+                        <i class="fas fa-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.8rem;"></i>
+                    </div>
+                    <div id="share-members-container" class="team-members-container" style="max-height:220px; overflow-y:auto;"></div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label-premium">ACCESS LEVEL</label>
+                    <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:8px; display:block;">ACCESS LEVEL</label>
                     <select class="form-control" id="share-access-level" title="Access Level" aria-label="Access Level">
                         <option value="viewer">VIEWER (READ ONLY)</option>
                         <option value="editor">EDITOR (FULL ACCESS)</option>
                     </select>
                 </div>
-                <button type="submit" class="btn-primary form-btn-full">GRANT ACCESS</button>
+                <button type="submit" id="share-submit-btn" class="btn-primary btn-drawer-submit">GRANT ACCESS</button>
             </form>
-            <hr class="share-hr">
-            <div class="active-perms-header">
-                ACTIVE PERMISSIONS</div>
+            <hr class="sidebar-hr-premium" style="margin:24px 0 16px 0;">
+            <div class="active-perms-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <span>ACTIVE PERMISSIONS</span>
+                <span id="active-perms-count" class="badge badge-info" style="font-size:0.65rem;">0 users</span>
+            </div>
             <div id="current-permissions-list" class="active-perms-list"></div>
         </div>
     </div>

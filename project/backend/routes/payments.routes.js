@@ -62,6 +62,33 @@ router.get('/client/:clientId', verifyToken, (req, res) => {
   res.json(rows);
 });
 
+// Update a payment (status, amount, method, notes)
+router.put('/:id', verifyToken, (req, res) => {
+  const { id } = req.params;
+  const { status, amount, method, notes, payment_date } = req.body;
+  
+  try {
+    const fields = [];
+    const params = [];
+    if (status !== undefined) { fields.push('status = ?'); params.push(status); }
+    if (amount !== undefined) { fields.push('amount = ?'); params.push(amount); }
+    if (method !== undefined) { fields.push('method = ?'); params.push(method); }
+    if (notes !== undefined) { fields.push('notes = ?'); params.push(notes); }
+    if (payment_date !== undefined) { fields.push('payment_date = ?'); params.push(payment_date); }
+
+    if (fields.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    params.push(id);
+    db.prepare(`UPDATE payments SET ${fields.join(', ')} WHERE id = ?`).run(...params);
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Error updating payment:', e);
+    res.status(500).json({ error: 'Failed to update payment' });
+  }
+});
+
 // Delete a payment
 router.delete('/:id', verifyToken, (req, res) => {
   const { id } = req.params;

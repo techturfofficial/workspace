@@ -4,8 +4,8 @@ const { verifyToken, checkRole } = require('../auth');
 
 const BUILTIN_ROLE_NAMES = [
   'admin', 'team_leader', 'rnd', 'writer',
-  'designer', 'media_manager', 'creator', 'client_handler',
-  'frontend', 'backend', 'frontend_backend', 'production'
+  'designer', 'media_manager',
+  'frontend', 'backend', 'frontend_backend'
 ];
 
 function normalizeRoleName(value) {
@@ -61,7 +61,7 @@ router.get('/heatmap', verifyToken, checkRole('admin'), (req, res) => {
 // GET /api/admin/roles-summary
 router.get('/roles-summary', verifyToken, checkRole('admin'), (req, res) => {
   const summary = BUILTIN_ROLE_NAMES.map(r => {
-    const count = db.prepare('SELECT COUNT(*) as c FROM users WHERE role=?').get(r).c;
+    const count = db.prepare('SELECT COUNT(*) as c FROM users WHERE role=? AND is_active >= 0 AND name != "[Deleted User]" AND email NOT LIKE "deleted_%"').get(r).c;
     return { role: r, count };
   });
   res.json(summary);
@@ -69,9 +69,21 @@ router.get('/roles-summary', verifyToken, checkRole('admin'), (req, res) => {
 
 // GET /api/admin/roles-users
 router.get('/roles-users', verifyToken, checkRole('admin'), (req, res) => {
-  const result = BUILTIN_ROLE_NAMES.map(r => {
-    const users = db.prepare('SELECT id, name, email FROM users WHERE role=? ORDER BY name ASC').all(r);
-    return { role: r, count: users.length, users };
+  const customRoles = db.prepare('SELECT name FROM company_roles WHERE is_system=0').all().map(r => r.name);
+  const allRoles = Array.from(new Set([...BUILTIN_ROLE_NAMES, ...customRoles]));
+
+  const result = allRoles.map(r => {
+    const users = db.prepare(`
+      SELECT id, name, email, role, secondary_roles, avatar, is_active 
+      FROM users 
+      WHERE (role=? OR (',' || COALESCE(secondary_roles, '') || ',') LIKE ?)
+        AND is_active >= 0 
+        AND name != '[Deleted User]'
+        AND email NOT LIKE 'deleted_%'
+      ORDER BY is_active DESC, name ASC
+    `).all(r, `%,${r},%`);
+    const activeCount = users.filter(u => u.is_active === 1).length;
+    return { role: r, count: activeCount, total: users.length, users };
   });
   res.json(result);
 });

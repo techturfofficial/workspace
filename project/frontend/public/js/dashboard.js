@@ -76,7 +76,7 @@ async function loadMyTasks() {
             `;
             return;
         }
-        container.innerHTML = tasks.slice(0, 4).map(t => `
+        container.innerHTML = tasks.slice(0, 2).map(t => `
             <div class="dashboard-list-item">
                 <div>
                     <div class="item-title">${t.title}</div>
@@ -105,7 +105,7 @@ async function loadProjectProgress() {
             `;
             return;
         }
-        container.innerHTML = projects.slice(0, 3).map(p => {
+        container.innerHTML = projects.slice(0, 2).map(p => {
             const pct = p.task_count > 0 ? Math.round((p.completed_tasks / p.task_count) * 100) : 0;
             const color = pct > 80 ? 'var(--accent-green)' : pct > 50 ? 'var(--accent-orange)' : 'var(--accent-secondary)';
             return `
@@ -231,55 +231,239 @@ async function loadAnnouncements() {
     }
 }
 
+function draw3DIsometricBarChart(canvas, users, hoveredIndex = -1) {
+    if (!canvas || !users || users.length === 0) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width || canvas.parentElement?.clientWidth || 560;
+    const height = rect.height || 380;
+
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.scale(dpr, dpr);
+
+    ctx.clearRect(0, 0, width, height);
+
+    const N = Math.min(users.length, 4);
+    const displayedUsers = users.slice(0, N);
+    const maxPoints = Math.max(...displayedUsers.map(u => u.points || 0), 10);
+
+    const colWidth = width / N;
+    const prismWidth = Math.min(68, Math.max(38, colWidth * 0.48));
+    const dy = prismWidth * 0.28; // Isometric tilt depth
+    const topMargin = 58; // Space for score text
+    const bottomMargin = 96; // Space for pill badge + subtitle
+    const availableHeight = height - topMargin - bottomMargin;
+    const baseY = height - bottomMargin;
+
+    displayedUsers.forEach((u, i) => {
+        const cx = colWidth * (i + 0.5);
+        const points = u.points || 0;
+        const ratio = maxPoints > 0 ? (points / maxPoints) : 0;
+        // Base pedestal height + proportional height
+        const pillarHeight = 36 + ratio * (availableHeight - 36);
+        const topY = baseY - pillarHeight;
+
+        const isHovered = (hoveredIndex === i);
+        const isOrange = (i % 2 === 1); // Criss-cross alternating: 0=Dark Blue, 1=Orange, 2=Dark Blue, 3=Orange
+
+        let topGrad, leftGrad, rightGrad, glowColor, textColor, pillBg, strokeLight;
+
+        if (!isOrange) {
+            // Tech Turf Dark Blue Theme
+            topGrad = ctx.createLinearGradient(cx - prismWidth / 2, topY - dy, cx + prismWidth / 2, topY + dy);
+            topGrad.addColorStop(0, '#60a5fa');
+            topGrad.addColorStop(1, '#2563eb');
+
+            leftGrad = ctx.createLinearGradient(cx - prismWidth / 2, topY, cx, baseY + dy);
+            leftGrad.addColorStop(0, isHovered ? '#3b82f6' : '#2563eb');
+            leftGrad.addColorStop(0.5, isHovered ? '#2563eb' : '#1d4ed8');
+            leftGrad.addColorStop(1, '#102a96');
+
+            rightGrad = ctx.createLinearGradient(cx, topY + dy, cx + prismWidth / 2, baseY);
+            rightGrad.addColorStop(0, '#1d4ed8');
+            rightGrad.addColorStop(1, '#091a61');
+
+            glowColor = 'rgba(16, 42, 150, 0.45)';
+            textColor = '#102a96';
+            pillBg = '#102a96';
+            strokeLight = '#93c5fd';
+        } else {
+            // Tech Turf Electric Orange Theme
+            topGrad = ctx.createLinearGradient(cx - prismWidth / 2, topY - dy, cx + prismWidth / 2, topY + dy);
+            topGrad.addColorStop(0, '#ffb066');
+            topGrad.addColorStop(1, '#ff6b00');
+
+            leftGrad = ctx.createLinearGradient(cx - prismWidth / 2, topY, cx, baseY + dy);
+            leftGrad.addColorStop(0, isHovered ? '#ffa14d' : '#ff8f3d');
+            leftGrad.addColorStop(0.5, isHovered ? '#ff7714' : '#ff6b00');
+            leftGrad.addColorStop(1, '#d95700');
+
+            rightGrad = ctx.createLinearGradient(cx, topY + dy, cx + prismWidth / 2, baseY);
+            rightGrad.addColorStop(0, '#ea580c');
+            rightGrad.addColorStop(1, '#8c3300');
+
+            glowColor = 'rgba(255, 107, 0, 0.45)';
+            textColor = '#ea580c';
+            pillBg = '#ff6b00';
+            strokeLight = '#ffd0a6';
+        }
+
+        // 1. Subtle soft pedestal shadow under the column
+        ctx.save();
+        ctx.beginPath();
+        ctx.ellipse(cx, baseY + dy + 8, prismWidth * 0.65, 8, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.08)';
+        ctx.fill();
+        ctx.restore();
+
+        // 2. Left Front Face (Parallelogram)
+        ctx.save();
+        if (isHovered) {
+            ctx.shadowColor = glowColor;
+            ctx.shadowBlur = 18;
+        }
+        ctx.beginPath();
+        ctx.moveTo(cx - prismWidth / 2, topY);
+        ctx.lineTo(cx, topY + dy);
+        ctx.lineTo(cx, baseY + dy);
+        ctx.lineTo(cx - prismWidth / 2, baseY);
+        ctx.closePath();
+        ctx.fillStyle = leftGrad;
+        ctx.fill();
+        ctx.restore();
+
+        // 3. Right Front Face (Parallelogram)
+        ctx.beginPath();
+        ctx.moveTo(cx, topY + dy);
+        ctx.lineTo(cx + prismWidth / 2, topY);
+        ctx.lineTo(cx + prismWidth / 2, baseY);
+        ctx.lineTo(cx, baseY + dy);
+        ctx.closePath();
+        ctx.fillStyle = rightGrad;
+        ctx.fill();
+
+        // 4. Top Diamond Facet (Isometric Cap)
+        ctx.beginPath();
+        ctx.moveTo(cx, topY - dy);
+        ctx.lineTo(cx + prismWidth / 2, topY);
+        ctx.lineTo(cx, topY + dy);
+        ctx.lineTo(cx - prismWidth / 2, topY);
+        ctx.closePath();
+        ctx.fillStyle = topGrad;
+        ctx.fill();
+        ctx.strokeStyle = strokeLight;
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
+        // 5. Vertical Center Seam Highlight
+        ctx.beginPath();
+        ctx.moveTo(cx, topY + dy);
+        ctx.lineTo(cx, baseY + dy);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // 6. Top Value Floating Number
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.font = '900 22px "Rajdhani", "Orbitron", sans-serif';
+        ctx.fillStyle = textColor;
+        ctx.shadowColor = glowColor;
+        ctx.shadowBlur = isHovered ? 12 : 6;
+        ctx.fillText(`${points}`, cx, topY - dy - 14);
+
+        ctx.font = '700 11px "Rajdhani", sans-serif';
+        ctx.fillStyle = '#64748b';
+        ctx.shadowBlur = 0;
+        ctx.fillText('PTS', cx, topY - dy - 2);
+        ctx.restore();
+
+        // 7. Bottom Pill Badge (Name)
+        const pillWidth = Math.min(colWidth - 10, 114);
+        const pillHeight = 28;
+        const pillX = cx - pillWidth / 2;
+        const pillY = baseY + dy + 16;
+        const pillRadius = 14;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(pillX, pillY, pillWidth, pillHeight, pillRadius);
+        ctx.fillStyle = pillBg;
+        ctx.shadowColor = glowColor;
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetY = 4;
+        ctx.fill();
+        ctx.restore();
+
+        // Text inside Pill
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = '700 11px "Rajdhani", "Inter", sans-serif';
+        ctx.fillStyle = '#ffffff';
+        let displayName = u.name || `User ${i + 1}`;
+        if (displayName.length > 12) displayName = displayName.slice(0, 11) + '…';
+        ctx.fillText(displayName, cx, pillY + pillHeight / 2);
+        ctx.restore();
+
+        // 8. Subtext (Role & Rank)
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.font = '700 10.5px "Rajdhani", sans-serif';
+        ctx.fillStyle = '#1e293b';
+        const roleStr = (u.role || 'Member').toUpperCase();
+        ctx.fillText(roleStr.length > 14 ? roleStr.slice(0, 13) + '…' : roleStr, cx, pillY + pillHeight + 15);
+
+        ctx.font = '700 9.5px "JetBrains Mono", monospace';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText(`RANK #0${i + 1}`, cx, pillY + pillHeight + 28);
+        ctx.restore();
+    });
+}
+
 async function loadTopPerformers() {
-    const container = document.getElementById('dash-performers-list');
-    if (!container) return;
+    const chartCanvas = document.getElementById('top-performers-chart');
+    if (!chartCanvas) return;
     try {
         const users = await api.get('/users');
         if (!users) return;
         const sorted = users.sort((a, b) => b.points - a.points).slice(0, 4);
+        window.topPerformersData = sorted;
 
-        // Render chart if canvas exists and Chart.js is loaded
-        const chartCanvas = document.getElementById('top-performers-chart');
-        if (chartCanvas && window.Chart) {
-            new Chart(chartCanvas, {
-                type: 'bar',
-                data: {
-                    labels: sorted.map(u => u.name),
-                    datasets: [{
-                        label: 'Points',
-                        data: sorted.map(u => u.points),
-                        backgroundColor: '#102a96',
-                        borderRadius: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true } }
-                }
+        // Draw 3D Isometric Bar Chart
+        draw3DIsometricBarChart(chartCanvas, sorted);
+
+        // Attach interactive mouse move listener for hover effects
+        if (!chartCanvas.dataset.hoverAttached) {
+            chartCanvas.dataset.hoverAttached = 'true';
+            chartCanvas.addEventListener('mousemove', (e) => {
+                const rect = chartCanvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const N = Math.min(window.topPerformersData?.length || 4, 4);
+                const colWidth = rect.width / N;
+                const hoveredIdx = Math.floor(mouseX / colWidth);
+                draw3DIsometricBarChart(chartCanvas, window.topPerformersData, hoveredIdx);
+            });
+
+            chartCanvas.addEventListener('mouseleave', () => {
+                draw3DIsometricBarChart(chartCanvas, window.topPerformersData, -1);
             });
         }
-
-        if (sorted.length === 0) {
-            container.innerHTML = '<div class="empty-state">No performers yet</div>';
-        } else {
-            container.innerHTML = sorted.map((u, i) => `
-                <div class="performer-item">
-                    <div class="performer-rank">0${i + 1}</div>
-                    <img src="${window.getInitialsAvatar ? getInitialsAvatar(u.name, 32) : ''}" class="performer-avatar" style="border:2px solid ${window.getRoleColor ? getRoleColor(u.role) : '#ccc'};">
-                    <div class="performer-info">
-                        <div class="performer-name">${u.name}</div>
-                        <div class="performer-role">${window.formatRole ? formatRole(u.role) : u.role}</div>
-                    </div>
-                    <div class="performer-score">${u.points}</div>
-                </div>
-            `).join('');
-        }
     } catch (e) {
-        container.innerHTML = '<div class="error-text">Error loading performers</div>';
+        console.error('Error loading performers 3D graph:', e);
     }
 }
+
+// Window resize handler for crisp 3D isometric chart scaling
+window.addEventListener('resize', () => {
+    const canvas = document.getElementById('top-performers-chart');
+    if (canvas && window.topPerformersData) {
+        draw3DIsometricBarChart(canvas, window.topPerformersData);
+    }
+});
 
 // --- ADMIN MODULES ---
 
@@ -417,115 +601,7 @@ function setupCustomReport() {
 // Export to window
 async function loadRoleHub() {
     const container = document.getElementById('role-hub-injection');
-    const user = auth.getUser();
-    if (!container || !user) return;
-
-    const hubs = {
-        'admin': {
-            title: 'ADMIN WARP CENTER',
-            desc: 'Audit temporal snapshots, perform system rollbacks, and manage role architectures.',
-            icon: 'fa-shield-alt',
-            color: 'var(--accent-primary)',
-            url: 'admin_control.html'
-        },
-        'team_leader': {
-            title: 'OPERATION HQ',
-            desc: 'Predict delivery curves with Nexus Forecasting and redistribute team resources.',
-            icon: 'fa-rocket',
-            color: 'var(--accent-orange)',
-            url: 'operation_hq.html'
-        },
-        'rnd': {
-            title: 'NEXUS LAB',
-            desc: 'Conduct sandboxed experiments and archive peer-reviewed research papers.',
-            icon: 'fa-flask',
-            color: 'var(--accent-secondary)',
-            url: 'nexus_lab.html'
-        },
-        'writer': {
-            title: 'CONTENT FORGE',
-            desc: 'Draft structural outlines with Nexus AI and analyze stylistic tone alignment.',
-            icon: 'fa-feather-alt',
-            color: 'var(--accent-primary)',
-            url: 'content_forge.html'
-        },
-        'designer': {
-            title: 'DESIGN VAULT',
-            desc: 'Access the Asset Galaxy and validate color-palette branding consistency.',
-            icon: 'fa-paint-brush',
-            color: 'var(--accent-primary)',
-            url: 'design_vault.html'
-        },
-        'media_manager': {
-            title: 'BROADCAST HUB',
-            desc: 'Schedule platform transmissions and optimize assets via the Transcode Engine.',
-            icon: 'fa-broadcast-tower',
-            color: 'var(--accent-orange)',
-            url: 'broadcasting.html'
-        },
-        'creator': {
-            title: 'CREATOR SLATE',
-            desc: 'Manage production calendars, gear inventory, and generate AI-driven clips.',
-            icon: 'fa-film',
-            color: 'var(--accent-secondary)',
-            url: 'creator_slate.html'
-        },
-        'client_handler': {
-            title: 'CLIENT CONNECT',
-            desc: 'Generate secure Portal Passes and monitor client rapport via Nexus Pulse.',
-            icon: 'fa-handshake',
-            color: 'var(--accent-primary)',
-            url: 'client_connect.html'
-        },
-        'frontend': {
-            title: 'DESIGN VAULT',
-            desc: 'Coordinate UI assets, style systems, and front-end delivery tasks.',
-            icon: 'fa-code',
-            color: 'var(--accent-primary)',
-            url: 'design_vault.html'
-        },
-        'backend': {
-            title: 'OPERATION HQ',
-            desc: 'Track API-facing execution work, delivery constraints, and implementation flow.',
-            icon: 'fa-server',
-            color: 'var(--accent-orange)',
-            url: 'operation_hq.html'
-        },
-        'frontend_backend': {
-            title: 'WORKSPACE BRIDGE',
-            desc: 'Run cross-stack execution across interface polish and service integration tasks.',
-            icon: 'fa-layer-group',
-            color: 'var(--accent-secondary)',
-            url: 'workspace.html'
-        },
-        'production': {
-            title: 'CREATOR SLATE',
-            desc: 'Drive production schedules, event timelines, and content shipment readiness.',
-            icon: 'fa-clapperboard',
-            color: 'var(--accent-orange)',
-            url: 'creator_slate.html'
-        }
-    };
-
-    const hub = hubs[user.role];
-    if (!hub) return;
-
-    container.innerHTML = `
-        <div class="glass-card anim-fade-up" style="padding:24px; margin-bottom:24px; border-left:2px solid ${hub.color}; background:rgba(255,255,255,0.04); display:flex; align-items:center; justify-content:space-between; gap:20px;">
-            <div style="display:flex; align-items:center; gap:20px;">
-                <div style="width:60px; height:60px; border-radius:12px; background:${hub.color}18; border:2px solid ${hub.color}33; display:flex; align-items:center; justify-content:center; font-size:1.8rem; color:${hub.color};">
-                    <i class="fas ${hub.icon}"></i>
-                </div>
-                <div>
-                    <div style="font-family:var(--font-display); font-weight:900; font-size:1.1rem; color:var(--text-primary); letter-spacing:1px; margin-bottom:4px;">${hub.title}</div>
-                    <div style="font-size:0.85rem; color:var(--text-secondary); max-width:600px;">${hub.desc}</div>
-                </div>
-            </div>
-            <button class="btn-primary" style="background:${hub.color}; box-shadow:0 8px 30px ${hub.color}44;" onclick="loadPage('${hub.url}')">
-                GO TO WORKSPACE <i class="fas fa-arrow-right" style="margin-left:8px;"></i>
-            </button>
-        </div>
-    `;
+    if (container) container.innerHTML = '';
 }
 
 window.initDashboard = initDashboard;
@@ -573,13 +649,13 @@ async function loadKpiMetrics() {
             }
         } catch (e) {
             console.warn('Failed to fetch payments for revenue KPI:', e);
-            totalRevenue = 42850; // default backup mockup value
+            totalRevenue = 0;
         }
 
-        // Format revenue nicely
-        const formattedRevenue = new Intl.NumberFormat('en-US', {
+        // Format revenue nicely in Rupees (INR)
+        const formattedRevenue = new Intl.NumberFormat('en-IN', {
             style: 'currency',
-            currency: 'USD',
+            currency: 'INR',
             maximumFractionDigits: 0
         }).format(totalRevenue);
 
@@ -603,7 +679,7 @@ async function loadKpiMetrics() {
                     <span class="kpi-card-title">Revenue</span>
                     <span class="kpi-card-value">${formattedRevenue}</span>
                 </div>
-                <i class="fas fa-dollar-sign kpi-card-icon"></i>
+                <i class="fas fa-rupee-sign kpi-card-icon"></i>
             </div>
             <div class="kpi-card purple">
                 <div class="kpi-card-info">

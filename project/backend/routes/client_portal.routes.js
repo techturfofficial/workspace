@@ -28,32 +28,42 @@ const clientLoginLimiter = rateLimit({
 // so the thread is visible in Employee Portal Team Messenger.
 function getOrCreateClientConversation(clientId) {
   let conversation = db.prepare('SELECT id FROM conversations WHERE client_id = ? LIMIT 1').get(clientId);
-  if (conversation) return conversation.id;
+  let conversationId;
+  
+  if (!conversation) {
+    let client = db.prepare('SELECT team_leader_id FROM clients WHERE id = ?').get(clientId);
+    let leaderId = client?.team_leader_id;
+    if (!leaderId) {
+      const project = db.prepare('SELECT team_leader_id FROM projects WHERE client_id = ? AND team_leader_id IS NOT NULL LIMIT 1').get(clientId);
+      leaderId = project?.team_leader_id;
+    }
+    if (!leaderId) {
+      const fallback = db.prepare("SELECT id FROM users WHERE role = 'admin' OR role = 'client_handler' LIMIT 1").get();
+      leaderId = fallback?.id;
+    }
+    if (!leaderId) throw new Error('No team leader or handler available to message');
 
-  let client = db.prepare('SELECT team_leader_id FROM clients WHERE id = ?').get(clientId);
-  let leaderId = client?.team_leader_id;
-  if (!leaderId) {
-    const project = db.prepare('SELECT team_leader_id FROM projects WHERE client_id = ? AND team_leader_id IS NOT NULL LIMIT 1').get(clientId);
-    leaderId = project?.team_leader_id;
+    const result = db.prepare('INSERT INTO conversations (title, is_group, client_id) VALUES (?, 0, ?)')
+      .run('Client Chat Thread', clientId);
+    conversationId = result.lastInsertRowid;
+  } else {
+    conversationId = conversation.id;
   }
-  if (!leaderId) {
-    const fallback = db.prepare("SELECT id FROM users WHERE role = 'admin' OR role = 'client_handler' LIMIT 1").get();
-    leaderId = fallback?.id;
-  }
 
-  if (!leaderId) throw new Error('No team leader or handler available to message');
-
-  const result = db.prepare('INSERT INTO conversations (title, is_group, client_id) VALUES (?, 0, ?)')
-    .run('Client Chat Thread', clientId);
-  const conversationId = result.lastInsertRowid;
-
-  // Collect all staff who should see this client thread
+  // Always collect and sync all staff (admins, project members, leaders) who should see this client thread
   const participantIds = new Set();
-  participantIds.add(leaderId);
-
+  
   // Add admin users so they always have visibility
   const admins = db.prepare("SELECT id FROM users WHERE role = 'admin' AND is_active = 1").all();
   admins.forEach(a => participantIds.add(a.id));
+
+  // Add client handler role users
+  const handlers = db.prepare("SELECT id FROM users WHERE role = 'client_handler' AND is_active = 1").all();
+  handlers.forEach(h => participantIds.add(h.id));
+
+  // Add assigned client team leader if set
+  let client = db.prepare('SELECT team_leader_id FROM clients WHERE id = ?').get(clientId);
+  if (client?.team_leader_id) participantIds.add(client.team_leader_id);
 
   // Add project members assigned to this client's projects
   const projectMembers = db.prepare(`
@@ -80,21 +90,16 @@ function getOrCreateClientConversation(clientId) {
 
 // POST /api/client-portal/login
 router.post('/login', clientLoginLimiter, async (req, res) => {
-  const { client_login_id, password } = req.body;
-  if (!client_login_id || !password) {
-    return res.status(400).json({ message: 'Client Login ID and password required' });
+  const { client_login_id } = req.body;
+  if (!client_login_id) {
+    return res.status(400).json({ message: 'Client Access ID required' });
   }
 
   try {
     let client = db.prepare('SELECT * FROM clients WHERE client_login_id = ? AND is_active = 1').get(String(client_login_id).trim());
 
     if (!client) {
-      return res.status(401).json({ message: 'No clients found in database or invalid login ID' });
-    }
-
-    const valid = client.password_hash && await comparePassword(password, client.password_hash);
-    if (!valid) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: 'No client found in database matching this Client Access ID' });
     }
 
     db.prepare('UPDATE clients SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?').run(client.id);

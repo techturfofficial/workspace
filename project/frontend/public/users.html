@@ -19,29 +19,88 @@
     .users-table-wrap {
       padding: 0 24px 24px;
     }
+    .users-table-wrap {
+      background: transparent;
+      padding: 0;
+      overflow-x: auto;
+    }
     .users-table {
       width: 100%;
-      border-collapse: collapse;
-      background: var(--bg-glass);
-      border-radius: var(--radius);
-      overflow: hidden;
-      border:  2px solid var(--border);
+      border-collapse: separate;
+      border-spacing: 0 10px;
+      background: transparent;
+      border: none;
     }
-    .users-table th {
-      text-align: left;
-      padding: 16px;
-      background: #ffffff;
+    .users-table thead th {
+      padding: 12px 16px;
       font-family: var(--font-display);
       font-size: 0.75rem;
-      font-weight: 700;
-      color: var(--text-muted);
+      font-weight: 800;
+      color: #ffffff;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 0.8px;
+      background: linear-gradient(135deg, #f97316, #ea580c);
+      border: none;
+      text-align: center;
     }
-    .users-table td {
-      padding: 16px;
-      border-bottom:  2px solid var(--border);
+    .users-table thead th:first-child,
+    .users-table thead th:first-of-type {
+      text-align: left;
+      border-radius: 14px 0 0 14px !important;
+      border-top-left-radius: 14px !important;
+      border-bottom-left-radius: 14px !important;
+      padding-left: 20px;
+      width: 260px;
+    }
+    .users-table thead th:last-child,
+    .users-table thead th:last-of-type {
+      border-radius: 0 14px 14px 0 !important;
+      border-top-right-radius: 14px !important;
+      border-bottom-right-radius: 14px !important;
+      padding-right: 20px;
+    }
+    .users-table thead tr {
+      box-shadow: 0 4px 14px rgba(249, 115, 22, 0.25);
+      border-radius: 12px;
+    }
+    .users-table tbody tr {
+      background: #ffffff;
+      box-shadow: 0 2px 8px rgba(16, 42, 150, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+      border-radius: 14px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+    .users-table tbody tr:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(16, 42, 150, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+    }
+    .users-table tbody td {
+      padding: 14px 16px;
+      background: #f8fafc;
       font-size: 0.85rem;
+      vertical-align: middle;
+      text-align: center;
+      border-top: 1px solid rgba(16, 42, 150, 0.06);
+      border-bottom: 1px solid rgba(16, 42, 150, 0.06);
+      border-right: 1.5px solid rgba(16, 42, 150, 0.06);
+    }
+    /* First column rounded left cap with solid card highlight */
+    .users-table tbody td:first-child,
+    .users-table tbody td:first-of-type {
+      border-radius: 14px 0 0 14px !important;
+      border-top-left-radius: 14px !important;
+      border-bottom-left-radius: 14px !important;
+      border-left: 1px solid rgba(16, 42, 150, 0.06);
+      background: #ffffff;
+      text-align: left;
+    }
+    /* Last column rounded right cap */
+    .users-table tbody td:last-child,
+    .users-table tbody td:last-of-type {
+      border-radius: 0 14px 14px 0 !important;
+      border-top-right-radius: 14px !important;
+      border-bottom-right-radius: 14px !important;
+      border-right: 1px solid rgba(16, 42, 150, 0.06);
     }
     .user-cell {
       display: flex;
@@ -49,21 +108,68 @@
       gap: 12px;
     }
     .user-avatar-img {
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      flex-shrink: 0;
     }
     .user-name-text {
-      font-weight: 700;
+      font-weight: 800;
+      font-size: 0.88rem;
+      color: var(--text-primary, #0f172a);
+      line-height: 1.2;
     }
     .user-email-text {
       font-size: 0.7rem;
-      color: var(--text-muted);
+      color: var(--text-muted, #64748b);
+      margin-top: 2px;
+      font-family: var(--font-mono);
     }
     .points-cell {
       font-family: var(--font-mono);
-      font-weight: 700;
+      font-weight: 800;
+      font-size: 0.95rem;
       color: var(--accent-primary);
+    }
+    .table-role-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      background: rgba(16, 42, 150, 0.07);
+      color: var(--accent-primary, #102a96);
+      border: 1px solid rgba(16, 42, 150, 0.16);
+      box-shadow: 0 1px 3px rgba(16, 42, 150, 0.05);
+      white-space: nowrap;
+    }
+    .table-sec-badge {
+      font-size: 0.6rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: #ffffff;
+      color: var(--text-muted);
+      border: 1px solid rgba(16, 42, 150, 0.12);
+      white-space: nowrap;
+    }
+    .table-actions-cell {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      justify-content: center;
+    }
+    .table-actions-cell i {
+      font-size: 0.9rem;
+      transition: transform 0.15s ease, color 0.15s ease;
+      cursor: pointer;
+    }
+    .table-actions-cell i:hover {
+      transform: scale(1.2);
     }
 
     .users-admin-grid {
@@ -81,15 +187,23 @@
     }
 
     .role-accordion {
-      margin-bottom: 10px;
-      border-radius: 10px;
+      margin-bottom: 12px;
+      border-radius: 12px;
       overflow: hidden;
-      border: 1px solid var(--border);
-      transition: border-color 0.25s;
+      border: 1.5px solid rgba(16, 42, 150, 0.14);
+      background: #ffffff;
+      box-shadow: 0 2px 8px rgba(16, 42, 150, 0.04);
+      transition: all 0.25s ease;
+    }
+
+    .role-accordion:hover {
+      border-color: rgba(16, 42, 150, 0.35);
+      box-shadow: 0 4px 14px rgba(16, 42, 150, 0.08);
     }
 
     .role-accordion.active {
-      border-color: var(--accent-primary);
+      border-color: var(--accent-primary, #102a96);
+      box-shadow: 0 4px 16px rgba(16, 42, 150, 0.12);
     }
 
     .role-acc-header {
@@ -97,8 +211,8 @@
       justify-content: space-between;
       align-items: center;
       padding: 14px 16px;
-      background: rgba(255, 255, 255, 0.03);
-      border-left: 4px solid var(--accent-primary);
+      background: #ffffff;
+      border-left: 4px solid var(--accent-primary, #102a96);
       cursor: pointer;
       -webkit-user-select: none;
       user-select: none;
@@ -106,21 +220,25 @@
     }
 
     .role-acc-header:hover {
-      background: rgba(255, 255, 255, 0.07);
+      background: rgba(16, 42, 150, 0.04);
     }
 
     .role-acc-name {
       font-weight: 900;
       font-family: var(--font-display);
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.6px;
+      color: var(--accent-primary, #102a96) !important;
     }
 
     .role-acc-count {
-      font-size: 0.65rem;
-      color: var(--text-muted);
-      margin-top: 2px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--text-muted, #64748b);
+      margin-top: 3px;
+      font-family: var(--font-mono);
+      letter-spacing: 0.4px;
     }
 
     .role-acc-right {
@@ -130,13 +248,14 @@
     }
 
     .role-acc-icon {
-      opacity: 0.3;
-      font-size: 0.9rem;
+      color: var(--accent-primary, #102a96) !important;
+      opacity: 0.75;
+      font-size: 0.95rem;
     }
 
     .role-acc-chevron {
-      font-size: 0.75rem;
-      color: var(--text-muted);
+      font-size: 0.78rem;
+      color: var(--accent-primary, #102a96) !important;
       transition: transform 0.3s ease;
     }
 
@@ -148,7 +267,7 @@
       max-height: 0;
       overflow: hidden;
       transition: max-height 0.35s ease, padding 0.2s;
-      background: rgba(0, 0, 0, 0.15);
+      background: #f8fafc;
     }
 
     .role-acc-body.open {
@@ -159,50 +278,298 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 10px 16px;
-      border-top: 1px solid var(--border);
+      padding: 11px 16px;
+      border-top: 1px solid rgba(16, 42, 150, 0.08);
       transition: background 0.15s;
+      cursor: pointer;
     }
 
     .role-acc-user:hover {
-      background: rgba(255, 255, 255, 0.04);
+      background: rgba(16, 42, 150, 0.06);
     }
 
     .role-acc-avatar {
-      width: 30px;
-      height: 30px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
-      background: var(--accent-primary);
-      color: #fff;
+      background: linear-gradient(135deg, #102a96, #2563eb);
+      color: #ffffff;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 900;
-      font-size: 0.7rem;
+      font-size: 0.75rem;
       font-family: var(--font-display);
       flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(16, 42, 150, 0.2);
     }
 
     .role-acc-uname {
-      font-size: 0.78rem;
+      font-size: 0.82rem;
       font-weight: 700;
+      color: var(--text-primary, #0f172a);
     }
 
     .role-acc-email {
-      font-size: 0.65rem;
-      color: var(--text-muted);
+      font-size: 0.68rem;
+      color: var(--text-muted, #64748b);
       font-family: var(--font-mono);
     }
 
     .role-acc-empty {
       padding: 14px 16px;
-      font-size: 0.72rem;
-      color: var(--text-muted);
+      font-size: 0.74rem;
+      color: var(--text-muted, #64748b);
       font-family: var(--font-mono);
-      border-top: 1px solid var(--border);
+      border-top: 1px solid rgba(16, 42, 150, 0.08);
       display: flex;
       align-items: center;
       gap: 8px;
+    }
+
+    /* Modern Side Drawer User Styles */
+    .user-drawer-card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      background: rgba(16, 42, 150, 0.05);
+      border: 1.5px solid rgba(16, 42, 150, 0.12);
+      border-radius: 12px;
+    }
+
+    .user-drawer-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--accent-primary, #102a96);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 1.1rem;
+      font-family: var(--font-display);
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(16, 42, 150, 0.18);
+      transition: all 0.25s ease;
+    }
+
+    .user-drawer-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .user-drawer-name {
+      font-weight: 800;
+      font-size: 0.98rem;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .user-drawer-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .form-label-modern {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .modal.modal-drawer .input-wrapper-icon {
+      position: relative;
+    }
+
+    .modal.modal-drawer .input-wrapper-icon i {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .modal.modal-drawer .input-wrapper-icon .form-control {
+      padding-left: 42px !important;
+    }
+
+    /* Primary Custom Select */
+    .custom-select-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .custom-select-wrap i.select-icon-left {
+      position: absolute;
+      left: 14px;
+      color: var(--accent-primary, #102a96);
+      font-size: 0.95rem;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .modal.modal-drawer .custom-select-wrap select.form-control {
+      padding-left: 42px !important;
+      padding-right: 36px !important;
+      height: 46px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      background-color: #ffffff;
+      border: 1.5px solid rgba(16, 42, 150, 0.16);
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23102a96'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 18px;
+      transition: all 0.2s ease;
+    }
+
+    .modal.modal-drawer .custom-select-wrap select.form-control:focus {
+      border-color: var(--accent-primary, #102a96);
+      box-shadow: 0 0 0 3px rgba(16, 42, 150, 0.12);
+    }
+
+    /* Secondary Roles Multi-Select Badge Matrix */
+    .secondary-roles-box {
+      background: #f8fafc;
+      border: 1.5px solid rgba(16, 42, 150, 0.14);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .secondary-roles-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 6px;
+      border-bottom: 1px dashed rgba(16, 42, 150, 0.15);
+    }
+
+    .secondary-roles-count {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .secondary-roles-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn-badge-action {
+      background: none;
+      border: none;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--accent-primary, #102a96);
+      cursor: pointer;
+      padding: 2px 4px;
+      transition: opacity 0.15s;
+    }
+
+    .btn-badge-action:hover {
+      text-decoration: underline;
+    }
+
+    .secondary-roles-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      max-height: 210px;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+
+    .sec-role-pill {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: #ffffff;
+      border: 1.5px solid rgba(16, 42, 150, 0.12);
+      cursor: pointer;
+      user-select: none;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .sec-role-pill:hover {
+      border-color: rgba(16, 42, 150, 0.35);
+      background: rgba(16, 42, 150, 0.03);
+    }
+
+    .sec-role-pill.active {
+      background: rgba(16, 42, 150, 0.08);
+      border-color: var(--accent-primary, #102a96);
+      color: var(--accent-primary, #102a96);
+      box-shadow: 0 2px 6px rgba(16, 42, 150, 0.1);
+    }
+
+    .sec-role-pill-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .sec-role-pill-left i {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .sec-role-pill.active .sec-role-pill-left i {
+      color: var(--accent-primary, #102a96);
+    }
+
+    .sec-role-pill-check {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(16, 42, 150, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.55rem;
+      color: transparent;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .sec-role-pill.active .sec-role-pill-check {
+      background: var(--accent-primary, #102a96);
+      border-color: var(--accent-primary, #102a96);
+      color: #ffffff;
     }
 
     @media (max-width: 1100px) {
@@ -220,64 +587,80 @@
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="sidebar-logo">TECH TURF</div>
-        <div class="sidebar-logo-short">TT</div>
+        <div class="sidebar-logo-short"><img src="assets/techturf-logo.png" alt="TT" class="sidebar-logo-img-short" /></div>
       </div>
       
-      <nav class="sidebar-menu">
-        <div class="menu-item" data-nav="dashboard.html">
-          <i class="fas fa-th-large"></i>
-          <span class="menu-text">Command Center</span>
+      <nav class="sidebar-menu" id="main-sidebar-nav">
+        <div class="menu-item" data-nav="dashboard.html" onclick="window.location.href='dashboard.html'">
+          <i class="fas fa-th-large"></i><span class="menu-text">Dashboard</span>
         </div>
-        <div class="menu-item" data-nav="projects.html">
-          <i class="fas fa-project-diagram"></i>
-          <span class="menu-text">Operations</span>
+        <div class="menu-item" data-nav="projects.html" onclick="window.location.href='projects.html'">
+          <i class="fas fa-project-diagram"></i><span class="menu-text">Projects</span>
         </div>
-        <div class="menu-item" data-nav="tasks.html">
-          <i class="fas fa-tasks"></i>
-          <span class="menu-text">Task Stream</span>
+        <div class="menu-item" data-nav="tasks.html" onclick="window.location.href='tasks.html'">
+          <i class="fas fa-tasks"></i><span class="menu-text">Tasks</span>
         </div>
-        <div class="menu-item tl-only" data-nav="submissions.html">
-          <i class="fas fa-check-double"></i>
-          <span class="menu-text">Directives</span>
+        <div class="menu-item" data-nav="submissions.html" onclick="window.location.href='submissions.html'">
+          <i class="fas fa-file-upload"></i><span class="menu-text">Submissions</span>
         </div>
-        <div class="menu-item" data-nav="drive.html">
-          <i class="fas fa-hdd"></i>
-          <span class="menu-text">Secure Drive</span>
+        <div class="menu-item" data-nav="clients.html" onclick="window.location.href='clients.html'">
+          <i class="fas fa-user-tie"></i><span class="menu-text">Clients</span>
         </div>
-        <div class="menu-item" data-nav="nexus_chat.html">
-          <i class="fas fa-robot" style="color:var(--accent-secondary);"></i>
-          <span class="menu-text">Nexus AI Terminal</span>
+        <div class="menu-item" data-nav="announcements.html" onclick="window.location.href='announcements.html'">
+          <i class="fas fa-bullhorn"></i><span class="menu-text">Announcements</span>
+        </div>
+        <div class="menu-item" data-nav="drive.html" onclick="window.location.href='drive.html'">
+          <i class="fas fa-hdd"></i><span class="menu-text">Secure Drive</span>
+        </div>
+        <div class="menu-item" data-nav="messages.html" onclick="window.location.href='messages.html'">
+          <i class="fas fa-comments messenger-icon"></i><span class="menu-text">Team Messenger</span>
+        </div>
+        <div class="menu-item" data-nav="nexus_chat.html" onclick="window.location.href='nexus_chat.html'">
+          <i class="fas fa-robot nexus-icon"></i><span class="menu-text">Nexus AI Terminal</span>
         </div>
 
-        <hr style="border:0; border-top:2px solid var(--border); margin:10px 0; opacity:0.3;">
-        
+        <hr class="sidebar-divider">
+
         <!-- Role-Based Control Centers -->
-        <div class="menu-item admin-only" data-nav="users.html">
-          <i class="fas fa-users-cog"></i>
-          <span class="menu-text">User Management</span>
+        <div class="sidebar-section admin-only">
+          <div class="sidebar-section-title">USER MANAGEMENT</div>
+          <div class="sidebar-submenu">
+            <div class="menu-item admin-only" data-nav="users.html" onclick="window.location.href='users.html'">
+              <i class="fas fa-users-cog"></i><span class="menu-text">User Management</span>
+            </div>
+            <div class="menu-item admin-only" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
+              <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
+            </div>
+          </div>
         </div>
-        <div class="menu-item admin-only" data-nav="admin_control.html">
-          <i class="fas fa-shield-alt"></i>
-          <span class="menu-text">Admin Warp</span>
+        <div class="menu-item rnd-only" data-nav="nexus_lab.html" onclick="window.location.href='nexus_lab.html'">
+          <i class="fas fa-flask"></i><span class="menu-text">Nexus Lab</span>
         </div>
-        
-        <div class="menu-item rnd-only" data-nav="nexus_lab.html">
-          <i class="fas fa-flask"></i>
-          <span class="menu-text">Nexus Lab</span>
+        <div class="menu-item handler-only" data-nav="client_connect.html" onclick="window.location.href='client_connect.html'">
+          <i class="fas fa-handshake"></i><span class="menu-text">Client Connect</span>
         </div>
-        
-        
-        
-        
-        <div class="menu-item handler-only" data-nav="client_connect.html">
-          <i class="fas fa-handshake"></i>
-          <span class="menu-text">Client Connect</span>
+        <div class="menu-item" data-nav="learning_hub.html" id="courses-link-global" onclick="window.location.href='learning_hub.html'">
+          <i class="fas fa-graduation-cap"></i><span class="menu-text">Learning Hub</span>
         </div>
 
-        <hr style="border:0; border-top:2px solid var(--border); margin:10px 0; opacity:0.3;">
-        <div class="menu-item" data-nav="profile.html">
-          <i class="fas fa-user-circle"></i>
-          <span class="menu-text">My Profile</span>
+        <hr class="sidebar-divider">
+        
+        <div class="menu-item" data-nav="workspace.html" onclick="window.location.href='workspace.html'">
+          <i class="fas fa-paint-brush"></i><span class="menu-text">Creative Workspace</span>
+        </div>
+        
+        <div class="menu-item admin-only" data-nav="database_viewer.html" id="dbadmin-link" onclick="window.location.href='database_viewer.html'">
+          <i class="fas fa-database"></i><span class="menu-text">Database Viewer</span>
+        </div>
+
+        <div class="menu-item admin-only" data-nav="payments.html" id="payments-link" onclick="window.location.href='payments.html'">
+          <i class="fas fa-money-check-alt"></i><span class="menu-text">Payments</span>
+        </div>
+
+        <hr class="sidebar-divider">
+        
+        <div class="menu-item" data-nav="profile.html" onclick="window.location.href='profile.html'">
+          <i class="fas fa-user-circle"></i><span class="menu-text">My Profile</span>
         </div>
       </nav>
 
@@ -294,34 +677,34 @@
     </aside>
 
     <main class="main-content">
-      <header class="navbar">
+            <header class="navbar">
         <div class="nav-left">
           <button id="mobile-toggle" class="mobile-hamburger"><i class="fas fa-bars"></i></button>
           <div class="nav-search">
             <i class="fas fa-search"></i>
-            <input type="text" id="user-search" placeholder="Search users...">
+            <input type="text" placeholder="Search team members, emails...">
           </div>
         </div>
-        
         <div class="nav-actions">
           <div class="notification-bell" id="notification-bell">
             <i class="fas fa-bell"></i>
-            <span class="notification-badge" id="notification-badge">0</span>
-            <div class="notification-dropdown glass-card" id="notification-dropdown" style="display:none; position:absolute; top:40px; right:0; width:320px; padding:16px; z-index:1000;">
-              <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
-                <span style="font-weight:700;">Notifications</span>
-                <span style="font-size:0.7rem; color:var(--accent-primary); cursor:pointer;" onclick="api.put('/notifications/read-all').then(loadNotifications)">Mark all read</span>
+            <span class="notification-badge" id="notification-badge" style="display:none;">0</span>
+            <div class="notification-dropdown glass-card" id="notification-dropdown">
+              <div class="notification-header">
+                <span class="notification-title">Notifications</span>
+                <span class="notification-mark-read" onclick="markAllNotificationsRead()">Mark all read</span>
               </div>
-              <div id="notification-list" style="max-height:300px; overflow-y:auto;"></div>
+              <div id="notification-list" class="notification-list-scroll"></div>
             </div>
           </div>
-          
+
           <div class="user-profile-nav" data-nav="profile.html">
-            <div style="text-align:right;">
-              <div id="nav-user-name" style="font-weight:700; font-size:0.9rem;">User Name</div>
-              <div id="nav-user-role" style="font-size:0.7rem; color:var(--text-muted);">Role</div>
+            <div class="user-nav-text">
+              <div id="nav-user-name" class="user-nav-name">Admin</div>
+              <div id="nav-user-role" class="user-nav-role">Admin</div>
             </div>
-            <img id="nav-avatar" class="user-avatar" src="" alt="Avatar">
+            <img id="nav-avatar" class="user-avatar" src="" alt="Avatar" style="display:none;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+            <div class="avatar-fallback-badge" id="nav-avatar-badge">A</div>
           </div>
         </div>
       </header>
@@ -333,10 +716,6 @@
 
       <div class="users-admin-grid">
         <div class="glass-card dash-card anim-fade-up users-role-panel">
-          <div class="card-header-row">
-            <div class="card-title">ROLE ARCHITECT</div>
-            <i class="fas fa-crown icon-primary"></i>
-          </div>
           <div id="role-list"></div>
         </div>
 
@@ -347,7 +726,6 @@
                 <th>User</th>
                 <th>Role</th>
                 <th>Points</th>
-                <th>Badge</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -359,52 +737,113 @@
     </main>
   </div>
 
-  <!-- Add User Modal -->
-  <div class="modal" id="add-user-modal">
-    <div class="glass-card modal-content">
+  <!-- Add User Modal (Modern Side Drawer) -->
+  <div class="modal modal-drawer" id="add-user-modal" onclick="if(event.target===this) closeModal('add-user-modal')">
+    <div class="modal-content side-drawer-panel" onclick="event.stopPropagation()">
       <div class="modal-header">
         <div class="modal-title">ADD NEW USER</div>
         <i class="fas fa-times close-modal" onclick="closeModal('add-user-modal')"></i>
       </div>
       <form id="add-user-form">
-        <div class="form-group"><label>Full Name</label><input type="text" class="form-control" id="user-name" required></div>
-        <div class="form-group"><label>Email Address</label><input type="email" class="form-control" id="user-email" required></div>
-        <div class="form-group"><label>Initial Password</label><input type="password" class="form-control" id="user-password" required></div>
         <div class="form-group">
-          <label>Primary Role</label>
-          <select class="form-control" id="user-role" required>
-            <option value="writer">Content Writer</option>
-            <option value="designer">Designer</option>
-            <option value="team_leader">Team Leader</option>
-            <option value="rnd">R&D Specialist</option>
-            <option value="creator">Content Creator</option>
-            <option value="media_manager">Media Manager</option>
-            <option value="client_handler">Client Handler</option>
-            <option value="frontend">Frontend</option>
-            <option value="backend">Backend</option>
-            <option value="frontend_backend">Frontend + Backend</option>
-            <option value="production">Production</option>
-            <option value="admin">Administrator</option>
-          </select>
+          <label class="form-label-modern">FULL NAME</label>
+          <div class="input-wrapper-icon">
+            <i class="fas fa-user"></i>
+            <input type="text" class="form-control" id="user-name" required placeholder="Enter full name...">
+          </div>
         </div>
-        <div class="form-group" style="margin-top: 12px;">
-          <label>Secondary Roles <span style="font-size:0.7rem; color:var(--text-muted);">(Hold Ctrl/Cmd to select multiple)</span></label>
-          <select class="form-control" id="user-secondary-roles" multiple style="height: 100px;">
-            <option value="writer">Content Writer</option>
-            <option value="designer">Designer</option>
-            <option value="team_leader">Team Leader</option>
-            <option value="rnd">R&D Specialist</option>
-            <option value="creator">Content Creator</option>
-            <option value="media_manager">Media Manager</option>
-            <option value="client_handler">Client Handler</option>
-            <option value="frontend">Frontend</option>
-            <option value="backend">Backend</option>
-            <option value="frontend_backend">Frontend + Backend</option>
-            <option value="production">Production</option>
-            <option value="admin">Administrator</option>
-          </select>
+        <div class="form-group" style="margin-top: 14px;">
+          <label class="form-label-modern">EMAIL ADDRESS</label>
+          <div class="input-wrapper-icon">
+            <i class="fas fa-envelope"></i>
+            <input type="email" class="form-control" id="user-email" required placeholder="Enter email address...">
+          </div>
         </div>
-        <button type="submit" class="btn-primary" style="width:100%; margin-top:12px;">Create User Account</button>
+        <div class="form-group" style="margin-top: 14px;">
+          <label class="form-label-modern">INITIAL PASSWORD</label>
+          <div class="input-wrapper-icon">
+            <i class="fas fa-lock"></i>
+            <input type="password" class="form-control" id="user-password" required placeholder="••••••••">
+          </div>
+        </div>
+        <div class="form-group" style="margin-top: 14px;">
+          <label class="form-label-modern">PRIMARY ROLE</label>
+          <div class="custom-select-wrap">
+            <i class="fas fa-id-badge select-icon-left"></i>
+            <select class="form-control" id="user-role" required></select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top: 14px;">
+          <label class="form-label-modern">SECONDARY ROLES</label>
+          <div class="secondary-roles-box">
+            <div class="secondary-roles-header">
+              <span class="secondary-roles-count">SELECTED: <span id="add-selected-count">0</span> ROLES</span>
+              <div class="secondary-roles-actions">
+                <button type="button" class="btn-badge-action" onclick="toggleAllAddSecRoles(true)">Select All</button>
+                <span style="color:var(--text-muted); font-size:0.7rem;">|</span>
+                <button type="button" class="btn-badge-action" onclick="toggleAllAddSecRoles(false)">Clear</button>
+              </div>
+            </div>
+            <div id="add-sec-roles-grid" class="secondary-roles-grid"></div>
+          </div>
+        </div>
+        <button type="submit" class="btn-primary btn-drawer-submit">
+          <i class="fas fa-user-plus" style="margin-right:8px;"></i>CREATE USER ACCOUNT
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit User Modal (Modern Side Drawer) -->
+  <div class="modal modal-drawer" id="edit-user-modal" onclick="if(event.target===this) closeModal('edit-user-modal')">
+    <div class="modal-content side-drawer-panel" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title">EDIT USER</div>
+        <i class="fas fa-times close-modal" onclick="closeModal('edit-user-modal')"></i>
+      </div>
+      
+      <!-- User Profile Preview Banner -->
+      <div class="user-drawer-card-header">
+        <div class="user-drawer-avatar" id="edit-user-avatar">U</div>
+        <div class="user-drawer-meta">
+          <div class="user-drawer-name" id="edit-user-display-name">User Name</div>
+          <div class="user-drawer-sub" id="edit-user-display-sub">Primary: Role</div>
+        </div>
+      </div>
+
+      <form id="edit-user-form">
+        <input type="hidden" id="edit-user-id">
+        <div class="form-group">
+          <label class="form-label-modern">FULL NAME</label>
+          <div class="input-wrapper-icon">
+            <i class="fas fa-user"></i>
+            <input type="text" class="form-control" id="edit-user-name" required placeholder="Enter full name...">
+          </div>
+        </div>
+        <div class="form-group" style="margin-top: 14px;">
+          <label class="form-label-modern">PRIMARY ROLE</label>
+          <div class="custom-select-wrap">
+            <i class="fas fa-id-badge select-icon-left"></i>
+            <select class="form-control" id="edit-user-primary-role" required onchange="onEditPrimaryRoleChange(this.value)"></select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top: 14px;">
+          <label class="form-label-modern">SECONDARY ROLES</label>
+          <div class="secondary-roles-box">
+            <div class="secondary-roles-header">
+              <span class="secondary-roles-count">SELECTED: <span id="edit-selected-count">0</span> ROLES</span>
+              <div class="secondary-roles-actions">
+                <button type="button" class="btn-badge-action" onclick="toggleAllEditSecRoles(true)">Select All</button>
+                <span style="color:var(--text-muted); font-size:0.7rem;">|</span>
+                <button type="button" class="btn-badge-action" onclick="toggleAllEditSecRoles(false)">Clear</button>
+              </div>
+            </div>
+            <div id="edit-sec-roles-grid" class="secondary-roles-grid"></div>
+          </div>
+        </div>
+        <button type="submit" class="btn-primary btn-drawer-submit">
+          <i class="fas fa-save" style="margin-right:8px;"></i>SAVE CHANGES
+        </button>
       </form>
     </div>
   </div>
@@ -420,30 +859,9 @@
   </div>
 
   <!-- Unified Modals Section -->
-  <div id="dbadmin-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:2200;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;backdrop-filter:blur(4px);">
-    <div class="glass-card" style="width:95vw;max-width:900px;max-height:90vh;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;">
-      <div style="background:var(--accent-primary);color:#102a96;padding:14px 18px;font-family:var(--font-display);font-weight:700;display:flex;align-items:center;justify-content:space-between;">
-        <span><i class="fas fa-database"></i> Database Viewer</span>
-        <i class="fas fa-times" id="dbadmin-close" style="cursor:pointer;"></i>
-      </div>
-      <div id="dbadmin-content" style="flex:1;overflow-y:auto;padding:18px;background:var(--bg-card);"></div>
-    </div>
+  
   </div>
-  <div id="tickets-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:2200;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;backdrop-filter:blur(4px);">
-    <div class="glass-card" style="width:95vw;max-width:700px;max-height:90vh;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;">
-      <div style="background:var(--accent-primary);color:#102a96;padding:14px 18px;font-family:var(--font-display);font-weight:700;display:flex;align-items:center;justify-content:space-between;">
-        <span><i class="fas fa-ticket-alt"></i> Tickets</span>
-        <i class="fas fa-times" id="tickets-close" style="cursor:pointer;"></i>
-      </div>
-      <div id="tickets-list" style="flex:1;overflow-y:auto;padding:18px;background:var(--bg-card);"></div>
-      <form id="tickets-add-form" style="padding:12px;background:var(--bg-primary);border-top:2px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;">
-        <input id="ticket-title" type="text" placeholder="Title" class="form-input" style="flex:2;" required />
-        <input id="ticket-desc" type="text" placeholder="Description" class="form-input" style="flex:3;" />
-        <input id="ticket-priority" type="text" placeholder="Priority" class="form-input" style="flex:1;" />
-        <button type="submit" class="btn-primary" style="margin-top:0;">Add</button>
-      </form>
-    </div>
-  </div>
+
   <div id="payments-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:2200;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;backdrop-filter:blur(4px);">
     <div class="glass-card" style="width:95vw;max-width:700px;max-height:90vh;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;">
       <div style="background:var(--accent-primary);color:#102a96;padding:14px 18px;font-family:var(--font-display);font-weight:700;display:flex;align-items:center;justify-content:space-between;">
@@ -511,7 +929,6 @@
                 modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
             }
         };
-        setupModal('tickets-link', 'tickets-modal', 'tickets-close');
         setupModal('payments-link', 'payments-modal', 'payments-close');
         setupModal('courses-link', 'courses-modal', 'courses-close');
     }

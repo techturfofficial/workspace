@@ -2,6 +2,9 @@ const drive = {
     currentParentId: null,
     history: [],
     users: [],
+    sharingItemId: null,
+    selectedUserIds: new Set(),
+    userSearchFilter: '',
 
     async init() {
         this.loadItems();
@@ -99,13 +102,108 @@ const drive = {
 
     async loadUsers() {
         try {
-            this.users = await api.get('/users');
-            const select = document.getElementById('share-user-id');
-            if (select) {
-                select.innerHTML = '<option value="">Select an employee...</option>' + 
-                    this.users.filter(u => u.is_active === 1).map(u => `<option value="${u.id}">${u.name} (${u.role})</option>`).join('');
+            const raw = await api.get('/users');
+            this.users = (raw || []).filter(u => Number(u.is_active) === 1);
+            this.renderUserSelection();
+        } catch (e) {
+            console.error('Failed to load users for drive sharing:', e);
+        }
+    },
+
+    renderUserSelection() {
+        const container = document.getElementById('share-members-container');
+        if (!container) return;
+
+        const filter = (this.userSearchFilter || '').toLowerCase().trim();
+        const filteredUsers = this.users.filter(u => {
+            if (!filter) return true;
+            const name = (u.name || '').toLowerCase();
+            const role = (u.role || '').toLowerCase();
+            const email = (u.email || '').toLowerCase();
+            return name.includes(filter) || role.includes(filter) || email.includes(filter);
+        });
+
+        if (filteredUsers.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:20px; font-size:0.8rem; color:var(--text-muted);">No matching employees found</div>';
+            this.updateSelectionCount();
+            return;
+        }
+
+        container.innerHTML = filteredUsers.map(u => {
+            const isChecked = this.selectedUserIds.has(u.id);
+            const avatarSrc = u.avatar || (typeof getInitialsAvatar === 'function' ? getInitialsAvatar(u.name, 28) : '');
+            return `
+                <label class="team-member-item ${isChecked ? 'checked' : ''}" id="share-tm-${u.id}" onclick="drive.toggleUserSelection(${u.id}, event)">
+                    <div class="team-member-label-left">
+                        <input type="checkbox" value="${u.id}" class="team-member-cb" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation(); drive.toggleUserSelection(${u.id}, event)">
+                        <img src="${avatarSrc}" alt="${u.name}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; flex-shrink:0;">
+                        <span style="font-weight:600;">${u.name}</span>
+                    </div>
+                    <span class="team-member-role-badge">${typeof formatRole === 'function' ? formatRole(u.role) : u.role}</span>
+                </label>
+            `;
+        }).join('');
+
+        this.updateSelectionCount();
+    },
+
+    toggleUserSelection(userId, event) {
+        if (event && event.target && event.target.tagName !== 'INPUT') {
+            // handled via label click
+        }
+        if (this.selectedUserIds.has(userId)) {
+            this.selectedUserIds.delete(userId);
+        } else {
+            this.selectedUserIds.add(userId);
+        }
+        
+        const label = document.getElementById(`share-tm-${userId}`);
+        if (label) {
+            const isChecked = this.selectedUserIds.has(userId);
+            label.classList.toggle('checked', isChecked);
+            const cb = label.querySelector('.team-member-cb');
+            if (cb) cb.checked = isChecked;
+        }
+        this.updateSelectionCount();
+    },
+
+    selectAllUsers(selectAll = true) {
+        const filter = (this.userSearchFilter || '').toLowerCase().trim();
+        const targetUsers = this.users.filter(u => {
+            if (!filter) return true;
+            const name = (u.name || '').toLowerCase();
+            const role = (u.role || '').toLowerCase();
+            const email = (u.email || '').toLowerCase();
+            return name.includes(filter) || role.includes(filter) || email.includes(filter);
+        });
+
+        if (selectAll) {
+            targetUsers.forEach(u => this.selectedUserIds.add(u.id));
+        } else {
+            if (filter) {
+                targetUsers.forEach(u => this.selectedUserIds.delete(u.id));
+            } else {
+                this.selectedUserIds.clear();
             }
-        } catch {}
+        }
+        this.renderUserSelection();
+    },
+
+    filterUsers(text) {
+        this.userSearchFilter = text;
+        this.renderUserSelection();
+    },
+
+    updateSelectionCount() {
+        const countSpan = document.getElementById('selected-share-count');
+        if (countSpan) countSpan.textContent = this.selectedUserIds.size;
+
+        const submitBtn = document.getElementById('share-submit-btn');
+        if (submitBtn) {
+            submitBtn.textContent = this.selectedUserIds.size > 0 
+                ? `GRANT ACCESS (${this.selectedUserIds.size})` 
+                : 'GRANT ACCESS';
+        }
     },
 
     setupEventListeners() {
@@ -117,7 +215,7 @@ const drive = {
                 try {
                     await api.post('/drive/folder', { name, parentId: this.currentParentId });
                     showToast('Folder created', 'success');
-                    document.getElementById('folder-modal').style.display = 'none';
+                    closeModal('folder-modal');
                     this.loadItems(this.currentParentId);
                     folderForm.reset();
                 } catch (err) {
@@ -131,11 +229,17 @@ const drive = {
             shareForm.onsubmit = async (e) => {
                 e.preventDefault();
                 const itemId = this.sharingItemId;
-                const userId = document.getElementById('share-user-id').value;
+                const userIds = Array.from(this.selectedUserIds);
+                if (userIds.length === 0) {
+                    showToast('Please select at least one employee to share with', 'error');
+                    return;
+                }
                 const accessLevel = document.getElementById('share-access-level').value;
                 try {
-                    await api.post('/drive/share', { itemId, userId, accessLevel });
-                    showToast('Access granted', 'success');
+                    await api.post('/drive/share', { itemId, userIds, accessLevel });
+                    showToast(`Access granted to ${userIds.length} employee(s)`, 'success');
+                    this.selectedUserIds.clear();
+                    this.renderUserSelection();
                     this.renderPermissions(itemId);
                 } catch (err) {
                     showToast(err.message, 'error');
@@ -146,38 +250,80 @@ const drive = {
 
     async openShareModal(itemId, itemName) {
         this.sharingItemId = itemId;
-        const modal = document.getElementById('share-modal');
-        document.getElementById('share-item-info').textContent = `Sharing: ${itemName}`;
-        // Move modal to body root to escape any stacking context issues
-        if (modal && modal.parentElement !== document.body) {
-            document.body.appendChild(modal);
+        this.selectedUserIds.clear();
+        this.userSearchFilter = '';
+        const searchInput = document.getElementById('share-member-search');
+        if (searchInput) searchInput.value = '';
+
+        const itemInfo = document.getElementById('share-item-info');
+        if (itemInfo) {
+            itemInfo.innerHTML = `
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-file-alt" style="font-size:1.1rem; color:var(--accent-primary);"></i>
+                    <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                        <span style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; display:block;">Sharing Item</span>
+                        <strong style="font-size:0.95rem; color:var(--text-primary);">${typeof escapeHtml === 'function' ? escapeHtml(itemName) : itemName}</strong>
+                    </div>
+                </div>
+            `;
         }
-        modal.style.display = 'flex';
-        // Apply draggable after display is set (so getBoundingClientRect works)
-        if (window.makeDraggableModal) setTimeout(() => makeDraggableModal(modal), 50);
+
+        if (!this.users || this.users.length === 0) {
+            await this.loadUsers();
+        } else {
+            this.renderUserSelection();
+        }
+
         this.renderPermissions(itemId);
+        openModal('share-modal');
     },
 
     async renderPermissions(itemId) {
         const list = document.getElementById('current-permissions-list');
-        list.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        const countBadge = document.getElementById('active-perms-count');
+        if (!list) return;
+
+        list.innerHTML = '<div style="text-align:center; padding:16px;"><i class="fas fa-spinner fa-spin"></i></div>';
         try {
             const perms = await api.get(`/drive/permissions/${itemId}`);
+            if (countBadge) countBadge.textContent = `${perms ? perms.length : 0} users`;
+
             if (!perms || perms.length === 0) {
-                list.innerHTML = '<div style="font-size:0.8rem; color:var(--text-muted);">No specific employee access granted.</div>';
+                list.innerHTML = '<div style="font-size:0.8rem; color:var(--text-muted); padding:12px; text-align:center; background:#f8fafc; border-radius:8px; border:1px dashed var(--border);">No specific employee access granted yet.</div>';
                 return;
             }
-            list.innerHTML = perms.map(p => `
-                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:8px;">
-                    <div>
-                        <div style="font-weight:600; font-size:0.8rem;">${p.user_name}</div>
-                        <div style="font-size:0.7rem; color:var(--text-muted);">${p.user_email}</div>
+            list.innerHTML = perms.map(p => {
+                const avatar = typeof getInitialsAvatar === 'function' ? getInitialsAvatar(p.user_name, 28) : '';
+                return `
+                <div class="perm-user-item">
+                    <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                        <img src="${avatar}" alt="${p.user_name}" style="width:28px; height:28px; border-radius:50%; object-fit:cover; flex-shrink:0;">
+                        <div style="min-width:0;">
+                            <div style="font-weight:700; font-size:0.85rem; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.user_name}</div>
+                            <div style="font-size:0.7rem; color:var(--text-muted);">${p.user_email || ''} • ${typeof formatRole === 'function' ? formatRole(p.user_role || '') : (p.user_role || '')}</div>
+                        </div>
                     </div>
-                    <div class="badge badge-info" style="font-size:0.6rem;">${p.access_level.toUpperCase()}</div>
+                    <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+                        <span class="badge ${p.access_level === 'editor' ? 'badge-primary' : 'badge-info'}" style="font-size:0.65rem; text-transform:uppercase;">${p.access_level}</span>
+                        <button type="button" class="perm-revoke-btn" title="Revoke Access" onclick="drive.revokeAccess(${p.user_id})">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
                 </div>
-            `).join('');
+            `}).join('');
         } catch {
-            list.innerHTML = 'Error loading permissions.';
+            list.innerHTML = '<div style="font-size:0.8rem; color:var(--accent-secondary); padding:8px;">Error loading permissions.</div>';
+        }
+    },
+
+    async revokeAccess(userId) {
+        if (!confirm('Revoke access for this employee?')) return;
+        try {
+            await api.delete(`/drive/share/${this.sharingItemId}/${userId}`);
+            showToast('Access revoked', 'success');
+            this.renderPermissions(this.sharingItemId);
+        } catch (e) {
+            showToast(e.message || 'Failed to revoke access', 'error');
         }
     },
 

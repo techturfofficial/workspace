@@ -683,93 +683,80 @@
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="sidebar-logo">TECH TURF</div>
-        <div class="sidebar-logo-short">TT</div>
+        <div class="sidebar-logo-short"><img src="assets/techturf-logo.png" alt="TT" class="sidebar-logo-img-short" /></div>
       </div>
 
-      <nav class="sidebar-menu">
-        <div class="menu-item" data-nav="dashboard.html">
-          <i class="fas fa-th-large"></i>
-          <span class="menu-text">Dashboard</span>
+      <nav class="sidebar-menu" id="main-sidebar-nav">
+        <div class="menu-item" data-nav="dashboard.html" onclick="window.location.href='dashboard.html'">
+          <i class="fas fa-th-large"></i><span class="menu-text">Dashboard</span>
         </div>
-        <div class="menu-item" data-nav="projects.html">
-          <i class="fas fa-project-diagram"></i>
-          <span class="menu-text">Projects</span>
+        <div class="menu-item" data-nav="projects.html" onclick="window.location.href='projects.html'">
+          <i class="fas fa-project-diagram"></i><span class="menu-text">Projects</span>
         </div>
-        <div class="menu-item" data-nav="tasks.html">
-          <i class="fas fa-tasks"></i>
-          <span class="menu-text">Tasks</span>
+        <div class="menu-item" data-nav="tasks.html" onclick="window.location.href='tasks.html'">
+          <i class="fas fa-tasks"></i><span class="menu-text">Tasks</span>
         </div>
-        <div class="menu-item active" data-nav="submissions.html">
-          <i class="fas fa-file-upload"></i>
-          <span class="menu-text">Submissions</span>
+        <div class="menu-item" data-nav="submissions.html" onclick="window.location.href='submissions.html'">
+          <i class="fas fa-file-upload"></i><span class="menu-text">Submissions</span>
         </div>
-        <div class="menu-item" data-nav="clients.html">
-          <i class="fas fa-user-tie"></i>
-          <span class="menu-text">Clients</span>
+        <div class="menu-item" data-nav="clients.html" onclick="window.location.href='clients.html'">
+          <i class="fas fa-user-tie"></i><span class="menu-text">Clients</span>
         </div>
-        <div class="menu-item" data-nav="announcements.html">
-          <i class="fas fa-bullhorn"></i>
-          <span class="menu-text">Announcements</span>
+        <div class="menu-item" data-nav="announcements.html" onclick="window.location.href='announcements.html'">
+          <i class="fas fa-bullhorn"></i><span class="menu-text">Announcements</span>
         </div>
-        <div class="menu-item" data-nav="drive.html">
-          <i class="fas fa-hdd"></i>
-          <span class="menu-text">Secure Drive</span>
+        <div class="menu-item" data-nav="drive.html" onclick="window.location.href='drive.html'">
+          <i class="fas fa-hdd"></i><span class="menu-text">Secure Drive</span>
         </div>
-        <div class="menu-item" data-nav="nexus_chat.html">
-          <i class="sub-auto-1 fas fa-robot"></i>
-          <span class="menu-text">Nexus AI Terminal</span>
+        <div class="menu-item" data-nav="messages.html" onclick="window.location.href='messages.html'">
+          <i class="fas fa-comments messenger-icon"></i><span class="menu-text">Team Messenger</span>
+        </div>
+        <div class="menu-item" data-nav="nexus_chat.html" onclick="window.location.href='nexus_chat.html'">
+          <i class="fas fa-robot nexus-icon"></i><span class="menu-text">Nexus AI Terminal</span>
         </div>
 
-        <hr class="sub-auto-2">
+        <hr class="sidebar-divider">
 
         <!-- Role-Based Control Centers -->
-        <div class="menu-item admin-only" data-nav="users.html">
-          <i class="fas fa-users-cog"></i>
-          <span class="menu-text">User Management</span>
+        <div class="sidebar-section admin-only">
+          <div class="sidebar-section-title">USER MANAGEMENT</div>
+          <div class="sidebar-submenu">
+            <div class="menu-item admin-only" data-nav="users.html" onclick="window.location.href='users.html'">
+              <i class="fas fa-users-cog"></i><span class="menu-text">User Management</span>
+            </div>
+            <div class="menu-item admin-only" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
+              <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
+            </div>
+          </div>
         </div>
-        <div class="menu-item admin-only" data-nav="admin_control.html">
-          <i class="fas fa-shield-alt"></i>
-          <span class="menu-text">Admin Warp</span>
+        <div class="menu-item rnd-only" data-nav="nexus_lab.html" onclick="window.location.href='nexus_lab.html'">
+          <i class="fas fa-flask"></i><span class="menu-text">Nexus Lab</span>
         </div>
-
-        <div class="menu-item rnd-only" data-nav="nexus_lab.html">
-          <i class="fas fa-flask"></i>
-          <span class="menu-text">Nexus Lab</span>
+        <div class="menu-item handler-only" data-nav="client_connect.html" onclick="window.location.href='client_connect.html'">
+          <i class="fas fa-handshake"></i><span class="menu-text">Client Connect</span>
         </div>
-
-
-
-
-        <div class="menu-item handler-only" data-nav="client_connect.html">
-          <i class="fas fa-handshake"></i>
-          <span class="menu-text">Client Connect</span>
-        </div>
-
-
-        <hr class="sub-auto-3">
-
-        <div class="menu-item admin-only" id="dbadmin-link">
-          <i class="fas fa-database"></i>
-          <span class="menu-text">Database Viewer</span>
-        </div>
-        <div class="menu-item" id="tickets-link">
-          <i class="fas fa-ticket-alt"></i>
-          <span class="menu-text">Tickets</span>
-        </div>
-        <div class="menu-item admin-only" id="payments-link">
-          <i class="fas fa-money-check-alt"></i>
-          <span class="menu-text">Payments</span>
-        </div>
-        <div class="menu-item" data-nav="learning_hub.html" id="courses-link">
-          <i class="fas fa-graduation-cap"></i>
-          <span class="menu-text">Learning Hub</span>
+        <div class="menu-item" data-nav="learning_hub.html" id="courses-link-global" onclick="window.location.href='learning_hub.html'">
+          <i class="fas fa-graduation-cap"></i><span class="menu-text">Learning Hub</span>
         </div>
 
-        <hr class="sub-auto-4">
+        <hr class="sidebar-divider">
+        
+        <div class="menu-item" data-nav="workspace.html" onclick="window.location.href='workspace.html'">
+          <i class="fas fa-paint-brush"></i><span class="menu-text">Creative Workspace</span>
+        </div>
+        
+        <div class="menu-item admin-only" data-nav="database_viewer.html" id="dbadmin-link" onclick="window.location.href='database_viewer.html'">
+          <i class="fas fa-database"></i><span class="menu-text">Database Viewer</span>
+        </div>
 
-        <div class="menu-item" data-nav="profile.html">
-          <i class="fas fa-user-circle"></i>
-          <span class="menu-text">My Profile</span>
+        <div class="menu-item admin-only" data-nav="payments.html" id="payments-link" onclick="window.location.href='payments.html'">
+          <i class="fas fa-money-check-alt"></i><span class="menu-text">Payments</span>
+        </div>
+
+        <hr class="sidebar-divider">
+        
+        <div class="menu-item" data-nav="profile.html" onclick="window.location.href='profile.html'">
+          <i class="fas fa-user-circle"></i><span class="menu-text">My Profile</span>
         </div>
       </nav>
 
@@ -786,36 +773,34 @@
     </aside>
 
     <main class="main-content">
-      <header class="navbar">
+            <header class="navbar">
         <div class="nav-left">
-          <button id="mobile-toggle" class="mobile-hamburger" title="Toggle Mobile Menu"><i
-              class="fas fa-bars"></i></button>
+          <button id="mobile-toggle" class="mobile-hamburger"><i class="fas fa-bars"></i></button>
           <div class="nav-search">
             <i class="fas fa-search"></i>
-            <input type="text" placeholder="Search submissions...">
+            <input type="text" placeholder="Search...">
           </div>
         </div>
-
         <div class="nav-actions">
           <div class="notification-bell" id="notification-bell">
             <i class="fas fa-bell"></i>
-            <span class="notification-badge" id="notification-badge">0</span>
-            <div class="sub-auto-5 notification-dropdown glass-card" id="notification-dropdown">
-              <div class="sub-auto-6">
-                <span class="sub-auto-7">Notifications</span>
-                <span class="sub-auto-8" onclick="api.put('/notifications/read-all').then(loadNotifications)">Mark all
-                  read</span>
+            <span class="notification-badge" id="notification-badge" style="display:none;">0</span>
+            <div class="notification-dropdown glass-card" id="notification-dropdown">
+              <div class="notification-header">
+                <span class="notification-title">Notifications</span>
+                <span class="notification-mark-read" onclick="markAllNotificationsRead()">Mark all read</span>
               </div>
-              <div id="notification-list" class="sub-auto-9"></div>
+              <div id="notification-list" class="notification-list-scroll"></div>
             </div>
           </div>
 
           <div class="user-profile-nav" data-nav="profile.html">
-            <div class="sub-auto-10">
-              <div id="nav-user-name" class="sub-auto-11">User Name</div>
-              <div id="nav-user-role" class="sub-auto-12">Role</div>
+            <div class="user-nav-text">
+              <div id="nav-user-name" class="user-nav-name">Admin</div>
+              <div id="nav-user-role" class="user-nav-role">Admin</div>
             </div>
-            <img id="nav-avatar" class="user-avatar" src="" alt="Avatar">
+            <img id="nav-avatar" class="user-avatar" src="" alt="Avatar" style="display:none;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+            <div class="avatar-fallback-badge" id="nav-avatar-badge">A</div>
           </div>
         </div>
       </header>
@@ -836,7 +821,7 @@
               <option value="rejected">Rejected</option>
             </select>
           </div>
-          <button class="btn-primary" onclick="openModal('manual-submission-modal')">
+          <button class="btn-primary" onclick="openManualSubmissionModal()">
             <i class="fas fa-cloud-upload-alt"></i> <span>Manual Upload</span>
           </button>
         </div>
@@ -847,14 +832,7 @@
   </div>
 
   <!-- Unified Modals Section -->
-  <div id="dbadmin-modal" class="sub-auto-15">
-    <div class="sub-auto-16 glass-card">
-      <div class="sub-auto-17">
-        <span><i class="fas fa-database"></i> Database Viewer</span>
-        <i class="sub-auto-18 fas fa-times" id="dbadmin-close"></i>
-      </div>
-      <div id="dbadmin-content" class="sub-auto-19"></div>
-    </div>
+  
   </div>
   <div id="tickets-modal" class="sub-auto-20">
     <div class="sub-auto-21 glass-card">
@@ -902,87 +880,80 @@
     </div>
   </div>
 
-  <!-- Work Assets Bundle Modal -->
-  <div class="modal" id="work-assets-modal">
-    <div class="sub-auto-16 glass-card modal-content detail-modal-narrow">
-      <div class="sub-auto-17 asset-header">
-        <span><i class="fas fa-cubes"></i> WORK ASSETS HUD</span>
+  <!-- Work Assets Bundle Modal (Side Drawer) -->
+  <div class="modal modal-drawer" id="work-assets-modal" onclick="if(event.target===this) closeModal('work-assets-modal')">
+    <div class="modal-content side-drawer-panel">
+      <div class="modal-header">
+        <div class="modal-title"><i class="fas fa-cubes"></i> WORK ASSETS HUD</div>
         <i class="fas fa-times close-modal" onclick="closeModal('work-assets-modal')"></i>
       </div>
-      <div class="sub-auto-19" id="work-assets-body">
+      <div id="work-assets-body" style="padding-top: 8px;">
         <!-- Sections injected by JS -->
       </div>
     </div>
   </div>
 
-  <!-- Submission Detail Modal -->
-  <div class="modal" id="submission-detail-modal">
-    <div class="sub-auto-16 glass-card modal-content detail-modal-wide">
-      <div class="sub-auto-17">
-        <span><i class="fas fa-file-invoice"></i> WORK INSPECTION</span>
+  <!-- Submission Detail Modal (Side Drawer) -->
+  <div class="modal modal-drawer" id="submission-detail-modal" onclick="if(event.target===this) closeModal('submission-detail-modal')">
+    <div class="modal-content side-drawer-panel">
+      <div class="modal-header">
+        <div class="modal-title"><i class="fas fa-file-invoice"></i> WORK INSPECTION</div>
         <i class="fas fa-times close-modal" onclick="closeModal('submission-detail-modal')"></i>
       </div>
-      <div class="sub-auto-19" id="submission-detail-body">
+      <div id="submission-detail-body" style="padding-top: 8px;">
         <!-- Content injected by JS -->
       </div>
     </div>
   </div>
 
-  <!-- Manual Submission Modal -->
-  <div class="modal" id="manual-submission-modal">
-    <div class="sub-auto-43 glass-card modal-content modal-scrollable">
-      <div class="modal-header modal-header-shrink">
+  <!-- Manual Submission Modal (Side Drawer) -->
+  <div class="modal modal-drawer" id="manual-submission-modal" onclick="if(event.target===this) { closeModal('manual-submission-modal'); clearManualQueue(); }">
+    <div class="modal-content side-drawer-panel">
+      <div class="modal-header">
         <div class="modal-title">MANUAL WORK UPLOAD</div>
         <i class="fas fa-times close-modal" onclick="closeModal('manual-submission-modal'); clearManualQueue();"></i>
       </div>
-      <div class="sub-auto-19 modal-body-scroll">
-        <form id="manual-submission-form">
-          <div class="form-group">
-            <label>Target Task (Optional)</label>
-            <select class="form-control" id="manual-task-id" title="Target Task">
-              <option value="">Loading tasks...</option>
-            </select>
-            <div class="sub-auto-44">Select the task this work belongs to,
-              if any.</div>
+      <form id="manual-submission-form">
+        <div class="form-group">
+          <label>Target Task (Optional)</label>
+          <select class="form-control" id="manual-task-id" title="Target Task">
+            <option value="">Select a task...</option>
+          </select>
+          <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">Select the task this work belongs to, if any.</div>
+        </div>
+        <div class="form-group">
+          <label>Client</label>
+          <select class="form-control" id="manual-client-id" title="Select a Client">
+            <option value="">Select a client...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Project Name</label>
+          <input type="text" class="form-control" id="manual-project-name" placeholder="Enter project name">
+        </div>
+        <div class="form-group">
+          <label>Submission Notes</label>
+          <textarea class="form-control" id="manual-text" rows="3" placeholder="Describe the work being uploaded..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Work File</label>
+          <div style="font-size:0.72rem; color:var(--accent-secondary); font-weight:700; margin-bottom:6px;">ONLY 500 MB WORTH OF DOCUMENTS CAN BE ADDED</div>
+          <div class="upload-zone" onclick="document.getElementById('manual-file').click()" style="border: 2px dashed rgba(16,42,150,0.2); padding: 20px; text-align:center; border-radius: 10px; cursor: pointer; background: #f8fafc;">
+            <i class="fas fa-file-upload" style="font-size: 1.8rem; color: var(--accent-primary); margin-bottom: 8px;"></i>
+            <div style="font-weight: 600; font-size: 0.85rem;">Click to select file(s)</div>
+            <input type="file" id="manual-file" style="display:none;" onchange="addFilesToManualQueue(this)" title="Select work file(s)" multiple>
           </div>
-          <div class="form-group">
-            <label>Client</label>
-            <select class="form-control" id="manual-client-id" title="Select a Client">
-              <option value="">Select a client...</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Project Name</label>
-            <input type="text" class="form-control" id="manual-project-name" placeholder="Enter project name">
-          </div>
-          <div class="form-group">
-            <label>Submission Notes</label>
-            <textarea class="form-control" id="manual-text" rows="3"
-              placeholder="Describe the work being uploaded..."></textarea>
-          </div>
-          <div class="form-group">
-            <label>Work File</label>
-            <div class="sub-auto-note">Only 500 MB worth of documents can be added</div>
-            <div class="sub-auto-45 upload-zone" onclick="document.getElementById('manual-file').click()">
-              <i class="sub-auto-46 fas fa-file-upload"></i>
-              <div class="sub-auto-47">Click to select file</div>
-              <input type="file" id="manual-file" class="sub-auto-48" onchange="addFilesToManualQueue(this)"
-                title="Select work file(s)" multiple>
-            </div>
-            <div id="manual-file-preview" class="sub-auto-49"></div>
-          </div>
+          <div id="manual-file-preview" style="margin-top: 10px;"></div>
+        </div>
 
-          <div class="form-group">
-            <label for="manual-external-link">External File Link (if > 500MB)</label>
-            <input type="url" class="form-control" id="manual-external-link" placeholder="https://drive.google.com/..."
-              title="External link for large files">
-            <div class="external-link-info">If your files exceed 500MB, please upload them to a cloud service (Drive,
-              Dropbox, etc.) and paste the link here.</div>
-          </div>
+        <div class="form-group">
+          <label for="manual-external-link">External File Link (if > 500MB)</label>
+          <input type="url" class="form-control" id="manual-external-link" placeholder="https://drive.google.com/..." title="External link for large files">
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">If your files exceed 500MB, please upload them to a cloud service (Drive, Dropbox, etc.) and paste the link here.</div>
+        </div>
 
-          <button type="submit" class="sub-auto-50 btn-primary">Upload Submission</button>
-        </form>
-      </div>
+        <button type="submit" class="btn-drawer-submit">Upload Submission</button>
+      </form>
     </div>
   </div>
 

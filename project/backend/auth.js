@@ -83,9 +83,7 @@ const ROLE_PERMISSION_MAP = {
   writer: ['dashboard.view', 'tasks.view', 'projects.view', 'chat.send'],
   designer: ['dashboard.view', 'tasks.view', 'projects.view', 'chat.send'],
   rnd: ['dashboard.view', 'tasks.view', 'projects.view', 'reports.view', 'chat.send'],
-  creator: ['dashboard.view', 'tasks.view', 'projects.view', 'chat.send'],
   media_manager: ['dashboard.view', 'tasks.view', 'projects.view', 'announcements.manage', 'chat.send'],
-  client_handler: ['dashboard.view', 'projects.view', 'tasks.view', 'chat.send'],
   frontend: ['dashboard.view', 'tasks.view', 'projects.view', 'chat.send'],
   backend: [
     'dashboard.view', 'tasks.view', 'tasks.edit',
@@ -94,10 +92,6 @@ const ROLE_PERMISSION_MAP = {
   frontend_backend: [
     'dashboard.view', 'tasks.view', 'tasks.create', 'tasks.edit',
     'projects.view', 'projects.create', 'projects.edit', 'chat.send'
-  ],
-  production: [
-    'dashboard.view', 'tasks.view', 'tasks.create', 'tasks.edit',
-    'projects.view', 'announcements.manage', 'chat.send'
   ]
 };
 

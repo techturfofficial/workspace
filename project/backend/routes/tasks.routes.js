@@ -83,33 +83,83 @@ router.post('/', verifyToken, checkRole('admin', 'team_leader', 'frontend_backen
     if (user) targetRole = user.role;
   }
 
+  let effectiveProjectId = null;
+  let clientId = null;
+  if (typeof project_id === 'string' && project_id.startsWith('client_')) {
+    clientId = parseInt(project_id.replace('client_', ''));
+  } else if (!isNaN(Number(project_id))) {
+    const existingProj = db.prepare('SELECT id FROM projects WHERE id=?').get(Number(project_id));
+    if (existingProj) {
+      effectiveProjectId = existingProj.id;
+    } else {
+      const existingClient = db.prepare('SELECT id FROM clients WHERE id=?').get(Number(project_id));
+      if (existingClient) clientId = existingClient.id;
+    }
+  }
+
+  if (clientId) {
+    let proj = db.prepare('SELECT id FROM projects WHERE client_id=? ORDER BY id DESC LIMIT 1').get(clientId);
+    if (!proj) {
+      const client = db.prepare('SELECT name FROM clients WHERE id=?').get(clientId);
+      const projTitle = client ? `${client.name}'s Project` : 'Client Project';
+      const newProj = db.prepare('INSERT INTO projects (title, client_id, created_by) VALUES (?, ?, ?)').run(projTitle, clientId, req.user.id);
+      effectiveProjectId = newProj.lastInsertRowid;
+    } else {
+      effectiveProjectId = proj.id;
+    }
+  }
+
+  if (!effectiveProjectId) {
+    let fallbackProj = db.prepare('SELECT id FROM projects ORDER BY id ASC LIMIT 1').get();
+    if (!fallbackProj) {
+      const newProj = db.prepare('INSERT INTO projects (title, created_by) VALUES (?, ?)').run('General Project', req.user.id);
+      effectiveProjectId = newProj.lastInsertRowid;
+    } else {
+      effectiveProjectId = fallbackProj.id;
+    }
+  }
+
   // Determine primary assignee: first in task_members list or explicit assigned_to
   const memberIds = Array.isArray(task_members) ? task_members.filter(Boolean).map(Number) : [];
-  const primaryAssignee = assigned_to || memberIds[0] || null;
+  const rawAssignee = assigned_to || memberIds[0] || null;
+  let primaryAssignee = null;
+  if (rawAssignee) {
+    const u = db.prepare('SELECT id FROM users WHERE id=?').get(Number(rawAssignee));
+    if (u) primaryAssignee = u.id;
+  }
+
+  let validDependsOn = null;
+  if (depends_on) {
+    const dep = db.prepare('SELECT id FROM tasks WHERE id=?').get(Number(depends_on));
+    if (dep) validDependsOn = dep.id;
+  }
 
   try {
     const result = db.prepare(`
       INSERT INTO tasks(project_id,title,description,assigned_to,role_required,priority,deadline,depends_on,max_revisions,created_by)
       VALUES(?,?,?,?,?,?,?,?,?,?)
     `).run(
-      project_id,
+      effectiveProjectId,
       title,
       description || null,
       primaryAssignee,
       targetRole || null,
       priority || 'normal',
       deadline || null,
-      depends_on || null,
+      validDependsOn,
       max_revisions || 3,
       req.user.id
     );
 
     const taskId = result.lastInsertRowid;
 
-    // Insert task_members
+    // Insert task_members (safely verifying each user_id exists in users table)
     if (memberIds.length > 0) {
       const memStmt = db.prepare('INSERT OR IGNORE INTO task_members(task_id, user_id) VALUES(?,?)');
-      memberIds.forEach(uid => memStmt.run(taskId, uid));
+      memberIds.forEach(uid => {
+        const u = db.prepare('SELECT id FROM users WHERE id=?').get(uid);
+        if (u) memStmt.run(taskId, u.id);
+      });
     }
 
     // AUDIT LOG (Nexus Integrity Record)

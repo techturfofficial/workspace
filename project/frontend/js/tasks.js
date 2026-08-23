@@ -144,14 +144,14 @@ async function loadTasks() {
         <div class="empty-state">
           <i class="fas fa-tasks"></i>
           <div class="empty-title">No tasks found</div>
-          <div class="empty-action admin-tl-only"><button class="btn-primary" onclick="openModal('new-task-modal')">Create Task</button></div>
+          <div class="empty-action task-create-only"><button class="btn-primary" onclick="openModal('new-task-modal')">Create Task</button></div>
         </div>
       </td></tr>`;
       return;
     }
 
     const currentUserId = auth.getUser().id;
-    const isAtLeastTL = ['admin', 'team_leader'].includes(auth.getUser().role);
+    const canEditTasks = ['admin', 'team_leader', 'backend', 'frontend_backend', 'production'].includes(auth.getUser().role);
 
     tbody.innerHTML = tasks.map(t => {
       // Render member avatars (stacked)
@@ -162,12 +162,12 @@ async function loadTasks() {
             ${memberIds.slice(0, 4).map((uid, i) => {
           const names = memberNames.split(', ');
           const n = names[i] || '?';
-          return `<img src="${getInitialsAvatar(n, 24)}" title="${n}" style="width:24px;height:24px;border-radius:50%;border:1px solid var(--border);margin-left:${i > 0 ? '-6px' : '0'};z-index:${4 - i};">`;
+          return `<img src="${getInitialsAvatar(n, 24)}" title="${n}" style="width:24px;height:24px;border-radius:50%;border:2px solid var(--border);margin-left:${i > 0 ? '-6px' : '0'};z-index:${4 - i};">`;
         }).join('')}
             ${memberIds.length > 4 ? `<span class="member-count-badge">+${memberIds.length - 4}</span>` : ''}
           </div><span style="font-size:0.75rem;color:var(--text-muted);margin-top:3px;display:block;">${memberNames.split(', ').slice(0, 2).join(', ')}${memberNames.split(', ').length > 2 ? '…' : ''}</span>`
         : `<div style="display:flex;align-items:center;gap:8px;">
-            <img src="${getInitialsAvatar(t.assignee_name || '?', 24)}" style="width:24px;height:24px;border-radius:50%;border:1px solid var(--border);">
+            <img src="${getInitialsAvatar(t.assignee_name || '?', 24)}" style="width:24px;height:24px;border-radius:50%;border:2px solid var(--border);">
             <span>${t.assignee_name || 'Unassigned'}</span>
           </div>`;
 
@@ -183,8 +183,8 @@ async function loadTasks() {
         <td>${memberAvatarsHtml}</td>
         <td><div class="badge badge-${t.priority}">${t.priority}</div></td>
         <td>
-          ${isAtLeastTL ?
-          `<select class="form-control" style="width:130px; font-size:0.75rem; padding:4px 8px; border-radius:12px; font-weight:700; height:auto; display:inline-block; appearance:auto; background-color: var(--bg-hover);" onchange="updateTaskStatus(${t.id}, this.value)">
+          ${canEditTasks ?
+          `<select class="status-select-pill" data-status="${t.status}" onchange="this.dataset.status = this.value; updateTaskStatus(${t.id}, this.value)">
                 <option value="pending" ${t.status === 'pending' ? 'selected' : ''}>Pending</option>
                 <option value="in_progress" ${t.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
                 <option value="submitted" ${t.status === 'submitted' ? 'selected' : ''}>Submitted</option>
@@ -206,7 +206,7 @@ async function loadTasks() {
           `<button class="btn-primary" style="padding:6px 12px; font-size:0.7rem;" onclick="openSubmitModal(${t.id}, '${t.title.replace(/'/g, "\\'")}')">SUBMIT</button>` : ''}
             ${(isMember && t.status === 'pending') ?
           `<button class="btn-secondary" style="padding:6px 12px; font-size:0.7rem;" onclick="startTask(${t.id})">START</button>` : ''}
-            ${isAtLeastTL ? `<button class="btn-secondary" style="padding:6px 12px; font-size:0.7rem;" onclick="editTask(${t.id})"><i class="fas fa-edit"></i></button>` : ''}
+            ${canEditTasks ? `<button class="btn-secondary" style="padding:6px 12px; font-size:0.7rem;" onclick="editTask(${t.id})"><i class="fas fa-edit"></i></button>` : ''}
             ${auth.getUser().role === 'admin' ? `<button class="btn-danger" style="padding:6px 12px; font-size:0.7rem;" onclick="deleteTask(${t.id})"><i class="fas fa-trash"></i></button>` : ''}
           </div>
         </td>
@@ -220,15 +220,35 @@ async function loadTasks() {
 // ─── Load Form Options ────────────────────────────────────────────────────────
 async function loadFormOptions() {
   try {
-    const projects = await api.get('/projects?status=active');
-    allUsers = await api.get('/users?is_active=1');
+    const [projects, clients, users] = await Promise.all([
+      api.get('/projects'),
+      api.get('/clients'),
+      api.get('/users?is_active=1')
+    ]);
+    allUsers = users || [];
 
     const filterProj = document.getElementById('filter-project');
     const taskProj = document.getElementById('task-project');
 
-    const projOptions = projects.map(p => `<option value="${p.id}">${p.title}</option>`).join('');
-    if (filterProj) filterProj.innerHTML = '<option value="">All Clients</option>' + projOptions;
-    if (taskProj) taskProj.innerHTML = '<option value="">Select Client</option>' + projOptions;
+    let filterOptions = '<option value="">All Clients & Projects</option>';
+    let taskOptions = '<option value="">Select Client</option>';
+
+    if (clients && clients.length > 0) {
+      taskOptions += clients.map(c => `<option value="client_${c.id}">${c.name}${c.company ? ' — ' + c.company : ''}</option>`).join('');
+      filterOptions += clients.map(c => `<option value="client_${c.id}">${c.name}${c.company ? ' — ' + c.company : ''}</option>`).join('');
+    }
+
+    if (projects && projects.length > 0) {
+      taskOptions += '<optgroup label="Projects">' +
+        projects.map(p => `<option value="${p.id}">${p.title}${p.client_name ? ' (' + p.client_name + ')' : ''}</option>`).join('') +
+        '</optgroup>';
+      filterOptions += '<optgroup label="Projects">' +
+        projects.map(p => `<option value="${p.id}">${p.title}${p.client_name ? ' (' + p.client_name + ')' : ''}</option>`).join('') +
+        '</optgroup>';
+    }
+
+    if (filterProj) filterProj.innerHTML = filterOptions;
+    if (taskProj) taskProj.innerHTML = taskOptions;
 
     // Populate both picker dropdowns with all users
     populatePickerDropdown('new-picker-dropdown', 'new');
@@ -503,15 +523,15 @@ function showNexusResult(res) {
   const feedbackDiv = document.getElementById('nexus-feedback');
   if (feedbackDiv) {
     feedbackDiv.innerHTML = `
-      <div style="margin-bottom:12px; background:rgba(67,233,123,0.05); padding:12px; border-radius:8px; border:1px solid rgba(67,233,123,0.2);">
+      <div style="margin-bottom:12px; background:rgba(67,233,123,0.05); padding:12px; border-radius:8px; border:2px solid rgba(67,233,123,0.2);">
         <span style="color:var(--accent-green); font-weight:700; display:block; margin-bottom:4px;">✅ WHAT WORKED:</span>
         <div style="color:var(--text-primary); font-size:0.85rem;">${feedback.what_worked || 'No feedback provided'}</div>
       </div>
-      <div style="margin-bottom:12px; background:rgba(249,168,37,0.05); padding:12px; border-radius:8px; border:1px solid rgba(249,168,37,0.2);">
+      <div style="margin-bottom:12px; background:rgba(249,168,37,0.05); padding:12px; border-radius:8px; border:2px solid rgba(249,168,37,0.2);">
         <span style="color:var(--accent-orange); font-weight:700; display:block; margin-bottom:4px;">⚠️ IMPROVEMENTS:</span>
         <div style="color:var(--text-primary); font-size:0.85rem;">${feedback.improvements || 'No feedback provided'}</div>
       </div>
-      <div style="background:rgba(16,42,150,0.05); padding:12px; border-radius:8px; border:1px solid rgba(16,42,150,0.2);">
+      <div style="background:rgba(16,42,150,0.05); padding:12px; border-radius:8px; border:2px solid rgba(16,42,150,0.2);">
         <span style="color:var(--accent-primary); font-weight:700; display:block; margin-bottom:4px;">🔧 SUGGESTIONS:</span>
         <div style="color:var(--text-primary); font-size:0.85rem;">${feedback.suggestions || 'No feedback provided'}</div>
       </div>
@@ -529,8 +549,17 @@ function isOverdue(deadline) {
   return new Date(deadline) < new Date().setHours(0, 0, 0, 0);
 }
 
+async function openNewTaskModal() {
+  const form = document.getElementById('new-task-form');
+  if (form) form.reset();
+  clearPicker('new');
+  await loadFormOptions();
+  openModal('new-task-modal');
+}
+
 // ─── Global Exports ───────────────────────────────────────────────────────────
 window.initTasks = initTasks;
+window.openNewTaskModal = openNewTaskModal;
 window.loadTasks = loadTasks;
 window.openSubmitModal = openSubmitModal;
 window.clearUpload = clearUpload;

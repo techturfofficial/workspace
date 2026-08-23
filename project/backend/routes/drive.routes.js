@@ -124,21 +124,64 @@ router.post('/upload', verifyToken, upload.single('file'), (req, res) => {
   }
 });
 
-// Share Item
+// Share Item (Single or Multi-employee)
 router.post('/share', verifyToken, checkRole('admin'), (req, res) => {
-  const { itemId, userId, accessLevel } = req.body;
+  const { itemId, userId, userIds, accessLevel } = req.body;
   const itemIdVal = validateId(itemId, 'Item ID');
-  const userIdVal = validateId(userId, 'User ID');
-  if (!itemIdVal.valid || !userIdVal.valid) return res.status(400).json({ error: 'Item ID and User ID required' });
+  if (!itemIdVal.valid) return res.status(400).json({ error: 'Item ID required' });
+
+  // Gather user IDs (supports both array userIds and single userId)
+  let ids = [];
+  if (Array.isArray(userIds)) {
+    for (const uid of userIds) {
+      const v = validateId(uid, 'User ID');
+      if (v.valid) ids.push(v.value);
+    }
+  } else if (userId !== undefined && userId !== null && userId !== '') {
+    const v = validateId(userId, 'User ID');
+    if (v.valid) ids.push(v.value);
+  }
+
+  if (ids.length === 0) {
+    return res.status(400).json({ error: 'At least one valid employee must be selected' });
+  }
+
+  const level = accessLevel === 'editor' ? 'editor' : 'viewer';
   
   try {
-    db.prepare('INSERT INTO drive_access (item_id, user_id, access_level) VALUES (?, ?, ?) ON CONFLICT(item_id, user_id) DO UPDATE SET access_level = excluded.access_level').run(
-      itemIdVal.value, userIdVal.value, accessLevel || 'viewer'
-    );
-    res.json({ success: true });
+    const insertStmt = db.prepare(`
+      INSERT INTO drive_access (item_id, user_id, access_level) 
+      VALUES (?, ?, ?) 
+      ON CONFLICT(item_id, user_id) 
+      DO UPDATE SET access_level = excluded.access_level
+    `);
+
+    const insertMany = db.transaction((iId, uIds, lvl) => {
+      for (const uId of uIds) {
+        insertStmt.run(iId, uId, lvl);
+      }
+    });
+
+    insertMany(itemIdVal.value, ids, level);
+    res.json({ success: true, count: ids.length });
   } catch (e) {
     console.error('Share error:', e);
     res.status(500).json({ error: 'Failed to update permissions' });
+  }
+});
+
+// Revoke / Delete Share Permission
+router.delete('/share/:itemId/:userId', verifyToken, checkRole('admin'), (req, res) => {
+  const itemIdVal = validateId(req.params.itemId, 'Item ID');
+  const userIdVal = validateId(req.params.userId, 'User ID');
+  if (!itemIdVal.valid || !userIdVal.valid) return res.status(400).json({ error: 'Item ID and User ID required' });
+
+  try {
+    db.prepare('DELETE FROM drive_access WHERE item_id = ? AND user_id = ?').run(itemIdVal.value, userIdVal.value);
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Revoke permission error:', e);
+    res.status(500).json({ error: 'Failed to revoke permission' });
   }
 });
 
@@ -146,10 +189,11 @@ router.post('/share', verifyToken, checkRole('admin'), (req, res) => {
 router.get('/permissions/:id', verifyToken, checkRole('admin'), (req, res) => {
   try {
     const permissions = db.prepare(`
-      SELECT da.*, u.name as user_name, u.email as user_email 
+      SELECT da.*, u.name as user_name, u.email as user_email, u.role as user_role 
       FROM drive_access da
       JOIN users u ON u.id = da.user_id
       WHERE da.item_id = ?
+      ORDER BY u.name ASC
     `).all(req.params.id);
     res.json(permissions);
   } catch (e) {

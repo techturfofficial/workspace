@@ -12,14 +12,9 @@ async function initProjects() {
   initSearch();
 
 
-  // Reload dropdowns fresh every time the modal opens
-  document.querySelectorAll('[onclick*="new-project-modal"]').forEach(btn => {
-    btn.addEventListener('click', () => setTimeout(loadFormOptions, 100));
-  });
-
   // Auto-open New Project modal if ?new=1 in URL
   if (window.location.search.includes('new=1')) {
-    setTimeout(() => openModal('new-project-modal'), 300);
+    setTimeout(() => openNewProjectModal(), 300);
   }
 
   document.getElementById('new-project-form').onsubmit = async (e) => {
@@ -109,7 +104,7 @@ async function loadProjects() {
       lists[status].innerHTML = groups[status].map(p => {
         const pct = p.task_count > 0 ? Math.round((p.completed_tasks / p.task_count) * 100) : 0;
         return `
-          <div class="glass-card project-card anim-fade-up" onclick="openProjectDetail(${p.id})">
+          <div class="glass-card project-card anim-fade-up" draggable="true" data-project-id="${p.id}" onclick="if(!isProjectDragging) openProjectDetail(${p.id})">
             <div class="badge badge-${p.priority} priority-badge">${p.priority}</div>
             <div class="project-card-title">${p.title}</div>
             <div class="project-meta">
@@ -130,9 +125,81 @@ async function loadProjects() {
         `;
       }).join('');
     });
+
+    initProjectDragAndDrop();
   } catch (e) {
     showToast('Failed to load projects', 'error');
   }
+}
+
+let isProjectDragging = false;
+
+function initProjectDragAndDrop() {
+  const cards = document.querySelectorAll('.project-card');
+  const columns = document.querySelectorAll('.kanban-column, .kanban-column-cards');
+
+  cards.forEach(card => {
+    if (card._dragInit) return;
+    card._dragInit = true;
+
+    card.addEventListener('dragstart', (e) => {
+      isProjectDragging = true;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', card.dataset.projectId);
+    });
+
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      document.querySelectorAll('.kanban-column.drag-over').forEach(col => col.classList.remove('drag-over'));
+      setTimeout(() => {
+        isProjectDragging = false;
+      }, 100);
+    });
+  });
+
+  columns.forEach(colEl => {
+    if (colEl._dragInit) return;
+    colEl._dragInit = true;
+
+    colEl.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const col = colEl.closest('.kanban-column') || colEl;
+      col?.classList.add('drag-over');
+    });
+
+    colEl.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      const col = colEl.closest('.kanban-column') || colEl;
+      col?.classList.add('drag-over');
+    });
+
+    colEl.addEventListener('dragleave', (e) => {
+      if (!colEl.contains(e.relatedTarget)) {
+        const col = colEl.closest('.kanban-column') || colEl;
+        col?.classList.remove('drag-over');
+      }
+    });
+
+    colEl.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      const col = colEl.closest('.kanban-column') || colEl;
+      col?.classList.remove('drag-over');
+
+      const projectId = e.dataTransfer.getData('text/plain');
+      const targetStatus = col?.dataset.status;
+      if (!projectId || !targetStatus) return;
+
+      try {
+        await api.put(`/projects/${projectId}`, { status: targetStatus });
+        showToast(`Project moved to ${targetStatus.toUpperCase()}`, 'success');
+        loadProjects();
+      } catch (err) {
+        showToast('Failed to update status: ' + (err.message || err), 'error');
+      }
+    });
+  });
 }
 
 function initSearch() {
@@ -141,47 +208,77 @@ function initSearch() {
   input.addEventListener('input', debounce(() => loadProjects(), 200));
 }
 
+function formatRole(role) {
+  return (role || '').replace(/_/g, ' ').toUpperCase();
+}
+
 async function loadFormOptions() {
   try {
-    const [leaders, clients, allUsers] = await Promise.all([
-      api.get('/users?role=team_leader'),
-      api.get('/clients'),
-      api.get('/users?is_active=1') // Get all active users
+    const [allUsers, clients] = await Promise.all([
+      api.get('/users?is_active=1'),
+      api.get('/clients')
     ]);
 
     const leaderSelect = document.getElementById('proj-leader');
+    const editLeaderSelect = document.getElementById('edit-proj-leader');
     const clientSelect = document.getElementById('proj-client');
+    const editClientSelect = document.getElementById('edit-proj-client');
     const c1 = document.getElementById('proj-team-members-container');
     const c2 = document.getElementById('edit-proj-team-members-container');
 
-    if (leaderSelect) {
-      if (leaders && leaders.length > 0) {
-        leaderSelect.innerHTML = '<option value="">Select Team Leader</option>' +
-          leaders.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
-      } else {
-        leaderSelect.innerHTML = '<option value="">No team leaders found</option>';
+    // 1. Populate Team Leader Dropdown
+    if (allUsers && allUsers.length > 0) {
+      const leaderUsers = allUsers.filter(u =>
+        ['team_leader', 'admin', 'frontend_backend', 'backend'].includes(u.role) ||
+        (u.secondary_roles || '').includes('team_leader') ||
+        (u.secondary_roles || '').includes('admin')
+      );
+      const otherUsers = allUsers.filter(u => !leaderUsers.includes(u));
+
+      let leaderOpts = '<option value="">Select Team Leader</option>';
+      if (leaderUsers.length > 0) {
+        leaderOpts += '<optgroup label="Team Leaders & Admins">' +
+          leaderUsers.map(u => `<option value="${u.id}">${u.name} (${formatRole(u.role)})</option>`).join('') +
+          '</optgroup>';
       }
+      if (otherUsers.length > 0) {
+        leaderOpts += '<optgroup label="Other Staff">' +
+          otherUsers.map(u => `<option value="${u.id}">${u.name} (${formatRole(u.role)})</option>`).join('') +
+          '</optgroup>';
+      }
+
+      if (leaderSelect) leaderSelect.innerHTML = leaderOpts;
+      if (editLeaderSelect) editLeaderSelect.innerHTML = leaderOpts;
+    } else {
+      if (leaderSelect) leaderSelect.innerHTML = '<option value="">No team members found</option>';
+      if (editLeaderSelect) editLeaderSelect.innerHTML = '<option value="">No team members found</option>';
     }
 
-    if (clientSelect) {
-      if (clients && clients.length > 0) {
-        clientSelect.innerHTML = '<option value="">Select Client (optional)</option>' +
-          clients.map(c => `<option value="${c.id}">${c.name}${c.company ? ' — ' + c.company : ''}</option>`).join('');
-      } else {
-        clientSelect.innerHTML = '<option value="">No clients yet — add one first</option>';
-      }
+    // 2. Populate Client Dropdown
+    if (clients && clients.length > 0) {
+      const clientOpts = '<option value="">Select Client (optional)</option>' +
+        clients.map(c => `<option value="${c.id}">${c.name}${c.company ? ' — ' + c.company : ''}</option>`).join('');
+      if (clientSelect) clientSelect.innerHTML = clientOpts;
+      if (editClientSelect) editClientSelect.innerHTML = clientOpts;
+    } else {
+      if (clientSelect) clientSelect.innerHTML = '<option value="">No clients yet — add one in Client Portfolio</option>';
+      if (editClientSelect) editClientSelect.innerHTML = '<option value="">No clients yet</option>';
     }
 
-    // Populate multi-selection checkboxes
-    if (c1 && allUsers) {
-      const checkboxHtml = allUsers.map(u => `
-        <label style="display:flex; align-items:center; gap:8px; font-weight:normal; cursor:pointer;">
-          <input type="checkbox" value="${u.id}" class="team-member-cb">
-          ${u.name} <span style="font-size:0.7rem; color:var(--accent-primary);">(${u.role})</span>
+    // 3. Populate Team Members Checkbox List
+    if (allUsers && allUsers.length > 0) {
+      const memberItems = allUsers.map(u => `
+        <label class="team-member-item" id="tm-label-${u.id}">
+          <div class="team-member-label-left">
+            <input type="checkbox" value="${u.id}" class="team-member-cb" onchange="this.closest('.team-member-item')?.classList.toggle('checked', this.checked)">
+            <span>${u.name}</span>
+          </div>
+          <span class="team-member-role-badge">${formatRole(u.role)}</span>
         </label>
       `).join('');
-      c1.innerHTML = checkboxHtml;
-      if (c2) c2.innerHTML = checkboxHtml.replace(/team-member-cb/g, 'edit-team-member-cb');
+
+      if (c1) c1.innerHTML = memberItems;
+      if (c2) c2.innerHTML = memberItems.replace(/tm-label-/g, 'edit-tm-label-').replace(/team-member-cb/g, 'edit-team-member-cb');
     }
 
   } catch (e) {
@@ -336,7 +433,9 @@ async function openEditProjectModal(id) {
     // Check boxes matching selected team members
     const curMembers = p.team_members || [];
     document.querySelectorAll('#edit-proj-team-members-container input[type="checkbox"]').forEach(cb => {
-      cb.checked = curMembers.some(m => m.id === parseInt(cb.value));
+      const isChecked = curMembers.some(m => m.id === parseInt(cb.value));
+      cb.checked = isChecked;
+      cb.closest('.team-member-item')?.classList.toggle('checked', isChecked);
     });
 
     openModal('edit-project-modal');
@@ -345,7 +444,18 @@ async function openEditProjectModal(id) {
   }
 }
 
+async function openNewProjectModal() {
+  document.getElementById('new-project-form')?.reset();
+  document.querySelectorAll('#proj-team-members-container input[type="checkbox"]').forEach(cb => {
+    cb.checked = false;
+    cb.closest('.team-member-item')?.classList.remove('checked');
+  });
+  await loadFormOptions();
+  openModal('new-project-modal');
+}
+
 window.initProjects = initProjects;
+window.openNewProjectModal = openNewProjectModal;
 window.openProjectDetail = openProjectDetail;
 window.closeDetailPanel = closeDetailPanel;
 window.archiveProject = archiveProject;

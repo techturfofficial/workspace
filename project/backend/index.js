@@ -9,6 +9,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
+const initialPort = process.env.PORT;
 require('dotenv').config();
 
 // Initialize the database connection (this also creates tables if missing)
@@ -16,7 +17,7 @@ const db = require('./db');
 
 async function startServer() {
     const app = express();
-    const PORT = process.env.PORT || 5000;
+    const PORT = initialPort || process.env.PORT || 5000;
 
     const compression = require('compression');
     app.use(compression());
@@ -190,27 +191,21 @@ async function startServer() {
         ...clientPortalStaticOptions
     }));
 
-    if (String(PORT).trim() === '5000') {
-        app.use(express.static(clientPortalDir, {
-            ...clientPortalStaticOptions
-        }));
+    // Serve main CRM frontend
+    app.use(express.static(employeePortalDir, {
+        etag: true,
+        lastModified: true
+    }));
 
-        // Fallback to client portal index.html for Single Page Application behavior
-        app.get('*', (req, res) => {
-            res.sendFile(path.join(clientPortalDir, 'index.html'));
-        });
-    } else {
-        // Serve documentation and static UI with 1-hour caching for faster re-loads
-        app.use(express.static(employeePortalDir, {
-            etag: true,
-            lastModified: true
-        }));
+    // Fallback for client-portal SPA routes
+    app.get('/client-portal/*', (req, res) => {
+        res.sendFile(path.join(clientPortalDir, 'index.html'));
+    });
 
-        // Fallback to employee portal index.html for Single Page Application behavior
-        app.get('*', (req, res) => {
-            res.sendFile(path.join(employeePortalDir, 'index.html'));
-        });
-    }
+    // Fallback for main CRM SPA routes
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(employeePortalDir, 'index.html'));
+    });
 
 
     // --- BACKGROUND SERVICES ---

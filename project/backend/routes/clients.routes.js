@@ -43,7 +43,7 @@ router.get('/:id', verifyToken, (req, res) => {
 
 router.post('/', verifyToken, checkRole('admin', 'client_handler', 'team_leader'), (req, res) => {
   const {
-    name, company, phone, phone_alt, email, location, comm_method,
+    name, company, client_login_id, phone, phone_alt, email, location, comm_method,
     industry, business_desc, audience, competitors, brand_assets,
     service_type, project_desc, project_goals, features, design_prefs, reference_examples,
     platform, tech, integrations, hosting,
@@ -55,8 +55,9 @@ router.post('/', verifyToken, checkRole('admin', 'client_handler', 'team_leader'
   } = req.body;
   if (!name) return res.status(400).json({ message: 'Name required' });
   try {
+    const loginId = client_login_id && client_login_id.trim() !== '' ? client_login_id.trim() : null;
     const result = db.prepare(`INSERT INTO clients (
-      name, company, phone, phone_alt, email, location, comm_method,
+      name, company, client_login_id, phone, phone_alt, email, location, comm_method,
       industry, business_desc, audience, competitors, brand_assets,
       service_type, project_desc, project_goals, features, design_prefs, reference_examples,
       platform, tech, integrations, hosting,
@@ -65,8 +66,8 @@ router.post('/', verifyToken, checkRole('admin', 'client_handler', 'team_leader'
       agreement, payment_terms, ownership, nda,
       maintenance, updates, marketing, team_leader_id, team_members,
       brand_colors, brand_tone, goals, project_key, stage
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
-      name, company, phone, phone_alt, email, location, comm_method,
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+      name, company, loginId, phone, phone_alt, email, location, comm_method,
       industry, business_desc, audience, competitors, brand_assets,
       service_type, project_desc, project_goals, features, design_prefs, reference_examples || '',
       platform, tech, integrations, hosting,
@@ -87,7 +88,7 @@ router.post('/', verifyToken, checkRole('admin', 'client_handler', 'team_leader'
 
 router.put('/:id', verifyToken, checkRole('admin', 'client_handler', 'team_leader'), (req, res) => {
   const fields = [
-    'name', 'company', 'phone', 'phone_alt', 'email', 'location', 'comm_method',
+    'name', 'company', 'client_login_id', 'phone', 'phone_alt', 'email', 'location', 'comm_method',
     'industry', 'business_desc', 'audience', 'competitors', 'brand_assets',
     'service_type', 'project_desc', 'project_goals', 'features', 'design_prefs', 'reference_examples',
     'platform', 'tech', 'integrations', 'hosting',

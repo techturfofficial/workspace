@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="css/dashboard.css">
   <link rel="stylesheet" href="css/animations.css">
   <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link
     href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
@@ -38,13 +39,13 @@
       background: var(--bg-glass);
       border-radius: var(--radius);
       overflow: hidden;
-      border: 1px solid var(--border);
+      border:  2px solid var(--border);
     }
 
     .task-table th {
       text-align: left;
       padding: 16px;
-      background: var(--bg-secondary);
+      background: #ffffff;
       font-family: var(--font-display);
       font-size: 0.75rem;
       font-weight: 700;
@@ -55,7 +56,7 @@
 
     .task-table td {
       padding: 16px;
-      border-bottom: 1px solid var(--border);
+      border-bottom:  2px solid var(--border);
       font-size: 0.85rem;
     }
 
@@ -91,9 +92,9 @@
 
     /* Multi-member picker */
     .member-picker {
-      border: 1px solid var(--border);
+      border:  2px solid var(--border);
       border-radius: var(--radius-sm);
-      background: var(--bg-secondary);
+      background: #ffffff;
       padding: 8px;
       display: flex;
       flex-wrap: wrap;
@@ -113,7 +114,7 @@
       gap: 5px;
       background: rgba(16, 42, 150, 0.18);
       color: var(--accent-primary);
-      border: 1px solid rgba(16, 42, 150, 0.35);
+      border:  2px solid rgba(16, 42, 150, 0.35);
       border-radius: 20px;
       padding: 3px 10px 3px 6px;
       font-size: 0.75rem;
@@ -154,7 +155,7 @@
       position: absolute;
       z-index: 500;
       background: var(--bg-card);
-      border: 1px solid var(--border);
+      border:  2px solid var(--border);
       border-radius: var(--radius-sm);
       max-height: 180px;
       overflow-y: auto;
@@ -206,7 +207,7 @@
       width: 24px;
       height: 24px;
       border-radius: 50%;
-      border: 1px solid var(--border);
+      border:  2px solid var(--border);
       margin-left: -6px;
     }
 
@@ -225,14 +226,14 @@
   <!-- Extracted Inline Styles -->
   <style>
     .ui-style-1 {
-      color: var(--accent-pink);
+      color: var(--accent-secondary);
     }
 
     .ui-style-2 {
       border: 0;
-      border-top: 1px solid var(--border);
+      border-top:  2px solid var(--border);
       margin: 10px 0;
-      opacity: 0.3;
+      opacity: 1.0;
     }
 
     .ui-style-3 {
@@ -312,7 +313,7 @@
       display: none;
       margin-top: 24px;
       padding: 20px;
-      border: 1px solid var(--border);
+      border:  2px solid var(--border);
       border-radius: var(--radius);
     }
 
@@ -320,7 +321,7 @@
       font-family: var(--font-display);
       font-size: 0.9rem;
       margin-bottom: 16px;
-      color: var(--accent-pink);
+      color: var(--accent-secondary);
     }
 
     .ui-style-18 {
@@ -342,7 +343,7 @@
       width: 100vw;
       height: 100vh;
       z-index: 2200;
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(255, 255, 255, 0.6);
       align-items: center;
       justify-content: center;
       -webkit-backdrop-filter: blur(4px);
@@ -361,7 +362,7 @@
 
     .ui-style-22 {
       background: var(--accent-primary);
-      color: #fff;
+      color: var(--text-primary);
       padding: 14px 18px;
       font-family: var(--font-display);
       font-weight: 700;
@@ -393,8 +394,8 @@
 
     .ui-style-26 {
       padding: 12px;
-      background: var(--bg-primary);
-      border-top: 1px solid var(--border);
+      background: #ffffff;
+      border-top:  2px solid var(--border);
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
@@ -418,8 +419,8 @@
 
     .ui-style-31 {
       padding: 20px;
-      background: var(--bg-primary);
-      border-top: 1px solid var(--border);
+      background: #ffffff;
+      border-top:  2px solid var(--border);
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
@@ -441,8 +442,8 @@
 
     .ui-style-34 {
       padding: 15px;
-      background: var(--bg-primary);
-      border-top: 1px solid var(--border);
+      background: #ffffff;
+      border-top:  2px solid var(--border);
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -458,88 +459,80 @@
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="sidebar-logo">TECH TURF</div>
-        <div class="sidebar-logo-short">TT</div>
+        <div class="sidebar-logo-short"><img src="assets/techturf-logo.png" alt="TT" class="sidebar-logo-img-short" /></div>
       </div>
 
-      <nav class="sidebar-menu">
-        <div class="menu-item" onclick="window.location.href='dashboard.html'">
-          <i class="fas fa-th-large"></i>
-          <span class="menu-text">Dashboard</span>
+      <nav class="sidebar-menu" id="main-sidebar-nav">
+        <div class="menu-item" data-nav="dashboard.html" onclick="window.location.href='dashboard.html'">
+          <i class="fas fa-th-large"></i><span class="menu-text">Dashboard</span>
         </div>
-        <div class="menu-item" onclick="window.location.href='projects.html'">
-          <i class="fas fa-project-diagram"></i>
-          <span class="menu-text">Projects</span>
+        <div class="menu-item" data-nav="projects.html" onclick="window.location.href='projects.html'">
+          <i class="fas fa-project-diagram"></i><span class="menu-text">Projects</span>
         </div>
-        <div class="menu-item active" onclick="window.location.href='tasks.html'">
-          <i class="fas fa-tasks"></i>
-          <span class="menu-text">Tasks</span>
+        <div class="menu-item" data-nav="tasks.html" onclick="window.location.href='tasks.html'">
+          <i class="fas fa-tasks"></i><span class="menu-text">Tasks</span>
         </div>
-        <div class="menu-item" onclick="window.location.href='submissions.html'">
-          <i class="fas fa-file-upload"></i>
-          <span class="menu-text">Submissions</span>
+        <div class="menu-item" data-nav="submissions.html" onclick="window.location.href='submissions.html'">
+          <i class="fas fa-file-upload"></i><span class="menu-text">Submissions</span>
         </div>
-        <div class="menu-item" onclick="window.location.href='clients.html'">
-          <i class="fas fa-user-tie"></i>
-          <span class="menu-text">Clients</span>
+        <div class="menu-item" data-nav="clients.html" onclick="window.location.href='clients.html'">
+          <i class="fas fa-user-tie"></i><span class="menu-text">Clients</span>
         </div>
-        <div class="menu-item" onclick="window.location.href='announcements.html'">
-          <i class="fas fa-bullhorn"></i>
-          <span class="menu-text">Announcements</span>
+        <div class="menu-item" data-nav="announcements.html" onclick="window.location.href='announcements.html'">
+          <i class="fas fa-bullhorn"></i><span class="menu-text">Announcements</span>
         </div>
-        <div class="menu-item" onclick="window.location.href='drive.html'">
-          <i class="fas fa-hdd"></i>
-          <span class="menu-text">Secure Drive</span>
+        <div class="menu-item" data-nav="drive.html" onclick="window.location.href='drive.html'">
+          <i class="fas fa-hdd"></i><span class="menu-text">Secure Drive</span>
         </div>
-        <div class="menu-item" onclick="window.location.href='nexus_chat.html'">
-          <i class="fas fa-robot ui-style-1"></i>
-          <span class="menu-text">Nexus AI Terminal</span>
+        <div class="menu-item" data-nav="messages.html" onclick="window.location.href='messages.html'">
+          <i class="fas fa-comments messenger-icon"></i><span class="menu-text">Team Messenger</span>
+        </div>
+        <div class="menu-item" data-nav="nexus_chat.html" onclick="window.location.href='nexus_chat.html'">
+          <i class="fas fa-robot nexus-icon"></i><span class="menu-text">Nexus AI Terminal</span>
         </div>
 
-        <hr class="ui-style-2">
+        <hr class="sidebar-divider">
 
         <!-- Role-Based Control Centers -->
-        <div class="menu-item admin-only" onclick="window.location.href='users.html'">
-          <i class="fas fa-users-cog"></i>
-          <span class="menu-text">User Management</span>
+        <div class="sidebar-section admin-only">
+          <div class="sidebar-section-title">USER MANAGEMENT</div>
+          <div class="sidebar-submenu">
+            <div class="menu-item admin-only" data-nav="users.html" onclick="window.location.href='users.html'">
+              <i class="fas fa-users-cog"></i><span class="menu-text">User Management</span>
+            </div>
+            <div class="menu-item admin-only" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
+              <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
+            </div>
+          </div>
         </div>
-        <div class="menu-item admin-only" onclick="window.location.href='admin_control.html'">
-          <i class="fas fa-shield-alt"></i>
-          <span class="menu-text">Admin Warp</span>
+        <div class="menu-item rnd-only" data-nav="nexus_lab.html" onclick="window.location.href='nexus_lab.html'">
+          <i class="fas fa-flask"></i><span class="menu-text">Nexus Lab</span>
         </div>
-        <div class="menu-item rnd-only" onclick="window.location.href='nexus_lab.html'">
-          <i class="fas fa-flask"></i>
-          <span class="menu-text">Nexus Lab</span>
+        <div class="menu-item handler-only" data-nav="client_connect.html" onclick="window.location.href='client_connect.html'">
+          <i class="fas fa-handshake"></i><span class="menu-text">Client Connect</span>
         </div>
-        <div class="menu-item handler-only" onclick="window.location.href='client_connect.html'">
-          <i class="fas fa-handshake"></i>
-          <span class="menu-text">Client Connect</span>
-        </div>
-
-
-        <hr class="ui-style-2">
-
-        <div class="menu-item admin-only" id="dbadmin-link">
-          <i class="fas fa-database"></i>
-          <span class="menu-text">Database Viewer</span>
-        </div>
-        <div class="menu-item" id="tickets-link">
-          <i class="fas fa-ticket-alt"></i>
-          <span class="menu-text">Tickets</span>
-        </div>
-        <div class="menu-item admin-only" id="payments-link">
-          <i class="fas fa-money-check-alt"></i>
-          <span class="menu-text">Payments</span>
-        </div>
-        <div class="menu-item" data-nav="learning_hub.html" id="courses-link">
-          <i class="fas fa-graduation-cap"></i>
-          <span class="menu-text">Learning Hub</span>
+        <div class="menu-item" data-nav="learning_hub.html" id="courses-link-global" onclick="window.location.href='learning_hub.html'">
+          <i class="fas fa-graduation-cap"></i><span class="menu-text">Learning Hub</span>
         </div>
 
-        <hr class="ui-style-2">
+        <hr class="sidebar-divider">
+        
+        <div class="menu-item" data-nav="workspace.html" onclick="window.location.href='workspace.html'">
+          <i class="fas fa-paint-brush"></i><span class="menu-text">Creative Workspace</span>
+        </div>
+        
+        <div class="menu-item admin-only" data-nav="database_viewer.html" id="dbadmin-link" onclick="window.location.href='database_viewer.html'">
+          <i class="fas fa-database"></i><span class="menu-text">Database Viewer</span>
+        </div>
 
-        <div class="menu-item" onclick="window.location.href='profile.html'">
-          <i class="fas fa-user-circle"></i>
-          <span class="menu-text">My Profile</span>
+        <div class="menu-item admin-only" data-nav="payments.html" id="payments-link" onclick="window.location.href='payments.html'">
+          <i class="fas fa-money-check-alt"></i><span class="menu-text">Payments</span>
+        </div>
+
+        <hr class="sidebar-divider">
+        
+        <div class="menu-item" data-nav="profile.html" onclick="window.location.href='profile.html'">
+          <i class="fas fa-user-circle"></i><span class="menu-text">My Profile</span>
         </div>
       </nav>
 
@@ -556,36 +549,34 @@
     </aside>
 
     <main class="main-content">
-      <header class="navbar">
+            <header class="navbar">
         <div class="nav-left">
-          <button id="mobile-toggle" class="mobile-hamburger" title="Toggle Mobile Menu"><i
-              class="fas fa-bars"></i></button>
+          <button id="mobile-toggle" class="mobile-hamburger"><i class="fas fa-bars"></i></button>
           <div class="nav-search">
             <i class="fas fa-search"></i>
-            <input type="text" id="task-search" title="Search tasks" placeholder="Search tasks...">
+            <input type="text" placeholder="Search tasks, assignees...">
           </div>
         </div>
-
         <div class="nav-actions">
           <div class="notification-bell" id="notification-bell">
             <i class="fas fa-bell"></i>
-            <span class="notification-badge" id="notification-badge">0</span>
-            <div class="notification-dropdown glass-card ui-style-3" id="notification-dropdown">
-              <div class="ui-style-4">
-                <span class="ui-style-5">Notifications</span>
-                <span onclick="api.put('/notifications/read-all').then(loadNotifications)" class="ui-style-6">Mark all
-                  read</span>
+            <span class="notification-badge" id="notification-badge" style="display:none;">0</span>
+            <div class="notification-dropdown glass-card" id="notification-dropdown">
+              <div class="notification-header">
+                <span class="notification-title">Notifications</span>
+                <span class="notification-mark-read" onclick="markAllNotificationsRead()">Mark all read</span>
               </div>
-              <div id="notification-list" class="ui-style-7"></div>
+              <div id="notification-list" class="notification-list-scroll"></div>
             </div>
           </div>
 
-          <div class="user-profile-nav" onclick="window.location.href='profile.html'">
-            <div class="ui-style-8">
-              <div id="nav-user-name" class="ui-style-9">User Name</div>
-              <div id="nav-user-role" class="ui-style-10">Role</div>
+          <div class="user-profile-nav" data-nav="profile.html">
+            <div class="user-nav-text">
+              <div id="nav-user-name" class="user-nav-name">Admin</div>
+              <div id="nav-user-role" class="user-nav-role">Admin</div>
             </div>
-            <img id="nav-avatar" class="user-avatar" src="" alt="Avatar">
+            <img id="nav-avatar" class="user-avatar" src="" alt="Avatar" style="display:none;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+            <div class="avatar-fallback-badge" id="nav-avatar-badge">A</div>
           </div>
         </div>
       </header>
@@ -595,7 +586,7 @@
           <div class="breadcrumb">Workspace / Tasks</div>
           <div class="page-title">TASK OVERVIEW</div>
         </div>
-        <div class="admin-tl-only">
+        <div class="task-create-only">
           <button class="btn-primary" onclick="openModal('new-task-modal')"><i class="fas fa-plus"></i><span>New
               Task</span></button>
         </div>
@@ -770,32 +761,7 @@
   </div>
 
   <!-- Unified Modals Section -->
-  <div id="dbadmin-modal" class="ui-style-20">
-    <div class="glass-card ui-style-21">
-      <div class="ui-style-22">
-        <span><i class="fas fa-database"></i> Database Viewer</span>
-        <i class="fas fa-times ui-style-23" id="dbadmin-close"></i>
-      </div>
-      <div id="dbadmin-content" class="ui-style-24"></div>
-    </div>
-  </div>
-  <div id="tickets-modal" class="ui-style-20">
-    <div class="glass-card ui-style-25">
-      <div class="ui-style-22">
-        <span><i class="fas fa-ticket-alt"></i> Tickets</span>
-        <i class="fas fa-times ui-style-23" id="tickets-close"></i>
-      </div>
-      <div id="tickets-list" class="ui-style-24"></div>
-      <form id="tickets-add-form" class="ui-style-26">
-        <input id="ticket-title" type="text" title="Ticket Title" placeholder="Title" class="form-input ui-style-27"
-          required />
-        <input id="ticket-desc" type="text" title="Ticket Description" placeholder="Description"
-          class="form-input ui-style-28" />
-        <input id="ticket-priority" type="text" title="Ticket Priority" placeholder="Priority"
-          class="form-input ui-style-29" />
-        <button type="submit" class="btn-primary ui-style-30">Add</button>
-      </form>
-    </div>
+  
   </div>
   <div id="payments-modal" class="ui-style-20">
     <div class="glass-card ui-style-25">
@@ -867,7 +833,7 @@
         }
       };
 
-      setupModal('tickets-link', 'tickets-modal', 'tickets-close');
+      
       setupModal('payments-link', 'payments-modal', 'payments-close');
     }
   </script>

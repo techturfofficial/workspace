@@ -408,7 +408,24 @@
       display: flex;
       flex-direction: column;
       gap: 16px;
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      min-height: 400px;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
     }
+
+    .kanban-column.drag-over {
+      border-color: var(--accent-primary) !important;
+      background: rgba(16, 42, 150, 0.04);
+      box-shadow: 0 12px 28px rgba(16, 42, 150, 0.14);
+      border-style: dashed;
+    }
+
+    .kanban-column[data-status="active"] { border-top: 4px solid var(--accent-primary); }
+    .kanban-column[data-status="paused"] { border-top: 4px solid var(--accent-secondary); }
+    .kanban-column[data-status="completed"] { border-top: 4px solid var(--status-completed, #10b981); }
 
     .column-header {
       display: flex;
@@ -417,31 +434,67 @@
       padding: 12px 16px;
       background: #ffffff;
       border-radius: var(--radius-sm);
-      border:  2px solid var(--border);
+      border: 1.5px solid var(--border);
       font-family: var(--font-display);
-      font-size: 0.8rem;
-      font-weight: 700;
+      font-size: 0.82rem;
+      font-weight: 800;
       letter-spacing: 1px;
     }
 
+    .kanban-column[data-status="active"] .column-header { color: var(--accent-primary); }
+    .kanban-column[data-status="paused"] .column-header { color: var(--accent-secondary); }
+    .kanban-column[data-status="completed"] .column-header { color: var(--status-completed, #10b981); }
+
     .column-count {
-      background: var(--bg-card);
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-size: 0.7rem;
-      color: var(--accent-primary);
+      background: var(--bg-hover);
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+    }
+
+    .kanban-column-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 250px;
+      height: 100%;
     }
 
     .project-card {
       padding: 20px;
-      cursor: pointer;
+      cursor: grab !important;
       position: relative;
+      background: #ffffff;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+      user-select: none;
+    }
+
+    .project-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(16, 42, 150, 0.08);
+      border-color: rgba(16, 42, 150, 0.25);
+    }
+
+    .project-card:active {
+      cursor: grabbing !important;
+    }
+
+    .project-card.dragging {
+      opacity: 0.45;
+      border: 2px dashed var(--accent-primary) !important;
+      transform: scale(0.98);
+      box-shadow: 0 14px 30px rgba(16, 42, 150, 0.2) !important;
     }
 
     .project-card .priority-badge {
       position: absolute;
-      top: 12px;
-      right: 12px;
+      top: 14px;
+      right: 14px;
     }
 
     .project-card-title {
@@ -450,6 +503,7 @@
       font-weight: 700;
       margin-bottom: 12px;
       color: var(--text-primary);
+      padding-right: 60px;
     }
 
     .project-meta {
@@ -495,88 +549,80 @@
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="sidebar-logo">TECH TURF</div>
-        <div class="sidebar-logo-short">TT</div>
+        <div class="sidebar-logo-short"><img src="assets/techturf-logo.png" alt="TT" class="sidebar-logo-img-short" /></div>
       </div>
 
-      <nav class="sidebar-menu">
-        <div class="menu-item" data-nav="dashboard.html">
-          <i class="fas fa-th-large"></i>
-          <span class="menu-text">Dashboard</span>
+      <nav class="sidebar-menu" id="main-sidebar-nav">
+        <div class="menu-item" data-nav="dashboard.html" onclick="window.location.href='dashboard.html'">
+          <i class="fas fa-th-large"></i><span class="menu-text">Dashboard</span>
         </div>
-        <div class="menu-item active" data-nav="projects.html">
-          <i class="fas fa-project-diagram"></i>
-          <span class="menu-text">Projects</span>
+        <div class="menu-item" data-nav="projects.html" onclick="window.location.href='projects.html'">
+          <i class="fas fa-project-diagram"></i><span class="menu-text">Projects</span>
         </div>
-        <div class="menu-item" data-nav="tasks.html">
-          <i class="fas fa-tasks"></i>
-          <span class="menu-text">Tasks</span>
+        <div class="menu-item" data-nav="tasks.html" onclick="window.location.href='tasks.html'">
+          <i class="fas fa-tasks"></i><span class="menu-text">Tasks</span>
         </div>
-        <div class="menu-item" data-nav="submissions.html">
-          <i class="fas fa-file-upload"></i>
-          <span class="menu-text">Submissions</span>
+        <div class="menu-item" data-nav="submissions.html" onclick="window.location.href='submissions.html'">
+          <i class="fas fa-file-upload"></i><span class="menu-text">Submissions</span>
         </div>
-        <div class="menu-item" data-nav="clients.html">
-          <i class="fas fa-user-tie"></i>
-          <span class="menu-text">Clients</span>
+        <div class="menu-item" data-nav="clients.html" onclick="window.location.href='clients.html'">
+          <i class="fas fa-user-tie"></i><span class="menu-text">Clients</span>
         </div>
-        <div class="menu-item" data-nav="announcements.html">
-          <i class="fas fa-bullhorn"></i>
-          <span class="menu-text">Announcements</span>
+        <div class="menu-item" data-nav="announcements.html" onclick="window.location.href='announcements.html'">
+          <i class="fas fa-bullhorn"></i><span class="menu-text">Announcements</span>
         </div>
-        <div class="menu-item" data-nav="drive.html">
-          <i class="fas fa-hdd"></i>
-          <span class="menu-text">Secure Drive</span>
+        <div class="menu-item" data-nav="drive.html" onclick="window.location.href='drive.html'">
+          <i class="fas fa-hdd"></i><span class="menu-text">Secure Drive</span>
         </div>
-        <div class="menu-item" data-nav="nexus_chat.html">
-          <i class="fas fa-robot x-style-1"></i>
-          <span class="menu-text">Nexus AI Terminal</span>
+        <div class="menu-item" data-nav="messages.html" onclick="window.location.href='messages.html'">
+          <i class="fas fa-comments messenger-icon"></i><span class="menu-text">Team Messenger</span>
+        </div>
+        <div class="menu-item" data-nav="nexus_chat.html" onclick="window.location.href='nexus_chat.html'">
+          <i class="fas fa-robot nexus-icon"></i><span class="menu-text">Nexus AI Terminal</span>
         </div>
 
-        <hr class="x-style-2">
+        <hr class="sidebar-divider">
 
         <!-- Role-Based Control Centers -->
-        <div class="menu-item admin-only" data-nav="users.html">
-          <i class="fas fa-users-cog"></i>
-          <span class="menu-text">User Management</span>
+        <div class="sidebar-section admin-only">
+          <div class="sidebar-section-title">USER MANAGEMENT</div>
+          <div class="sidebar-submenu">
+            <div class="menu-item admin-only" data-nav="users.html" onclick="window.location.href='users.html'">
+              <i class="fas fa-users-cog"></i><span class="menu-text">User Management</span>
+            </div>
+            <div class="menu-item admin-only" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
+              <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
+            </div>
+          </div>
         </div>
-        <div class="menu-item admin-only" data-nav="admin_control.html">
-          <i class="fas fa-shield-alt"></i>
-          <span class="menu-text">Admin Warp</span>
+        <div class="menu-item rnd-only" data-nav="nexus_lab.html" onclick="window.location.href='nexus_lab.html'">
+          <i class="fas fa-flask"></i><span class="menu-text">Nexus Lab</span>
         </div>
-        <div class="menu-item rnd-only" data-nav="nexus_lab.html">
-          <i class="fas fa-flask"></i>
-          <span class="menu-text">Nexus Lab</span>
+        <div class="menu-item handler-only" data-nav="client_connect.html" onclick="window.location.href='client_connect.html'">
+          <i class="fas fa-handshake"></i><span class="menu-text">Client Connect</span>
         </div>
-        <div class="menu-item handler-only" data-nav="client_connect.html">
-          <i class="fas fa-handshake"></i>
-          <span class="menu-text">Client Connect</span>
-        </div>
-
-
-        <hr class="x-style-3">
-
-        <div class="menu-item admin-only" id="dbadmin-link">
-          <i class="fas fa-database"></i>
-          <span class="menu-text">Database Viewer</span>
-        </div>
-        <div class="menu-item" id="tickets-link">
-          <i class="fas fa-ticket-alt"></i>
-          <span class="menu-text">Tickets</span>
-        </div>
-        <div class="menu-item admin-only" id="payments-link">
-          <i class="fas fa-money-check-alt"></i>
-          <span class="menu-text">Payments</span>
-        </div>
-        <div class="menu-item" data-nav="learning_hub.html" id="courses-link">
-          <i class="fas fa-graduation-cap"></i>
-          <span class="menu-text">Learning Hub</span>
+        <div class="menu-item" data-nav="learning_hub.html" id="courses-link-global" onclick="window.location.href='learning_hub.html'">
+          <i class="fas fa-graduation-cap"></i><span class="menu-text">Learning Hub</span>
         </div>
 
-        <hr class="x-style-4">
+        <hr class="sidebar-divider">
+        
+        <div class="menu-item" data-nav="workspace.html" onclick="window.location.href='workspace.html'">
+          <i class="fas fa-paint-brush"></i><span class="menu-text">Creative Workspace</span>
+        </div>
+        
+        <div class="menu-item admin-only" data-nav="database_viewer.html" id="dbadmin-link" onclick="window.location.href='database_viewer.html'">
+          <i class="fas fa-database"></i><span class="menu-text">Database Viewer</span>
+        </div>
 
-        <div class="menu-item" data-nav="profile.html">
-          <i class="fas fa-user-circle"></i>
-          <span class="menu-text">My Profile</span>
+        <div class="menu-item admin-only" data-nav="payments.html" id="payments-link" onclick="window.location.href='payments.html'">
+          <i class="fas fa-money-check-alt"></i><span class="menu-text">Payments</span>
+        </div>
+
+        <hr class="sidebar-divider">
+        
+        <div class="menu-item" data-nav="profile.html" onclick="window.location.href='profile.html'">
+          <i class="fas fa-user-circle"></i><span class="menu-text">My Profile</span>
         </div>
       </nav>
 
@@ -593,36 +639,34 @@
     </aside>
 
     <main class="main-content">
-      <header class="navbar">
+            <header class="navbar">
         <div class="nav-left">
-          <button id="mobile-toggle" class="mobile-hamburger" aria-label="Toggle Mobile Menu"><i
-              class="fas fa-bars"></i></button>
+          <button id="mobile-toggle" class="mobile-hamburger"><i class="fas fa-bars"></i></button>
           <div class="nav-search">
             <i class="fas fa-search"></i>
-            <input type="text" id="project-search" placeholder="Search projects...">
+            <input type="text" placeholder="Search projects, clients...">
           </div>
         </div>
-
         <div class="nav-actions">
           <div class="notification-bell" id="notification-bell">
             <i class="fas fa-bell"></i>
-            <span class="notification-badge" id="notification-badge">0</span>
-            <div class="notification-dropdown glass-card x-style-5" id="notification-dropdown">
-              <div class="x-style-6">
-                <span class="x-style-7">Notifications</span>
-                <span onclick="api.put('/notifications/read-all').then(loadNotifications)" class="x-style-8">Mark all
-                  read</span>
+            <span class="notification-badge" id="notification-badge" style="display:none;">0</span>
+            <div class="notification-dropdown glass-card" id="notification-dropdown">
+              <div class="notification-header">
+                <span class="notification-title">Notifications</span>
+                <span class="notification-mark-read" onclick="markAllNotificationsRead()">Mark all read</span>
               </div>
-              <div id="notification-list" class="x-style-9"></div>
+              <div id="notification-list" class="notification-list-scroll"></div>
             </div>
           </div>
 
           <div class="user-profile-nav" data-nav="profile.html">
-            <div class="x-style-10">
-              <div id="nav-user-name" class="x-style-11">User Name</div>
-              <div id="nav-user-role" class="x-style-12">Role</div>
+            <div class="user-nav-text">
+              <div id="nav-user-name" class="user-nav-name">Admin</div>
+              <div id="nav-user-role" class="user-nav-role">Admin</div>
             </div>
-            <img id="nav-avatar" class="user-avatar" src="" alt="Avatar">
+            <img id="nav-avatar" class="user-avatar" src="" alt="Avatar" style="display:none;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+            <div class="avatar-fallback-badge" id="nav-avatar-badge">A</div>
           </div>
         </div>
       </header>
@@ -633,31 +677,31 @@
           <div class="page-title">PROJECT BOARD</div>
         </div>
         <div class="project-create-only">
-          <button class="btn-primary" onclick="openModal('new-project-modal')"><i class="fas fa-plus"></i><span>New
+          <button class="btn-primary" onclick="openNewProjectModal()"><i class="fas fa-plus"></i><span>New
               Project</span></button>
         </div>
       </div>
 
       <div class="kanban-container">
-        <div class="kanban-column" id="col-active">
+        <div class="kanban-column" id="col-active" data-status="active">
           <div class="column-header">ACTIVE <span class="column-count" id="count-active">0</span></div>
-          <div class="column-body" id="list-active"></div>
+          <div class="column-body kanban-column-cards" id="list-active"></div>
         </div>
-        <div class="kanban-column" id="col-paused">
+        <div class="kanban-column" id="col-paused" data-status="paused">
           <div class="column-header">PAUSED <span class="column-count" id="count-paused">0</span></div>
-          <div class="column-body" id="list-paused"></div>
+          <div class="column-body kanban-column-cards" id="list-paused"></div>
         </div>
-        <div class="kanban-column" id="col-completed">
+        <div class="kanban-column" id="col-completed" data-status="completed">
           <div class="column-header">COMPLETED <span class="column-count" id="count-completed">0</span></div>
-          <div class="column-body" id="list-completed"></div>
+          <div class="column-body kanban-column-cards" id="list-completed"></div>
         </div>
       </div>
     </main>
   </div>
 
-  <!-- New Project Modal -->
-  <div class="modal" id="new-project-modal">
-    <div class="glass-card modal-content">
+  <!-- New Project Modal (Side Drawer) -->
+  <div class="modal modal-drawer" id="new-project-modal" onclick="if(event.target===this) closeModal('new-project-modal')">
+    <div class="modal-content side-drawer-panel">
       <div class="modal-header">
         <div class="modal-title">CREATE PROJECT</div>
         <i class="fas fa-times close-modal" onclick="closeModal('new-project-modal')"></i>
@@ -665,13 +709,13 @@
       <form id="new-project-form">
         <div class="form-group">
           <label for="proj-title">Project Title</label>
-          <input type="text" class="form-control" id="proj-title" required>
+          <input type="text" class="form-control" id="proj-title" placeholder="Enter project title" required>
         </div>
         <div class="form-group">
           <label for="proj-desc">Description</label>
-          <textarea class="form-control" id="proj-desc" rows="3"></textarea>
+          <textarea class="form-control" id="proj-desc" rows="3" placeholder="Enter project description"></textarea>
         </div>
-        <div class="x-style-13">
+        <div class="form-row-grid">
           <div class="form-group">
             <label for="proj-priority">Priority</label>
             <select class="form-control" id="proj-priority">
@@ -697,14 +741,14 @@
           <label for="proj-client">Client</label>
           <select class="form-control" id="proj-client"></select>
         </div>
-        <button type="submit" class="btn-primary x-style-14">Create Project</button>
+        <button type="submit" class="btn-primary btn-drawer-submit">Create Project</button>
       </form>
     </div>
   </div>
 
-  <!-- Edit Project Modal -->
-  <div class="modal" id="edit-project-modal">
-    <div class="glass-card modal-content">
+  <!-- Edit Project Modal (Side Drawer) -->
+  <div class="modal modal-drawer" id="edit-project-modal" onclick="if(event.target===this) closeModal('edit-project-modal')">
+    <div class="modal-content side-drawer-panel">
       <div class="modal-header">
         <div class="modal-title">EDIT PROJECT</div>
         <i class="fas fa-times close-modal" onclick="closeModal('edit-project-modal')"></i>
@@ -719,7 +763,7 @@
           <label for="edit-proj-desc">Description</label>
           <textarea class="form-control" id="edit-proj-desc" rows="3"></textarea>
         </div>
-        <div class="x-style-15">
+        <div class="form-row-grid">
           <div class="form-group">
             <label for="edit-proj-status">Status</label>
             <select class="form-control" id="edit-proj-status">
@@ -754,11 +798,7 @@
           <label for="edit-proj-client">Client</label>
           <select class="form-control" id="edit-proj-client"></select>
         </div>
-        <div class="x-style-16">
-          <button type="button" class="btn-secondary x-style-17"
-            onclick="closeModal('edit-project-modal')">Cancel</button>
-          <button type="submit" class="btn-primary x-style-18">Update Project</button>
-        </div>
+        <button type="submit" class="btn-primary btn-drawer-submit">Update Project</button>
       </form>
     </div>
   </div>
@@ -775,14 +815,7 @@
   </div>
 
   <!-- Unified Modals Section -->
-  <div id="dbadmin-modal" class="x-style-23">
-    <div class="glass-card x-style-24">
-      <div class="x-style-25">
-        <span><i class="fas fa-database"></i> Database Viewer</span>
-        <i class="fas fa-times x-style-26" id="dbadmin-close"></i>
-      </div>
-      <div id="dbadmin-content" class="x-style-27"></div>
-    </div>
+  
   </div>
   <div id="tickets-modal" class="x-style-28">
     <div class="glass-card x-style-29">

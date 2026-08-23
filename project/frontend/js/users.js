@@ -1,3 +1,135 @@
+const BUILTIN_ROLE_OPTIONS = [
+  { value: 'writer', label: 'Writer' },
+  { value: 'designer', label: 'Designer' },
+  { value: 'team_leader', label: 'Team Leader' },
+  { value: 'rnd', label: 'R&D' },
+  { value: 'media_manager', label: 'Media Mgr' },
+  { value: 'frontend', label: 'Frontend' },
+  { value: 'backend', label: 'Backend' },
+  { value: 'frontend_backend', label: 'Frontend + Backend' },
+  { value: 'admin', label: 'Admin' }
+];
+
+const REMOVED_ROLES = new Set(['creator', 'client_handler', 'production']);
+
+function getRoleOptions() {
+  const combined = BUILTIN_ROLE_OPTIONS.filter(r => !REMOVED_ROLES.has(r.value));
+  companyRoleOptions.forEach(role => {
+    if (!REMOVED_ROLES.has(role.name) && !combined.some(option => option.value === role.name)) {
+      combined.push({ value: role.name, label: role.name.replace(/_/g, ' ') });
+    }
+  });
+  return combined;
+}
+
+const ROLE_ICONS = {
+  admin: 'fa-crown',
+  team_leader: 'fa-users-gear',
+  rnd: 'fa-flask',
+  writer: 'fa-pen-nib',
+  designer: 'fa-palette',
+  media_manager: 'fa-photo-film',
+  frontend: 'fa-code',
+  backend: 'fa-server',
+  frontend_backend: 'fa-layer-group'
+};
+
+let editSelectedRoles = new Set();
+let addSelectedRoles = new Set();
+
+function renderSecondaryRolePills(gridId, selectedSet, countElementId) {
+  const container = document.getElementById(gridId);
+  if (!container) return;
+
+  const roles = getRoleOptions();
+  container.innerHTML = roles.map(r => {
+    const isActive = selectedSet.has(r.value);
+    const iconClass = ROLE_ICONS[r.value] || 'fa-tag';
+    return `
+      <div class="sec-role-pill ${isActive ? 'active' : ''}" id="pill-${gridId}-${r.value}" onclick="toggleSecRolePill('${r.value}', '${gridId}')">
+        <div class="sec-role-pill-left">
+          <i class="fas ${iconClass}"></i>
+          <span>${r.label}</span>
+        </div>
+        <div class="sec-role-pill-check">
+          <i class="fas fa-check"></i>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  updateSecRoleCount(countElementId, selectedSet.size);
+}
+
+function toggleSecRolePill(role, gridId) {
+  const isEdit = gridId === 'edit-sec-roles-grid';
+  const selectedSet = isEdit ? editSelectedRoles : addSelectedRoles;
+  const countId = isEdit ? 'edit-selected-count' : 'add-selected-count';
+
+  if (selectedSet.has(role)) {
+    selectedSet.delete(role);
+  } else {
+    selectedSet.add(role);
+  }
+
+  const pill = document.getElementById(`pill-${gridId}-${role}`);
+  if (pill) {
+    pill.classList.toggle('active', selectedSet.has(role));
+  }
+
+  updateSecRoleCount(countId, selectedSet.size);
+}
+
+function toggleAllEditSecRoles(selectAll) {
+  const roles = getRoleOptions();
+  if (selectAll) {
+    roles.forEach(r => editSelectedRoles.add(r.value));
+  } else {
+    editSelectedRoles.clear();
+  }
+  renderSecondaryRolePills('edit-sec-roles-grid', editSelectedRoles, 'edit-selected-count');
+}
+
+function toggleAllAddSecRoles(selectAll) {
+  const roles = getRoleOptions();
+  if (selectAll) {
+    roles.forEach(r => addSelectedRoles.add(r.value));
+  } else {
+    addSelectedRoles.clear();
+  }
+  renderSecondaryRolePills('add-sec-roles-grid', addSelectedRoles, 'add-selected-count');
+}
+
+function updateSecRoleCount(elementId, count) {
+  const el = document.getElementById(elementId);
+  if (el) el.textContent = count;
+}
+
+function onEditPrimaryRoleChange(role) {
+  const subEl = document.getElementById('edit-user-display-sub');
+  if (subEl) subEl.textContent = `Primary: ${typeof formatRole === 'function' ? formatRole(role) : role}`;
+  const avatarEl = document.getElementById('edit-user-avatar');
+  if (avatarEl) avatarEl.style.border = `2px solid ${typeof getRoleColor === 'function' ? getRoleColor(role) : 'var(--accent-primary)'}`;
+}
+
+function renderRoleOptionSelects() {
+  const primarySelect = document.getElementById('user-role');
+  if (primarySelect) {
+    primarySelect.innerHTML = getRoleOptions().map(role => `<option value="${role.value}">${role.label}</option>`).join('');
+  }
+
+  renderSecondaryRolePills('add-sec-roles-grid', addSelectedRoles, 'add-selected-count');
+}
+
+async function loadCompanyRoles() {
+  try {
+    companyRoleOptions = await api.get('/admin/company-roles');
+  } catch {
+    companyRoleOptions = [];
+  }
+  renderRoleOptionSelects();
+}
+
 async function initUsers() {
   await loadCompanyRoles();
   loadRoleArchitect();
@@ -6,25 +138,46 @@ async function initUsers() {
 
   document.getElementById('add-user-form').onsubmit = async (e) => {
     e.preventDefault();
-    const secondarySelect = document.getElementById('user-secondary-roles');
-    const selectedSecondary = Array.from(secondarySelect.selectedOptions).map(opt => opt.value);
     const data = {
       name: document.getElementById('user-name').value,
       email: document.getElementById('user-email').value,
       password: document.getElementById('user-password').value,
       role: document.getElementById('user-role').value,
-      secondary_roles: selectedSecondary.join(',')
+      secondary_roles: Array.from(addSelectedRoles).join(',')
     };
     try {
       await api.post('/users', data);
       showToast('User created successfully', 'success');
       closeModal('add-user-modal');
       e.target.reset();
+      addSelectedRoles.clear();
+      renderSecondaryRolePills('add-sec-roles-grid', addSelectedRoles, 'add-selected-count');
       loadUsers();
+      loadRoleArchitect();
     } catch (err) {
       showToast(err.message, 'error');
     }
   };
+
+  const editForm = document.getElementById('edit-user-form');
+  if (editForm) {
+    editForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('edit-user-id').value;
+      const newName = document.getElementById('edit-user-name').value;
+      const newRole = document.getElementById('edit-user-primary-role').value;
+      const secondary_roles = Array.from(editSelectedRoles).join(',');
+      try {
+        await api.put(`/users/${id}`, { name: newName, role: newRole, secondary_roles });
+        showToast('User updated successfully', 'success');
+        closeModal('edit-user-modal');
+        loadUsers();
+        loadRoleArchitect();
+      } catch (err) {
+        showToast('Failed to update user: ' + err.message, 'error');
+      }
+    };
+  }
 }
 
 async function loadUsers() {
@@ -35,7 +188,7 @@ async function loadUsers() {
       if (users.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="6">
+            <td colspan="5">
               <div class="empty-state">
                 <i class="fas fa-user-slash"></i>
                 <div class="empty-title">No users found</div>
@@ -46,24 +199,21 @@ async function loadUsers() {
         `;
         return;
       }
-      const allRoles = [
-        {val:'writer',label:'Writer'},{val:'designer',label:'Designer'},{val:'team_leader',label:'Team Leader'},
-        {val:'rnd',label:'R&D'},{val:'creator',label:'Creator'},{val:'media_manager',label:'Media Mgr'},
-        {val:'client_handler',label:'Client Handler'},{val:'admin',label:'Admin'}
-      ];
+      const allRoles = getRoleOptions().map(role => ({ val: role.value, label: role.label }));
 
       tbody.innerHTML = users.map(u => {
         const secRoles = (u.secondary_roles || '').split(',').filter(r => r.trim());
         const primaryRole = allRoles.find(role => role.val === u.role);
+        const roleColor = typeof getRoleColor === 'function' ? getRoleColor(u.role) : 'var(--accent-primary)';
         const secBadges = secRoles.map(r => {
           const found = allRoles.find(ar => ar.val === r);
-          return found ? `<span style="font-size:0.55rem;padding:2px 6px;border-radius:8px;background:var(--bg-hover);color:var(--text-muted);border:1px solid var(--border-color);">${found.label}</span>` : '';
+          return found ? `<span class="table-sec-badge">${found.label}</span>` : '';
         }).join(' ');
         return `
-        <tr onclick="openUserPerformance(${u.id})" style="cursor:pointer;">
+        <tr onclick="openUserPerformance(${u.id})">
           <td>
             <div class="user-cell">
-              <img src="${getInitialsAvatar(u.name, 36)}" class="user-avatar-img" style="border:2px solid ${getRoleColor(u.role)}">
+              <img src="${getInitialsAvatar(u.name, 38)}" class="user-avatar-img" style="border: 2px solid ${roleColor};">
               <div>
                 <div class="user-name-text">${u.name}</div>
                 <div class="user-email-text">${u.email}</div>
@@ -71,36 +221,28 @@ async function loadUsers() {
             </div>
           </td>
           <td>
-            <div style="display:flex; flex-direction:column; gap:4px;">
-              <select class="form-control" style="min-width:110px;" onchange="changeUserRole(${u.id}, this.value); event.stopPropagation();">
-                <option value="writer" ${u.role==='writer'?'selected':''}>Writer</option>
-                <option value="designer" ${u.role==='designer'?'selected':''}>Designer</option>
-                <option value="team_leader" ${u.role==='team_leader'?'selected':''}>Team Leader</option>
-                <option value="rnd" ${u.role==='rnd'?'selected':''}>R&D Specialist</option>
-                <option value="creator" ${u.role==='creator'?'selected':''}>Content Creator</option>
-                <option value="media_manager" ${u.role==='media_manager'?'selected':''}>Media Manager</option>
-                <option value="client_handler" ${u.role==='client_handler'?'selected':''}>Client Handler</option>
-                <option value="admin" ${u.role==='admin'?'selected':''}>Administrator</option>
-              </select>
-              ${secBadges ? `<div style="display:flex; flex-wrap:wrap; gap:3px; margin-top:2px;">${secBadges}</div>` : ''}
+            <div style="display:flex; flex-direction:column; gap:4px; align-items:center; justify-content:center;">
+              ${primaryRole ? `<div class="table-role-badge">${primaryRole.label}</div>` : '—'}
+              ${secBadges ? `<div style="display:flex; flex-wrap:wrap; gap:4px; justify-content:center; margin-top:2px;">${secBadges}</div>` : ''}
             </div>
           </td>
           <td><div class="points-cell">${u.points}</div></td>
-          <td>${primaryRole ? `<div class="badge badge-approved" style="font-size:0.6rem;">${primaryRole.label}</div>` : '\u2014'}</td>
           <td>
-            <label class="switch">
-              <input type="checkbox" ${u.is_active ? 'checked' : ''} onchange="toggleUserActive(${u.id}, this.checked); event.stopPropagation();">
-              <span class="slider round"></span>
-            </label>
-            <span style="margin-left:8px;" class="badge badge-${u.is_active ? 'approved' : 'rejected'}">${u.is_active ? 'Active' : 'Inactive'}</span>
+            <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
+              <label class="switch">
+                <input type="checkbox" ${u.is_active ? 'checked' : ''} onchange="toggleUserActive(${u.id}, this.checked); event.stopPropagation();">
+                <span class="slider round"></span>
+              </label>
+              <span class="badge badge-${u.is_active ? 'approved' : 'rejected'}" style="font-size:0.65rem; font-weight:700; padding:4px 10px; border-radius:12px;">${u.is_active ? 'ACTIVE' : 'INACTIVE'}</span>
+            </div>
           </td>
           <td>
-            <div style="display:flex; gap:12px; align-items:center;">
+            <div class="table-actions-cell">
               ${auth.hasRole('admin') ? `
-                <i class="fas fa-edit-user fas fa-edit" title="Edit User" style="color:var(--accent-primary); cursor:pointer;" onclick="event.stopPropagation(); editUser(${u.id}, '${u.name}', '${u.role}', '${u.secondary_roles || ''}')"></i>
-                <i class="fas fa-key" title="Reset Password" style="color:var(--text-muted); cursor:pointer;" onclick="event.stopPropagation(); resetUserPassword(${u.id}, '${u.email}')"></i>
-                <i class="fas fa-user-slash" title="Deactivate Account" style="color:var(--accent-secondary); cursor:pointer;" onclick="event.stopPropagation(); deactivateUser(${u.id})"></i>
-                <i class="fas fa-trash-alt" title="Permanent Delete" style="color:var(--accent-danger); cursor:pointer;" onclick="event.stopPropagation(); deleteUser(${u.id})"></i>
+                <i class="fas fa-edit-user fas fa-edit" title="Edit User" style="color:var(--accent-primary);" onclick="event.stopPropagation(); editUser(${u.id}, '${u.name}', '${u.role}', '${u.secondary_roles || ''}')"></i>
+                <i class="fas fa-key" title="Reset Password" style="color:var(--text-muted);" onclick="event.stopPropagation(); resetUserPassword(${u.id}, '${u.email}')"></i>
+                <i class="fas fa-user-slash" title="Deactivate Account" style="color:var(--accent-secondary);" onclick="event.stopPropagation(); deactivateUser(${u.id})"></i>
+                <i class="fas fa-trash-alt" title="Permanent Delete" style="color:var(--accent-danger);" onclick="event.stopPropagation(); deleteUser(${u.id})"></i>
               ` : `
                 <i class="fas fa-lock" title="Permission Required" style="color:var(--text-muted); opacity:0.5;"></i>
               `}
@@ -126,13 +268,22 @@ async function loadRoleArchitect() {
   if (!container) return;
 
   try {
-    const data = await api.get('/admin/roles-users');
-    container.innerHTML = data.map((group, idx) => `
+    const rawData = await api.get('/admin/roles-users');
+    const data = (Array.isArray(rawData) ? rawData : []).filter(group => !REMOVED_ROLES.has(group.role));
+    container.innerHTML = data.map((group, idx) => {
+      const activeUsers = (group.users || []).filter(u => 
+        u.name !== '[Deleted User]' && 
+        !u.email?.startsWith('deleted_') && 
+        u.is_active !== -1
+      );
+      const activeCount = activeUsers.filter(u => u.is_active === 1).length;
+
+      return `
       <div class="role-accordion" id="role-acc-${idx}">
         <div class="role-acc-header" onclick="toggleRoleDropdown(${idx})">
           <div class="role-acc-info">
             <div class="role-acc-name">${group.role.replace(/_/g, ' ')}</div>
-            <div class="role-acc-count">${group.count} ACTIVE AGENT${group.count !== 1 ? 'S' : ''}</div>
+            <div class="role-acc-count">${activeCount} ACTIVE</div>
           </div>
           <div class="role-acc-right">
             <i class="fas fa-users role-acc-icon"></i>
@@ -140,11 +291,11 @@ async function loadRoleArchitect() {
           </div>
         </div>
         <div class="role-acc-body" id="role-body-${idx}">
-          ${group.users.length === 0
-        ? `<div class="role-acc-empty"><i class="fas fa-ghost"></i> No agents assigned</div>`
-        : group.users.map(user => `
-              <div class="role-acc-user">
-                <div class="role-acc-avatar">${user.name.charAt(0).toUpperCase()}</div>
+          ${activeUsers.length === 0
+            ? `<div class="role-acc-empty"><i class="fas fa-ghost"></i> No users assigned</div>`
+            : activeUsers.map(user => `
+              <div class="role-acc-user" onclick="openUserPerformance(${user.id})">
+                <div class="role-acc-avatar">${(user.name || 'U').charAt(0).toUpperCase()}</div>
                 <div class="role-acc-details">
                   <div class="role-acc-uname">${user.name}</div>
                   <div class="role-acc-email">${user.email}</div>
@@ -153,9 +304,10 @@ async function loadRoleArchitect() {
             `).join('')}
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
   } catch (err) {
-    container.innerHTML = '<div class="role-acc-empty">Failed to load role architecture.</div>';
+    container.innerHTML = '<div class="role-acc-empty">Failed to load roles.</div>';
   }
 }
 
@@ -177,6 +329,7 @@ window.changeUserRole = async function(id, role) {
     await api.put(`/users/${id}`, { role });
     showToast('Role updated', 'success');
     loadUsers();
+    loadRoleArchitect();
   } catch (e) {
     showToast('Failed to update role', 'error');
   }
@@ -188,6 +341,7 @@ window.toggleUserActive = async function(id, isActive) {
     await api.put(`/users/${id}`, { is_active: isActive ? 1 : 0 });
     showToast('User status updated', 'success');
     loadUsers();
+    loadRoleArchitect();
   } catch (e) {
     showToast('Failed to update status', 'error');
   }
@@ -215,73 +369,48 @@ window.deleteUser = async function(id) {
     const res = await api.delete(`/users/${id}`);
     showToast(res.message || 'User data purged successfully', 'success');
     loadUsers();
+    loadRoleArchitect();
   } catch (e) { 
     console.error('Purge error:', e);
     showToast('Purge Failed: ' + e.message, 'error'); 
   }
 };
 
-// Edit user in a quick modal
+// Edit user in a modern side drawer modal
 window.editUser = function(id, name, primaryRole, secondaryRolesStr) {
-  const allRoleOptions = [
-    {val:'writer',label:'Content Writer'},{val:'designer',label:'Designer'},{val:'team_leader',label:'Team Leader'},
-    {val:'rnd',label:'R&D Specialist'},{val:'creator',label:'Content Creator'},{val:'media_manager',label:'Media Manager'},
-    {val:'client_handler',label:'Client Handler'},{val:'admin',label:'Administrator'}
-  ];
-  const secRoles = (secondaryRolesStr || '').split(',').filter(r => r.trim());
+  const allRoleOptions = getRoleOptions();
+  const secRoles = (secondaryRolesStr || '').split(',').map(r => r.trim()).filter(Boolean);
 
-  // Build or reuse a quick-edit modal
-  let modal = document.getElementById('quick-edit-user-modal');
-  if (!modal) {
-    modal = document.createElement('div');
-    modal.id = 'quick-edit-user-modal';
-    modal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:3000;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);';
-    document.body.appendChild(modal);
+  const idInput = document.getElementById('edit-user-id');
+  const nameInput = document.getElementById('edit-user-name');
+  const primSelect = document.getElementById('edit-user-primary-role');
+  const avatarEl = document.getElementById('edit-user-avatar');
+  const displayNameEl = document.getElementById('edit-user-display-name');
+  const displaySubEl = document.getElementById('edit-user-display-sub');
+
+  if (idInput) idInput.value = id;
+  if (nameInput) nameInput.value = name;
+  if (displayNameEl) displayNameEl.textContent = name || 'User';
+  if (displaySubEl) displaySubEl.textContent = `Primary: ${typeof formatRole === 'function' ? formatRole(primaryRole || '') : (primaryRole || '')}`;
+  if (avatarEl) {
+    avatarEl.textContent = (name || 'U').charAt(0).toUpperCase();
+    avatarEl.style.border = `2px solid ${typeof getRoleColor === 'function' ? getRoleColor(primaryRole) : 'var(--accent-primary)'}`;
   }
-  modal.innerHTML = `
-    <div class="glass-card" style="width:480px;max-width:95vw;padding:28px;border-radius:16px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-        <div style="font-family:var(--font-display);font-weight:700;font-size:1.1rem;">EDIT USER</div>
-        <i class="fas fa-times" style="cursor:pointer;" onclick="document.getElementById('quick-edit-user-modal').style.display='none'"></i>
-      </div>
-      <form id="quick-edit-user-form">
-        <div class="form-group">
-          <label>Full Name</label>
-          <input type="text" class="form-control" id="edit-user-name" value="${name}" required>
-        </div>
-        <div class="form-group" style="margin-top:12px;">
-          <label>Primary Role</label>
-          <select class="form-control" id="edit-user-primary-role">
-            ${allRoleOptions.map(r => `<option value="${r.val}" ${r.val===primaryRole?'selected':''}>${r.label}</option>`).join('')}
-          </select>
-        </div>
-        <div class="form-group" style="margin-top:12px;">
-          <label>Secondary Roles <span style="font-size:0.7rem;color:var(--text-muted);">(Hold Ctrl/Cmd for multiple)</span></label>
-          <select class="form-control" id="edit-user-secondary-roles" multiple style="height:110px;">
-            ${allRoleOptions.map(r => `<option value="${r.val}" ${secRoles.includes(r.val)?'selected':''}>${r.label}</option>`).join('')}
-          </select>
-        </div>
-        <button type="submit" class="btn-primary" style="width:100%;margin-top:16px;">Save Changes</button>
-      </form>
-    </div>
-  `;
-  modal.style.display = 'flex';
-  modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
 
-  document.getElementById('quick-edit-user-form').onsubmit = async (e) => {
-    e.preventDefault();
-    const newName = document.getElementById('edit-user-name').value;
-    const newRole = document.getElementById('edit-user-primary-role').value;
-    const selSec = Array.from(document.getElementById('edit-user-secondary-roles').selectedOptions).map(o => o.value);
-    try {
-      await api.put(`/users/${id}`, { name: newName, role: newRole, secondary_roles: selSec.join(',') });
-      showToast('User updated successfully', 'success');
-      modal.style.display = 'none';
-      loadUsers();
-    } catch (err) {
-      showToast('Failed to update user: ' + err.message, 'error');
+  if (primSelect) {
+    primSelect.innerHTML = allRoleOptions.map(r => `<option value="${r.value}" ${r.value === primaryRole ? 'selected' : ''}>${r.label}</option>`).join('');
+  }
+
+  // Populate secondary roles set and render interactive pills
+  editSelectedRoles.clear();
+  secRoles.forEach(role => {
+    if (allRoleOptions.some(opt => opt.value === role)) {
+      editSelectedRoles.add(role);
     }
-  };
+  });
+  renderSecondaryRolePills('edit-sec-roles-grid', editSelectedRoles, 'edit-selected-count');
+
+  openModal('edit-user-modal');
 };
 
 async function openUserPerformance(id) {
@@ -300,7 +429,7 @@ async function openUserPerformance(id) {
       <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin-bottom:32px;">
         <div class="glass-card" style="padding:12px; text-align:center;">
           <div style="font-size:0.6rem; color:var(--text-muted); margin-bottom:4px;">AVG SCORE</div>
-          <div style="font-family:var(--font-mono); font-weight:700; color:var(--accent-pink);">${Math.round(perf.stats.avg_score || 0)}</div>
+          <div style="font-family:var(--font-mono); font-weight:700; color:var(--accent-secondary);">${Math.round(perf.stats.avg_score || 0)}</div>
         </div>
         <div class="glass-card" style="padding:12px; text-align:center;">
           <div style="font-size:0.6rem; color:var(--text-muted); margin-bottom:4px;">APPROVED</div>
@@ -374,4 +503,9 @@ window.initUsers = initUsers;
 window.openUserPerformance = openUserPerformance;
 window.closeDetailPanel = closeDetailPanel;
 window.deactivateUser = deactivateUser;
+window.loadCompanyRoles = loadCompanyRoles;
 window.toggleRoleDropdown = toggleRoleDropdown;
+window.toggleSecRolePill = toggleSecRolePill;
+window.toggleAllEditSecRoles = toggleAllEditSecRoles;
+window.toggleAllAddSecRoles = toggleAllAddSecRoles;
+window.onEditPrimaryRoleChange = onEditPrimaryRoleChange;

@@ -4,8 +4,8 @@ require('dotenv').config();
 
 const BUILTIN_ROLE_NAMES = [
   'admin', 'team_leader', 'rnd', 'writer',
-  'designer', 'media_manager', 'creator', 'client_handler',
-  'frontend', 'backend', 'frontend_backend', 'production'
+  'designer', 'media_manager',
+  'frontend', 'backend', 'frontend_backend'
 ];
 const USER_ROLE_CHECK_VALUES = BUILTIN_ROLE_NAMES.map(role => `'${role}'`).join(',');
 
@@ -320,6 +320,7 @@ CREATE TABLE IF NOT EXISTS tickets (
   assigned_to INTEGER REFERENCES users(id),
   priority TEXT DEFAULT 'normal' CHECK(priority IN ('urgent','normal','low')),
   category TEXT,
+  image TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -338,6 +339,8 @@ CREATE INDEX IF NOT EXISTS idx_tickets_created_by ON tickets(created_by);
 CREATE INDEX IF NOT EXISTS idx_tickets_assigned_to ON tickets(assigned_to);
 CREATE INDEX IF NOT EXISTS idx_payments_user_id ON payments(user_id);
 `);
+
+try { db.prepare("ALTER TABLE tickets ADD COLUMN image TEXT").run(); } catch(e){}
 
 db.pragma('foreign_keys = ON');
 
@@ -487,6 +490,12 @@ if (!userColumns.includes('mobile')) {
 }
 if (!userColumns.includes('github_link')) {
   db.exec('ALTER TABLE users ADD COLUMN github_link TEXT');
+}
+if (!userColumns.includes('linkedin_link')) {
+  db.exec('ALTER TABLE users ADD COLUMN linkedin_link TEXT');
+}
+if (!userColumns.includes('instagram_link')) {
+  db.exec('ALTER TABLE users ADD COLUMN instagram_link TEXT');
 }
 if (!userColumns.includes('bio')) {
   db.exec('ALTER TABLE users ADD COLUMN bio TEXT');
@@ -863,13 +872,13 @@ const roleSeedStmt = db.prepare(`
   ['writer', 'Content writing role', '#3b82f6'],
   ['designer', 'Design and visual work', '#a855f7'],
   ['media_manager', 'Media planning and publishing', '#ec4899'],
-  ['creator', 'Creator and production role', '#14b8a6'],
-  ['client_handler', 'Client communication and support', '#f97316'],
   ['frontend', 'Frontend engineering role', '#0ea5e9'],
   ['backend', 'Backend engineering role', '#10b981'],
-  ['frontend_backend', 'Full-stack engineering role', '#6366f1'],
-  ['production', 'Production operations role', '#f59e0b']
+  ['frontend_backend', 'Full-stack engineering role', '#6366f1']
 ].forEach(([name, description, color]) => roleSeedStmt.run(name, description, color));
+
+// Cleanup removed roles from company_roles table
+db.prepare("DELETE FROM company_roles WHERE name IN ('creator', 'client_handler', 'production')").run();
 
 const permissionSeedStmt = db.prepare('INSERT OR IGNORE INTO permissions (key, category, description) VALUES (?,?,?)');
 [
@@ -912,6 +921,9 @@ const roleTemplateSeedStmt = db.prepare(`
 const clientColumns = db.prepare('PRAGMA table_info(clients)').all().map(c => c.name);
 if (!clientColumns.includes('stage')) {
   db.exec("ALTER TABLE clients ADD COLUMN stage TEXT DEFAULT 'new_register'");
+}
+if (!clientColumns.includes('avatar')) {
+  try { db.exec('ALTER TABLE clients ADD COLUMN avatar TEXT'); } catch (_) {}
 }
 
 // ──────────────────────────────────────────────────────────────────────

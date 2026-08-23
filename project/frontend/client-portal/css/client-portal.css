@@ -765,3 +765,7 @@ textarea.form-control {
 #sidebar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+#three-bg {
+  display: none !important;
+}

@@ -2,20 +2,9 @@
 <html lang="en">
 
 <head>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    .mobile-hamburger {
-      display: none;
-      background: none;
-      color: var(--text-primary);
-      font-size: 1.2rem;
-    }
-
-    @media(max-width:768px) {
-      .mobile-hamburger {
-        display: flex;
-      }
-    }
+    .mobile-hamburger{display:none;background:none;color:var(--text-primary);font-size:1.2rem;}
+    @media(max-width:768px){.mobile-hamburger{display:flex;}}
   </style>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,77 +16,63 @@
   <link rel="stylesheet" href="css/responsive.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link
-    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap"
     rel="stylesheet">
   <style>
     .profile-container {
       display: grid;
-      grid-template-columns: 350px 1fr;
+      grid-template-columns: 320px 1fr;
       gap: 24px;
-      padding: 0 24px 24px;
-    }
-
-    .profile-sidebar {
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-
-    .profile-main {
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
+      margin-top: 24px;
     }
 
     .profile-card {
-      padding: 40px 24px;
       text-align: center;
+      padding: 32px 24px;
     }
 
     .profile-avatar-large {
       width: 120px;
       height: 120px;
+      margin: 0 auto 16px;
       border-radius: 50%;
-      margin: 0 auto 24px;
-      border: 2px solid var(--accent-primary);
-      box-shadow: 0 0 30px rgba(16, 42, 150, 0.3);
+      border: 3px solid var(--accent-primary);
+      position: relative;
     }
 
     .profile-name {
+      font-size: 1.4rem;
+      font-weight: 700;
       font-family: var(--font-display);
-      font-size: 1.6rem;
-      font-weight: 900;
-      margin-bottom: 8px;
     }
 
     .points-display {
       margin-top: 24px;
-      padding: 20px;
-      background: #ffffff;
-      border-radius: var(--radius);
-      border: 2px solid var(--border);
+      padding: 16px;
+      background: rgba(16, 42, 150, 0.05);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
     }
 
     .points-val {
-      font-family: var(--font-mono);
-      font-size: 2.5rem;
-      font-weight: 700;
+      font-size: 2rem;
+      font-weight: 900;
       color: var(--accent-primary);
-      line-height: 1;
+      font-family: var(--font-display);
     }
 
     .points-label {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 2px;
+      font-size: 0.8rem;
       color: var(--text-muted);
-      margin-top: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
 
     .stats-row {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 16px;
+      margin-bottom: 24px;
     }
 
     .stat-box {
@@ -106,31 +81,27 @@
     }
 
     .stat-val {
-      font-family: var(--font-mono);
-      font-size: 1.5rem;
+      font-size: 1.8rem;
       font-weight: 700;
-      margin-bottom: 4px;
+      font-family: var(--font-display);
     }
 
     .stat-label {
-      font-size: 0.65rem;
-      text-transform: uppercase;
+      font-size: 0.75rem;
       color: var(--text-muted);
+      text-transform: uppercase;
     }
 
     .avatar-wrapper {
       position: relative;
-      display: inline-flex;
+      overflow: hidden;
+      display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 50%;
-      overflow: hidden;
-      background: #102a96;
-      color: white;
+      background: linear-gradient(135deg, #102a96 0%, #2563eb 100%);
+      color: #fff;
+      font-weight: 800;
       font-family: var(--font-display);
-      font-weight: 700;
-      text-transform: uppercase;
-      -webkit-user-select: none;
       user-select: none;
     }
 
@@ -142,14 +113,28 @@
       height: 100%;
       object-fit: cover;
       opacity: 0;
-      transition: opacity 0.3s;
+      transition: opacity 0.2s ease-in-out;
     }
 
     .avatar-wrapper img.loaded {
       opacity: 1;
     }
 
-    /* Profile page utility classes */
+    .nav-avatar-wrap {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      font-size: 0.9rem;
+    }
+
+    .preview-avatar-sm {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      font-size: 1.4rem;
+      border: 2px solid var(--border);
+    }
+
     .section-header {
       display: flex;
       justify-content: space-between;
@@ -174,6 +159,7 @@
       color: var(--text-muted);
       text-transform: uppercase;
       margin-bottom: 6px;
+      font-weight: 700;
     }
 
     .profile-form-grid {
@@ -207,8 +193,109 @@
       margin-top: 20px;
     }
 
+    .profile-social-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .profile-social-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-surface-2, #f1f5f9);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      text-decoration: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      font-size: 1.1rem;
+    }
+
+    .profile-social-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+    }
+
+    .profile-social-btn.github:hover {
+      background: #24292e;
+      color: #ffffff;
+      border-color: #24292e;
+    }
+
+    .profile-social-btn.linkedin:hover {
+      background: #0a66c2;
+      color: #ffffff;
+      border-color: #0a66c2;
+    }
+
+    .profile-social-btn.instagram:hover {
+      background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
+      color: #ffffff;
+      border-color: transparent;
+    }
+
+    /* Social Input Action Groups */
+    .social-input-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .social-input-group .form-control {
+      flex: 1;
+      margin-bottom: 0;
+    }
+
+    .social-visit-btn {
+      height: 42px;
+      padding: 0 16px;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: var(--bg-surface-2, #f1f5f9);
+      color: var(--text-primary);
+      font-weight: 750;
+      font-size: 0.84rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      font-family: inherit;
+    }
+
+    .social-visit-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+
+    .social-visit-btn.github-btn:hover {
+      background: #24292e;
+      color: #ffffff;
+      border-color: #24292e;
+    }
+
+    .social-visit-btn.linkedin-btn:hover {
+      background: #0a66c2;
+      color: #ffffff;
+      border-color: #0a66c2;
+    }
+
+    .social-visit-btn.instagram-btn:hover {
+      background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
+      color: #ffffff;
+      border-color: transparent;
+    }
+
     .profile-email-wrap {
-      margin-top: 32px;
+      margin-top: 24px;
       text-align: left;
     }
 
@@ -249,191 +336,25 @@
       font-size: 0.9rem;
     }
 
-    .nav-role-text {
-      font-size: 0.7rem;
-      color: var(--text-muted);
-    }
-
-    .nav-avatar-wrap {
-      width: 40px;
-      height: 40px;
-      margin-left: 12px;
-      font-size: 14px;
-    }
-
-    .profile-avatar-accent {
-      font-size: 40px;
-      border: 2px solid var(--accent-primary);
-      box-shadow: 0 0 30px rgba(16, 42, 150, 0.3);
-    }
-
-    .preview-avatar-sm {
-      width: 64px;
-      height: 64px;
-      border: 2px solid var(--accent-primary);
-      font-size: 20px;
-    }
-
-    .sidebar-hr {
-      border: 0;
-      border-top: 2px solid var(--border);
-      margin: 10px 0;
-      opacity: 0.3;
-    }
-
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: 2200;
-      background: rgba(0, 0, 0, 0.6);
-      align-items: center;
-      justify-content: center;
-      -webkit-backdrop-filter: blur(4px);
-      backdrop-filter: blur(4px);
-    }
-
-    .modal-panel-lg {
-      width: 95vw;
-      max-width: 900px;
-      max-height: 90vh;
-      border-radius: 18px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .modal-panel-md {
-      width: 95vw;
-      max-width: 700px;
-      max-height: 90vh;
-      border-radius: 18px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .modal-panel-sm {
-      width: 95vw;
-      max-width: 600px;
-      max-height: 90vh;
-      border-radius: 18px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .modal-header-bar {
-      background: var(--accent-primary);
-      color: #102a96;
-      padding: 14px 18px;
-      font-family: var(--font-display);
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .modal-body {
-      flex: 1;
-      overflow-y: auto;
-      padding: 18px;
-      background: var(--bg-card);
-    }
-
-    .modal-footer-form {
-      padding: 12px;
-      background: var(--bg-primary);
-      border-top: 2px solid var(--border);
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .modal-footer-grid {
-      padding: 20px;
-      background: var(--bg-primary);
-      border-top: 2px solid var(--border);
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .modal-footer-col {
-      padding: 15px;
-      background: var(--bg-primary);
-      border-top: 2px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .modal-close-icon {
-      cursor: pointer;
-    }
-
-    .span-2-btn {
-      grid-column: span 2;
-    }
-
-    .notif-panel {
-      display: none;
-      position: absolute;
-      top: 40px;
-      right: 0;
-      width: 320px;
-      padding: 16px;
-      z-index: 1000;
-    }
-
-    .notif-panel-hdr {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 12px;
-    }
-
-    .notif-mark-all {
-      font-size: 0.7rem;
-      color: var(--accent-primary);
-      cursor: pointer;
-    }
-
-    .notif-list {
-      max-height: 300px;
-      overflow-y: auto;
-    }
-
-    .ticket-input-title {
-      flex: 2;
-    }
-
-    .ticket-input-desc {
-      flex: 3;
-    }
-
-    .ticket-input-priority {
-      flex: 1;
-    }
-
-    .menu-icon-accent {
-      color: var(--accent-secondary);
-    }
-
-    @media (max-width: 1024px) {
+    @media (max-width: 900px) {
       .profile-container {
         grid-template-columns: 1fr;
       }
-    }
-
-    .font-bold {
-      font-weight: 700;
-    }
-
-    .mb-0 {
-      margin-bottom: 0 !important;
+      .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .profile-form-grid {
+        grid-template-columns: 1fr;
+      }
+      .span-2 {
+        grid-column: span 1;
+      }
+      .avatar-upload-row {
+        grid-column: span 1;
+      }
+      .form-actions {
+        grid-column: span 1;
+      }
     }
   </style>
 </head>
@@ -443,96 +364,84 @@
   <div class="toast-container" id="toast-container"></div>
 
   <div class="dashboard-container">
+    
+    <!-- Unified Sidebar Navigation -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="sidebar-logo">TECH TURF</div>
-        <div class="sidebar-logo-short">TT</div>
+        <div class="sidebar-logo-short"><img src="assets/techturf-logo.png" alt="TT" class="sidebar-logo-img-short" /></div>
       </div>
 
-      <nav class="sidebar-menu">
-        <div class="menu-item" data-nav="dashboard.html">
-          <i class="fas fa-th-large"></i>
-          <span class="menu-text">Dashboard</span>
+      <nav class="sidebar-menu" id="main-sidebar-nav">
+        <div class="menu-item" data-nav="dashboard.html" onclick="window.location.href='dashboard.html'">
+          <i class="fas fa-th-large"></i><span class="menu-text">Dashboard</span>
         </div>
-        <div class="menu-item" data-nav="projects.html">
-          <i class="fas fa-project-diagram"></i>
-          <span class="menu-text">Projects</span>
+        <div class="menu-item" data-nav="projects.html" onclick="window.location.href='projects.html'">
+          <i class="fas fa-project-diagram"></i><span class="menu-text">Projects</span>
         </div>
-        <div class="menu-item" data-nav="tasks.html">
-          <i class="fas fa-tasks"></i>
-          <span class="menu-text">Tasks</span>
+        <div class="menu-item" data-nav="tasks.html" onclick="window.location.href='tasks.html'">
+          <i class="fas fa-tasks"></i><span class="menu-text">Tasks</span>
         </div>
-        <div class="menu-item" data-nav="submissions.html">
-          <i class="fas fa-file-upload"></i>
-          <span class="menu-text">Submissions</span>
+        <div class="menu-item" data-nav="submissions.html" onclick="window.location.href='submissions.html'">
+          <i class="fas fa-file-upload"></i><span class="menu-text">Submissions</span>
         </div>
-        <div class="menu-item" data-nav="clients.html">
-          <i class="fas fa-user-tie"></i>
-          <span class="menu-text">Clients</span>
+        <div class="menu-item" data-nav="clients.html" onclick="window.location.href='clients.html'">
+          <i class="fas fa-user-tie"></i><span class="menu-text">Clients</span>
         </div>
-        <div class="menu-item" data-nav="announcements.html">
-          <i class="fas fa-bullhorn"></i>
-          <span class="menu-text">Announcements</span>
+        <div class="menu-item" data-nav="announcements.html" onclick="window.location.href='announcements.html'">
+          <i class="fas fa-bullhorn"></i><span class="menu-text">Announcements</span>
         </div>
-        <div class="menu-item" data-nav="drive.html">
-          <i class="fas fa-hdd"></i>
-          <span class="menu-text">Secure Drive</span>
+        <div class="menu-item" data-nav="drive.html" onclick="window.location.href='drive.html'">
+          <i class="fas fa-hdd"></i><span class="menu-text">Secure Drive</span>
         </div>
-        <div class="menu-item" data-nav="nexus_chat.html">
-          <i class="fas fa-robot menu-icon-accent"></i>
-          <span class="menu-text">Nexus AI Terminal</span>
+        <div class="menu-item" data-nav="messages.html" onclick="window.location.href='messages.html'">
+          <i class="fas fa-comments messenger-icon"></i><span class="menu-text">Team Messenger</span>
+        </div>
+        <div class="menu-item" data-nav="nexus_chat.html" onclick="window.location.href='nexus_chat.html'">
+          <i class="fas fa-robot nexus-icon"></i><span class="menu-text">Nexus AI Terminal</span>
         </div>
 
-        <hr class="sidebar-hr">
+        <hr class="sidebar-divider">
 
-        <!-- Role-Based Control Centers -->
-        <div class="menu-item admin-only" data-nav="users.html">
-          <i class="fas fa-users-cog"></i>
-          <span class="menu-text">User Management</span>
+        <div class="sidebar-section admin-only">
+          <div class="sidebar-section-title">USER MANAGEMENT</div>
+          <div class="sidebar-submenu">
+            <div class="menu-item admin-only" data-nav="users.html" onclick="window.location.href='users.html'">
+              <i class="fas fa-users-cog"></i><span class="menu-text">User Management</span>
+            </div>
+            <div class="menu-item admin-only" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
+              <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
+            </div>
+          </div>
         </div>
-        <div class="menu-item admin-only" data-nav="admin_control.html">
-          <i class="fas fa-shield-alt"></i>
-          <span class="menu-text">Admin Warp</span>
+        <div class="menu-item rnd-only" data-nav="nexus_lab.html" onclick="window.location.href='nexus_lab.html'">
+          <i class="fas fa-flask"></i><span class="menu-text">Nexus Lab</span>
         </div>
-
-        <div class="menu-item rnd-only" data-nav="nexus_lab.html">
-          <i class="fas fa-flask"></i>
-          <span class="menu-text">Nexus Lab</span>
+        <div class="menu-item handler-only" data-nav="client_connect.html" onclick="window.location.href='client_connect.html'">
+          <i class="fas fa-handshake"></i><span class="menu-text">Client Connect</span>
         </div>
-
-
-
-
-        <div class="menu-item handler-only" data-nav="client_connect.html">
-          <i class="fas fa-handshake"></i>
-          <span class="menu-text">Client Connect</span>
+        <div class="menu-item" data-nav="learning_hub.html" id="courses-link-global" onclick="window.location.href='learning_hub.html'">
+          <i class="fas fa-graduation-cap"></i><span class="menu-text">Learning Hub</span>
         </div>
 
-
-        <hr class="sidebar-hr">
-
-        <div class="menu-item admin-only" id="dbadmin-link">
-          <i class="fas fa-database"></i>
-          <span class="menu-text">Database Viewer</span>
+        <hr class="sidebar-divider">
+        
+        <div class="menu-item" data-nav="workspace.html" onclick="window.location.href='workspace.html'">
+          <i class="fas fa-paint-brush"></i><span class="menu-text">Creative Workspace</span>
         </div>
-        <div class="menu-item" id="tickets-link">
-          <i class="fas fa-ticket-alt"></i>
-          <span class="menu-text">Tickets</span>
-        </div>
-        <div class="menu-item admin-only" id="payments-link">
-          <i class="fas fa-money-check-alt"></i>
-          <span class="menu-text">Payments</span>
-        </div>
-        <div class="menu-item" data-nav="learning_hub.html" id="courses-link">
-          <i class="fas fa-graduation-cap"></i>
-          <span class="menu-text">Learning Hub</span>
+        
+        <div class="menu-item admin-only" data-nav="database_viewer.html" id="dbadmin-link" onclick="window.location.href='database_viewer.html'">
+          <i class="fas fa-database"></i><span class="menu-text">Database Viewer</span>
         </div>
 
-        <hr class="sidebar-hr">
+        <div class="menu-item admin-only" data-nav="payments.html" id="payments-link" onclick="window.location.href='payments.html'">
+          <i class="fas fa-money-check-alt"></i><span class="menu-text">Payments</span>
+        </div>
 
-        <div class="menu-item active" data-nav="profile.html">
-          <i class="fas fa-user-circle"></i>
-          <span class="menu-text">My Profile</span>
+        <hr class="sidebar-divider">
+        
+        <div class="menu-item active" data-nav="profile.html" onclick="window.location.href='profile.html'">
+          <i class="fas fa-user-circle"></i><span class="menu-text">My Profile</span>
         </div>
       </nav>
 
@@ -549,7 +458,7 @@
     </aside>
 
     <main class="main-content">
-      <header class="navbar">
+            <header class="navbar">
         <div class="nav-left">
           <button id="mobile-toggle" class="mobile-hamburger"><i class="fas fa-bars"></i></button>
           <div class="nav-search">
@@ -557,30 +466,26 @@
             <input type="text" placeholder="Search...">
           </div>
         </div>
-
         <div class="nav-actions">
           <div class="notification-bell" id="notification-bell">
             <i class="fas fa-bell"></i>
-            <span class="notification-badge" id="notification-badge">0</span>
-            <div class="notification-dropdown glass-card notif-panel" id="notification-dropdown">
-              <div class="notif-panel-hdr">
-                <span class="font-bold">Notifications</span>
-                <span class="notif-mark-all" onclick="api.put('/notifications/read-all').then(loadNotifications)">Mark
-                  all read</span>
+            <span class="notification-badge" id="notification-badge" style="display:none;">0</span>
+            <div class="notification-dropdown glass-card" id="notification-dropdown">
+              <div class="notification-header">
+                <span class="notification-title">Notifications</span>
+                <span class="notification-mark-read" onclick="markAllNotificationsRead()">Mark all read</span>
               </div>
-              <div id="notification-list" class="notif-list"></div>
+              <div id="notification-list" class="notification-list-scroll"></div>
             </div>
           </div>
 
           <div class="user-profile-nav" data-nav="profile.html">
-            <div class="nav-name-block">
-              <div id="nav-user-name" class="nav-name">User Name</div>
-              <div id="nav-user-role" class="nav-role-text">Role</div>
+            <div class="user-nav-text">
+              <div id="nav-user-name" class="user-nav-name">Admin</div>
+              <div id="nav-user-role" class="user-nav-role">Admin</div>
             </div>
-            <div class="avatar-wrapper nav-avatar-wrap">
-              <span id="nav-initials">U</span>
-              <img id="nav-avatar" src="" alt="" onload="this.classList.add('loaded')">
-            </div>
+            <img id="nav-avatar" class="user-avatar" src="" alt="Avatar" style="display:none;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+            <div class="avatar-fallback-badge" id="nav-avatar-badge">A</div>
           </div>
         </div>
       </header>
@@ -593,6 +498,8 @@
       </div>
 
       <div class="profile-container">
+        
+        <!-- Left Profile Overview Card -->
         <div class="profile-sidebar">
           <div class="glass-card profile-card anim-fade-up">
             <div class="avatar-wrapper profile-avatar-large profile-avatar-accent">
@@ -606,19 +513,26 @@
               <div class="points-label">Total Turf Points</div>
             </div>
             <div id="profile-badge-display" class="profile-badge-wrap"></div>
+            
             <div class="profile-email-wrap">
               <div class="profile-email-label">Account Email</div>
               <div id="profile-email" class="profile-email-val">email@techturf.com</div>
             </div>
+
+            <!-- Clickable Social Links Row -->
+            <div id="profile-social-links" class="profile-social-row"></div>
           </div>
         </div>
 
+        <!-- Right Profile Settings & Performance -->
         <div class="profile-main">
+          
           <div class="glass-card glass-section anim-fade-up">
             <div class="section-header">
               <div class="section-title mb-0">PROFILE SETTINGS</div>
               <div class="section-note">Editable by all users</div>
             </div>
+
             <form id="profile-edit-form" class="profile-form-grid">
               <div class="avatar-upload-row">
                 <div class="avatar-wrapper preview-avatar-sm">
@@ -631,30 +545,63 @@
                     title="Upload profile photo" />
                 </div>
               </div>
+
               <div>
                 <label for="edit-profile-name" class="form-label">Full Name</label>
                 <input id="edit-profile-name" type="text" class="form-control" placeholder="Your name" />
               </div>
+
               <div>
                 <label for="edit-profile-mobile" class="form-label">Mobile Number</label>
                 <input id="edit-profile-mobile" type="text" class="form-control" placeholder="+91..." />
               </div>
+
+              <!-- GitHub Field with Button -->
               <div class="span-2">
-                <label for="edit-profile-github" class="form-label">GitHub Profile Link</label>
-                <input id="edit-profile-github" type="url" class="form-control"
-                  placeholder="https://github.com/username" />
+                <label for="edit-profile-github" class="form-label"><i class="fab fa-github"></i> GitHub Profile Link</label>
+                <div class="social-input-group">
+                  <input id="edit-profile-github" type="url" class="form-control" placeholder="https://github.com/username" />
+                  <button type="button" class="social-visit-btn github-btn" onclick="openProfileUrl('edit-profile-github', 'https://github.com/')" title="Open GitHub Profile">
+                    <i class="fab fa-github"></i> <span>Visit</span> <i class="fas fa-arrow-up-right-from-square" style="font-size:0.75rem;"></i>
+                  </button>
+                </div>
               </div>
+
+              <!-- LinkedIn Field with Button -->
+              <div class="span-2">
+                <label for="edit-profile-linkedin" class="form-label"><i class="fab fa-linkedin" style="color:#0a66c2;"></i> LinkedIn Profile Link</label>
+                <div class="social-input-group">
+                  <input id="edit-profile-linkedin" type="url" class="form-control" placeholder="https://linkedin.com/in/username" />
+                  <button type="button" class="social-visit-btn linkedin-btn" onclick="openProfileUrl('edit-profile-linkedin', 'https://linkedin.com/in/')" title="Open LinkedIn Profile">
+                    <i class="fab fa-linkedin" style="color:#0a66c2;"></i> <span>Visit</span> <i class="fas fa-arrow-up-right-from-square" style="font-size:0.75rem;"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Instagram Field with Button -->
+              <div class="span-2">
+                <label for="edit-profile-instagram" class="form-label"><i class="fab fa-instagram" style="color:#e1306c;"></i> Instagram Profile Link</label>
+                <div class="social-input-group">
+                  <input id="edit-profile-instagram" type="url" class="form-control" placeholder="https://instagram.com/username" />
+                  <button type="button" class="social-visit-btn instagram-btn" onclick="openProfileUrl('edit-profile-instagram', 'https://instagram.com/')" title="Open Instagram Profile">
+                    <i class="fab fa-instagram" style="color:#e1306c;"></i> <span>Visit</span> <i class="fas fa-arrow-up-right-from-square" style="font-size:0.75rem;"></i>
+                  </button>
+                </div>
+              </div>
+
               <div class="span-2">
                 <label for="edit-profile-bio" class="form-label">Short Description</label>
                 <textarea id="edit-profile-bio" class="form-control" rows="3"
                   placeholder="Write a short profile about yourself"></textarea>
               </div>
+
               <div class="form-actions">
                 <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Save Profile</button>
               </div>
             </form>
           </div>
 
+          <!-- Stats & Activity Row -->
           <div class="stats-row">
             <div class="glass-card stat-box anim-fade-up">
               <div id="stat-total" class="stat-val">0</div>
@@ -673,79 +620,28 @@
               <div class="stat-label">Global Rank</div>
             </div>
           </div>
+
           <div class="glass-card glass-section anim-fade-up">
             <div class="section-title">SCORE HISTORY</div>
             <canvas id="profile-score-chart" class="section-canvas-wrap"></canvas>
           </div>
+
           <div class="glass-card glass-section anim-fade-up">
             <div class="section-title">RECENT ACTIVITY</div>
             <div id="profile-activity-list" class="list-col"></div>
           </div>
+
           <div class="glass-card glass-section anim-fade-up">
             <div class="section-title">LATEST SUBMISSIONS</div>
             <div id="profile-subs-list" class="list-col"></div>
           </div>
+
         </div>
       </div>
     </main>
   </div>
 
-  <!-- Unified Modals Section -->
-  <div id="dbadmin-modal" class="modal-overlay">
-    <div class="glass-card modal-panel-lg">
-      <div class="modal-header-bar">
-        <span><i class="fas fa-database"></i> Database Viewer</span>
-        <i class="fas fa-times modal-close-icon" id="dbadmin-close"></i>
-      </div>
-      <div id="dbadmin-content" class="modal-body"></div>
-    </div>
-  </div>
-  <div id="tickets-modal" class="modal-overlay">
-    <div class="glass-card modal-panel-md">
-      <div class="modal-header-bar">
-        <span><i class="fas fa-ticket-alt"></i> Tickets</span>
-        <i class="fas fa-times modal-close-icon" id="tickets-close"></i>
-      </div>
-      <div id="tickets-list" class="modal-body"></div>
-      <form id="tickets-add-form" class="modal-footer-form">
-        <input id="ticket-title" type="text" placeholder="Title" class="form-input ticket-input-title" required />
-        <input id="ticket-desc" type="text" placeholder="Description" class="form-input ticket-input-desc" />
-        <input id="ticket-priority" type="text" placeholder="Priority" class="form-input ticket-input-priority" />
-        <button type="submit" class="btn-primary">Add</button>
-      </form>
-    </div>
-  </div>
-  <div id="payments-modal" class="modal-overlay">
-    <div class="glass-card modal-panel-md">
-      <div class="modal-header-bar">
-        <span><i class="fas fa-money-check-alt"></i> Payments</span>
-        <i class="fas fa-times modal-close-icon" id="payments-close"></i>
-      </div>
-      <div id="payments-list" class="modal-body"></div>
-      <form id="payments-add-form" class="modal-footer-grid">
-        <input id="payment-user-id" type="number" placeholder="User ID" class="form-input" required />
-        <input id="payment-amount" type="number" step="0.01" placeholder="Amount" class="form-input" required />
-        <input id="payment-currency" type="text" placeholder="Currency (USD)" class="form-input" />
-        <input id="payment-method" type="text" placeholder="Method" class="form-input" />
-        <button type="submit" class="btn-primary span-2-btn">Add Payment</button>
-      </form>
-    </div>
-  </div>
-  <div id="courses-modal" class="modal-overlay">
-    <div class="glass-card modal-panel-sm">
-      <div class="modal-header-bar">
-        <span><i class="fas fa-graduation-cap"></i> Learning Hub</span>
-        <i class="fas fa-times modal-close-icon" id="courses-close"></i>
-      </div>
-      <div id="courses-list" class="modal-body"></div>
-      <form id="courses-add-form" class="modal-footer-col">
-        <input id="course-title" type="text" placeholder="Course Title" class="form-input" required />
-        <input id="course-link" type="url" placeholder="Course Link (URL)" class="form-input" required />
-        <button type="submit" class="btn-primary">Add Course</button>
-      </form>
-    </div>
-  </div>
-
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
   <script src="https://unpkg.com/three@0.128.0/build/three.min.js" defer></script>
   <script src="js/utils.js" defer></script>
   <script src="js/api.js" defer></script>
@@ -754,69 +650,15 @@
   <script src="js/sidebar.js" defer></script>
   <script src="js/profile.js" defer></script>
   <script>
-    // Bulletproof Avatar Fallback Logic
-    function applyAvatarFallback(img, size) {
-      if (!img || img.dataset.fallbackApplied) return;
-      img.dataset.fallbackApplied = "true";
-      img.onerror = null;
-
-      const name = (window.auth && auth.getUser() && auth.getUser().name) || "User";
-      const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) || "U";
-
-      // Use a high-reliability cloud service as the primary fallback
-      const cloudUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=102a96&color=fff&size=${size}&bold=true`;
-      img.src = cloudUrl;
-    }
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      // Initial setup
-      const avatarIds = [
-        { id: 'profile-avatar', size: 120 },
-        { id: 'profile-avatar-preview', size: 64 },
-        { id: 'nav-avatar', size: 40 }
-      ];
-
-      avatarIds.forEach(item => {
-        const el = document.getElementById(item.id);
-        if (el) {
-          el.onerror = () => applyAvatarFallback(el, item.size);
-          // If it's already shown as broken (collapsed), fix it
-          if (el.complete && el.naturalWidth === 0) el.onerror();
-        }
-      });
-
+    document.addEventListener('DOMContentLoaded', () => {
       auth.requireAuth();
       const user = auth.getUser();
-      if (!user) return;
-
-      auth.initNavbar();
+      if (!auth.getToken()) return;
+      if (user) auth.initNavbar();
       initThreeBg();
       initSidebar();
-      if (window.initProfile) initProfile();
-      initModuleUI();
+      initProfile();
     });
-
-    function initModuleUI() {
-      const setupModal = (linkId, modalId, closeId) => {
-        const link = document.getElementById(linkId);
-        const modal = document.getElementById(modalId);
-        const close = document.getElementById(closeId);
-        if (link && modal && close) {
-          link.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            modal.style.display = 'flex';
-          });
-          close.addEventListener('click', () => modal.style.display = 'none');
-          modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
-        }
-      };
-
-      setupModal('tickets-link', 'tickets-modal', 'tickets-close');
-      setupModal('payments-link', 'payments-modal', 'payments-close');
-    }
   </script>
-  <script src="js/dbadmin.js" defer></script>
 </body>
-
 </html>
