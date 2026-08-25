@@ -64,7 +64,7 @@ async function loadAnnouncements() {
       <div class="glass-card announcement-card anim-fade-up${a.pinned ? ' pinned' : ''}">
         ${a.pinned ? '<i class="fas fa-thumbtack pin-icon"></i>' : ''}
         <div class="announcement-header">
-          <img src="${getInitialsAvatar(a.author_name, 48)}" class="announcement-author-avatar">
+          <img src="${getInitialsAvatar(a.author_name, 48, a.author_role || 'admin')}" class="announcement-author-avatar">
           <div>
             <div style="font-weight:700; font-size:1.1rem;">${a.author_name || 'Admin'}</div>
             <div style="font-size:0.75rem; color:var(--text-muted);">${timeAgo(a.created_at)}</div>

@@ -24,84 +24,239 @@
   <link rel="stylesheet" href="css/animations.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/responsive.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
   <link
     href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet">
   <style>
     .submissions-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 24px;
-      padding: 0 24px 24px;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+      padding: 0 24px 32px;
     }
 
     .submission-card {
-      padding: 24px;
+      padding: 16px 18px;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 10px;
+      background: #ffffff;
+      border: 1.5px solid rgba(16, 42, 150, 0.08);
+      border-radius: 14px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .submission-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #102a96 0%, #ff6b00 100%);
+      opacity: 0.85;
+    }
+
+    .submission-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(16, 42, 150, 0.08);
+      border-color: rgba(16, 42, 150, 0.22);
     }
 
     .submission-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
+      gap: 8px;
     }
 
     .submission-title {
       font-family: var(--font-display);
-      font-size: 1rem;
-      font-weight: 700;
-      margin-bottom: 4px;
+      font-size: 0.86rem;
+      font-weight: 800;
+      color: #102a96;
+      line-height: 1.25;
+      margin-bottom: 2px;
     }
 
     .submission-project {
-      font-size: 0.75rem;
+      font-size: 0.68rem;
       color: var(--text-muted);
+      font-weight: 600;
     }
 
     .submitter-info {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 12px;
-      background: #ffffff;
-      border-radius: var(--radius-sm);
+      gap: 10px;
+      padding: 6px 10px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
     }
 
-    .feedback-box {
-      background: rgba(0, 0, 0, 0.2);
-      border:  2px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 16px;
-      font-size: 0.8rem;
-      line-height: 1.5;
+    .sub-summary-box {
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.72rem;
+      color: #475569;
+      line-height: 1.4;
+      max-height: 48px;
+      overflow: hidden;
+      position: relative;
     }
 
-    .feedback-item {
-      margin-bottom: 12px;
+    .sub-summary-box::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 14px;
+      background: linear-gradient(transparent, #f8fafc);
     }
 
-    .feedback-item:last-child {
-      margin-bottom: 0;
-    }
-
-    .feedback-label {
+    .sub-btn-pdf {
+      font-size: 0.72rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #102a96 0%, #ff6b00 100%);
+      color: #ffffff !important;
+      text-decoration: none;
+      padding: 7px 12px;
+      border-radius: 8px;
       font-weight: 700;
-      margin-bottom: 4px;
-      display: block;
+      box-shadow: 0 2px 8px rgba(16, 42, 150, 0.15);
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: none;
+    }
+
+    .sub-btn-pdf:hover {
+      box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3);
+      transform: translateY(-1px);
     }
 
     .submission-actions {
       display: flex;
-      gap: 12px;
+      align-items: center;
+      gap: 6px;
       margin-top: auto;
     }
 
-    @media (max-width: 1024px) {
+    .submission-actions button {
+      height: 30px !important;
+      font-size: 0.68rem !important;
+      font-weight: 800 !important;
+      padding: 4px 8px !important;
+      border-radius: 6px !important;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    /* Modernized Wide Drawer Styles */
+    #submission-detail-modal .side-drawer-panel,
+    #work-assets-modal .side-drawer-panel {
+      max-width: min(840px, 94vw) !important;
+      padding: 24px 28px !important;
+      background: #ffffff !important;
+    }
+
+    .drawer-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .drawer-meta-tile {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      transition: all 0.2s ease;
+    }
+
+    .drawer-meta-tile:hover {
+      border-color: rgba(16, 42, 150, 0.2);
+      background: #f1f5f9;
+    }
+
+    .drawer-meta-title {
+      font-size: 0.65rem;
+      font-weight: 800;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .drawer-meta-value {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #0f172a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .drawer-pdf-container {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px;
+      margin: 16px 0;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    }
+
+    .drawer-pdf-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .drawer-pdf-iframe {
+      width: 100%;
+      height: 540px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    .drawer-sticky-footer {
+      position: sticky;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      padding: 12px 0 4px 0;
+      margin-top: 20px;
+      border-top: 1.5px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      z-index: 20;
+    }
+
+    @media (max-width: 768px) {
       .submissions-grid {
         grid-template-columns: 1fr;
+        padding: 0 16px 24px;
       }
     }
   </style>
@@ -702,6 +857,9 @@
         <div class="menu-item" data-nav="clients.html" onclick="window.location.href='clients.html'">
           <i class="fas fa-user-tie"></i><span class="menu-text">Clients</span>
         </div>
+        <div class="menu-item" data-nav="client_reports.html" onclick="window.location.href='client_reports.html'">
+          <i class="fas fa-chart-pie"></i><span class="menu-text">Client Reports</span>
+        </div>
         <div class="menu-item" data-nav="announcements.html" onclick="window.location.href='announcements.html'">
           <i class="fas fa-bullhorn"></i><span class="menu-text">Announcements</span>
         </div>
@@ -724,9 +882,6 @@
             <div class="menu-item admin-only" data-nav="users.html" onclick="window.location.href='users.html'">
               <i class="fas fa-users-cog"></i><span class="menu-text">User Management</span>
             </div>
-            <div class="menu-item admin-only" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
-              <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
-            </div>
           </div>
         </div>
         <div class="menu-item rnd-only" data-nav="nexus_lab.html" onclick="window.location.href='nexus_lab.html'">
@@ -743,6 +898,9 @@
         
         <div class="menu-item" data-nav="workspace.html" onclick="window.location.href='workspace.html'">
           <i class="fas fa-paint-brush"></i><span class="menu-text">Creative Workspace</span>
+        </div>
+        <div class="menu-item" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
+          <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
         </div>
         
         <div class="menu-item admin-only" data-nav="database_viewer.html" id="dbadmin-link" onclick="window.location.href='database_viewer.html'">

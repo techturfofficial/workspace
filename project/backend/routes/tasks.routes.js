@@ -178,7 +178,7 @@ router.post('/', verifyToken, checkRole('admin', 'team_leader', 'frontend_backen
 });
 
 // PUT /api/tasks/:id
-router.put('/:id', verifyToken, checkRole('admin', 'team_leader', 'backend', 'frontend_backend', 'production'), (req, res) => {
+router.put('/:id', verifyToken, checkRole('admin'), (req, res) => {
   const { title, description, assigned_to, status, priority, deadline, max_revisions, role_required, task_members } = req.body;
   const oldTask = db.prepare('SELECT * FROM tasks WHERE id=?').get(req.params.id);
   if (!oldTask) return res.status(404).json({ message: 'Task not found' });
@@ -278,15 +278,29 @@ router.delete('/:id', verifyToken, checkRole('admin'), (req, res) => {
   if (!oldTask) return res.status(404).json({ message: 'Task not found' });
 
   try {
-    db.prepare('DELETE FROM tasks WHERE id=?').run(req.params.id);
+    const deleteTaskTx = db.transaction((taskId) => {
+      // 1. Unlink dependent tasks
+      db.prepare('UPDATE tasks SET depends_on=NULL WHERE depends_on=?').run(taskId);
+      // 2. Remove task members
+      db.prepare('DELETE FROM task_members WHERE task_id=?').run(taskId);
+      // 3. Remove submissions linked to this task
+      db.prepare('DELETE FROM submissions WHERE task_id=?').run(taskId);
+      // 4. Nullify meeting notes and performance logs
+      db.prepare('UPDATE meeting_notes SET task_id=NULL WHERE task_id=?').run(taskId);
+      db.prepare('UPDATE performance_log SET task_id=NULL WHERE task_id=?').run(taskId);
+      // 5. Delete task itself
+      db.prepare('DELETE FROM tasks WHERE id=?').run(taskId);
+      // 6. Audit log
+      db.prepare('INSERT INTO audit_log (user_id, action, table_name, record_id, old_data) VALUES (?,?,?,?,?)')
+        .run(req.user.id, 'DELETE', 'tasks', taskId, JSON.stringify(oldTask));
+    });
 
-    // AUDIT LOG (Nexus Relic Snapshot)
-    db.prepare('INSERT INTO audit_log (user_id, action, table_name, record_id, old_data) VALUES (?,?,?,?,?)')
-      .run(req.user.id, 'DELETE', 'tasks', req.params.id, JSON.stringify(oldTask));
+    deleteTaskTx(req.params.id);
 
-    res.json({ message: 'Task deleted successfully (Historic snapshot saved to Warp)' });
+    res.json({ message: 'Task deleted successfully' });
   } catch (err) {
-    res.status(500).json({ message: 'Failed to delete task' });
+    console.error('Delete Task Error:', err);
+    res.status(500).json({ message: 'Failed to delete task: ' + err.message });
   }
 });
 

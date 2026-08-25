@@ -9,7 +9,8 @@
   <link rel="stylesheet" href="css/animations.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/responsive.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     /* Messenger Master Container */
@@ -1275,6 +1276,9 @@
         <div class="menu-item" data-nav="clients.html" onclick="window.location.href='clients.html'">
           <i class="fas fa-user-tie"></i><span class="menu-text">Clients</span>
         </div>
+        <div class="menu-item" data-nav="client_reports.html" onclick="window.location.href='client_reports.html'">
+          <i class="fas fa-chart-pie"></i><span class="menu-text">Client Reports</span>
+        </div>
         <div class="menu-item" data-nav="announcements.html" onclick="window.location.href='announcements.html'">
           <i class="fas fa-bullhorn"></i><span class="menu-text">Announcements</span>
         </div>
@@ -1297,9 +1301,6 @@
             <div class="menu-item admin-only" data-nav="users.html" onclick="window.location.href='users.html'">
               <i class="fas fa-users-cog"></i><span class="menu-text">User Management</span>
             </div>
-            <div class="menu-item admin-only" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
-              <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
-            </div>
           </div>
         </div>
         <div class="menu-item rnd-only" data-nav="nexus_lab.html" onclick="window.location.href='nexus_lab.html'">
@@ -1316,6 +1317,9 @@
         
         <div class="menu-item" data-nav="workspace.html" onclick="window.location.href='workspace.html'">
           <i class="fas fa-paint-brush"></i><span class="menu-text">Creative Workspace</span>
+        </div>
+        <div class="menu-item" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
+          <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
         </div>
         
         <div class="menu-item admin-only" data-nav="database_viewer.html" id="dbadmin-link" onclick="window.location.href='database_viewer.html'">
@@ -1603,7 +1607,11 @@
         </button>
         <button type="button" class="wa-modal-seg-btn" id="modal-tab-group">
           <i class="fas fa-users"></i>
-          <span>Create Group</span>
+          <span>Team Group</span>
+        </button>
+        <button type="button" class="wa-modal-seg-btn" id="modal-tab-client-group">
+          <i class="fas fa-handshake"></i>
+          <span>Group with Client</span>
         </button>
       </div>
 
@@ -1625,7 +1633,7 @@
         <div class="wa-contact-list" id="modal-clients-list"></div>
       </div>
 
-      <!-- Create Group View -->
+      <!-- Create Team Group View -->
       <div id="modal-view-group" style="display:none; flex-direction:column; gap:12px;">
         <div class="wa-modal-search">
           <i class="fas fa-heading"></i>
@@ -1634,7 +1642,26 @@
         <div style="font-size:0.75rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Select Participants</div>
         <div class="wa-contact-list" id="modal-group-participants-list" style="max-height:220px;"></div>
         <button type="button" class="btn-primary" id="create-group-submit-btn" style="width:100%; height:42px; justify-content:center; border-radius:12px; font-weight:800; letter-spacing:0.5px;">
-          <i class="fas fa-check" style="margin-right:8px;"></i> Create Group Channel
+          <i class="fas fa-check" style="margin-right:8px;"></i> Create Team Group
+        </button>
+      </div>
+
+      <!-- Create Group With Client View -->
+      <div id="modal-view-client-group" style="display:none; flex-direction:column; gap:12px;">
+        <div>
+          <label style="font-size:0.75rem; font-weight:700; color:#94a3b8; text-transform:uppercase; display:block; margin-bottom:5px;">Select Client *</label>
+          <select id="client-group-select-client" class="form-control" style="background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff; border-radius:10px; width:100%; padding:9px 12px; font-size:0.85rem;">
+            <option value="">-- Choose Client --</option>
+          </select>
+        </div>
+        <div class="wa-modal-search">
+          <i class="fas fa-heading"></i>
+          <input type="text" id="client-group-title-input" placeholder="Group Name (e.g. Acme Corp Project Squad)...">
+        </div>
+        <div style="font-size:0.75rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Select Staff Members to Include</div>
+        <div class="wa-contact-list" id="modal-client-group-participants-list" style="max-height:180px;"></div>
+        <button type="button" class="btn-primary" id="create-client-group-submit-btn" style="width:100%; height:42px; justify-content:center; border-radius:12px; font-weight:800; letter-spacing:0.5px; background:linear-gradient(135deg,#ff6b00,#ea580c);">
+          <i class="fas fa-handshake" style="margin-right:8px;"></i> Create Client Group Channel
         </button>
       </div>
 

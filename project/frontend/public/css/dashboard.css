@@ -70,15 +70,19 @@
   min-width: 72px;
 }
 
-/* Sidebar Header Unified */
+/* Sidebar Header Unified (Pixel-perfect 68px alignment matching .navbar) */
 .sidebar-header {
-  padding: 20px 16px 18px 18px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: #ffffff;
-  border-bottom: 1px solid rgba(241, 245, 249, 0.95);
-  margin-bottom: 0;
+  height: 68px !important;
+  min-height: 68px !important;
+  max-height: 68px !important;
+  box-sizing: border-box !important;
+  padding: 0 18px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  background: #ffffff !important;
+  border-bottom: 1.5px solid rgba(16, 42, 150, 0.08) !important;
+  margin: 0 !important;
   user-select: none;
   transition: all 0.2s ease;
   cursor: pointer;
@@ -286,17 +290,43 @@
   transform: scale(1.08);
 }
 
-/* --- ACTIVE ITEM: Premium Dark Blue Pill --- */
+/* --- ACTIVE ITEM: Role-Themed Selector System --- */
 .sidebar .menu-item.active,
-.sidebar a.menu-item.active {
+.sidebar a.menu-item.active,
+.sidebar.role-theme-blue .menu-item.active,
+.sidebar.role-theme-blue a.menu-item.active,
+body.role-theme-blue .sidebar .menu-item.active,
+body.role-theme-blue .sidebar a.menu-item.active {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 9px !important;
-  background: linear-gradient(135deg, #102a96 0%, #1d4ed8 100%) !important;
+  background: #102a96 !important;
   color: #ffffff !important;
   border-color: transparent !important;
-  box-shadow: 0 4px 14px rgba(16, 42, 150, 0.24) !important;
+  box-shadow: 0 4px 14px rgba(16, 42, 150, 0.28) !important;
   font-weight: 600;
   transform: none !important;
+}
+
+/* Orange Active Selector for Creative / Content Roles */
+.sidebar.role-theme-orange .menu-item.active,
+.sidebar.role-theme-orange a.menu-item.active,
+body.role-theme-orange .sidebar .menu-item.active,
+body.role-theme-orange .sidebar a.menu-item.active {
+  background: #ff6a00 !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 14px rgba(255, 106, 0, 0.28) !important;
+}
+
+/* Tech Turf Blue & Orange Gradient Active Selector for Admin / Team Leaders */
+.sidebar.role-theme-admin .menu-item.active,
+.sidebar.role-theme-admin a.menu-item.active,
+body.role-theme-admin .sidebar .menu-item.active,
+body.role-theme-admin .sidebar a.menu-item.active {
+  background: linear-gradient(135deg, #102a96 0%, #ff6a00 100%) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 14px rgba(16, 42, 150, 0.28) !important;
 }
 
 .sidebar .menu-item.active i,

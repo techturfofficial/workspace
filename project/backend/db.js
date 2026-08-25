@@ -1,5 +1,6 @@
 const Database = require('better-sqlite3');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const BUILTIN_ROLE_NAMES = [
@@ -9,7 +10,17 @@ const BUILTIN_ROLE_NAMES = [
 ];
 const USER_ROLE_CHECK_VALUES = BUILTIN_ROLE_NAMES.map(role => `'${role}'`).join(',');
 
-const dbPath = process.env.DB_PATH || path.join(__dirname, '../storage/techturf.db');
+let dbPath = process.env.DB_PATH;
+if (dbPath) {
+  if (!path.isAbsolute(dbPath)) {
+    const fromProject = path.resolve(__dirname, '..', dbPath);
+    const fromCwd = path.resolve(process.cwd(), dbPath);
+    dbPath = fs.existsSync(fromProject) ? fromProject : (fs.existsSync(fromCwd) ? fromCwd : fromProject);
+  }
+} else {
+  const rootDb = path.resolve(__dirname, '../../techturf.db');
+  dbPath = fs.existsSync(rootDb) ? rootDb : path.join(__dirname, '../storage/techturf.db');
+}
 const db = new Database(dbPath);
 db.exec(`
 CREATE TABLE IF NOT EXISTS users (
@@ -983,6 +994,14 @@ if (!clientColumns.includes('last_login_at')) {
 }
 // Unique index — use IF NOT EXISTS to be idempotent
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_login_id ON clients(client_login_id)');
+
+// Users table migrations
+try {
+  const existingUserCols = db.prepare('PRAGMA table_info(users)').all().map(col => col.name);
+  if (!existingUserCols.includes('personal_email')) {
+    db.exec('ALTER TABLE users ADD COLUMN personal_email TEXT');
+  }
+} catch (e) {}
 
 // --- Meetings table (used by client_portal.routes.js) ---
 db.exec(`

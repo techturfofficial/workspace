@@ -179,16 +179,56 @@ router.delete('/:id', verifyToken, checkRole('admin'), (req, res) => {
         )
       `).run(projectId);
 
-      // 2. Delete performance log entries for this project
-      db.prepare('DELETE FROM performance_log WHERE project_id=?').run(projectId);
+      // 2. Delete task_members linked to tasks of this project
+      db.prepare(`
+        DELETE FROM task_members WHERE task_id IN (
+          SELECT id FROM tasks WHERE project_id=?
+        )
+      `).run(projectId);
 
-      // 3. Delete all tasks in this project
+      // 3. Delete meeting notes linked to tasks of this project
+      db.prepare(`
+        DELETE FROM meeting_notes WHERE task_id IN (
+          SELECT id FROM tasks WHERE project_id=?
+        )
+      `).run(projectId);
+
+      // 4. Clear task dependency self-references
+      db.prepare('UPDATE tasks SET depends_on=NULL WHERE project_id=?').run(projectId);
+
+      // 5. Delete all tasks in this project
       db.prepare('DELETE FROM tasks WHERE project_id=?').run(projectId);
 
-      // 4. Delete project-related notifications (optional cleanup)
+      // 6. Delete project members assigned to this project
+      db.prepare('DELETE FROM project_members WHERE project_id=?').run(projectId);
+
+      // 7. Delete performance log entries for this project
+      db.prepare('DELETE FROM performance_log WHERE project_id=?').run(projectId);
+
+      // 8. Delete whiteboards linked to this project
+      db.prepare('DELETE FROM whiteboards WHERE project_id=?').run(projectId);
+
+      // 9. Delete meeting notes linked directly to this project
+      db.prepare('DELETE FROM meeting_notes WHERE project_id=?').run(projectId);
+
+      // 10. Delete client reviews linked to this project
+      db.prepare('DELETE FROM client_reviews WHERE project_id=?').run(projectId);
+
+      // 11. Delete asset library entries linked to this project
+      db.prepare('DELETE FROM asset_library WHERE project_id=?').run(projectId);
+
+      // 12. Delete project conversations, participants, and chat messages
+      const projectConvs = db.prepare('SELECT id FROM conversations WHERE project_id=?').all(projectId);
+      for (const conv of projectConvs) {
+        db.prepare('DELETE FROM chat_messages WHERE conversation_id=?').run(conv.id);
+        db.prepare('DELETE FROM conversation_participants WHERE conversation_id=?').run(conv.id);
+        db.prepare('DELETE FROM conversations WHERE id=?').run(conv.id);
+      }
+
+      // 13. Delete project-related notifications (cleanup)
       db.prepare(`DELETE FROM notifications WHERE message LIKE ?`).run(`%"${project.title}"%`);
 
-      // 5. Finally delete the project itself
+      // 14. Finally delete the project itself
       db.prepare('DELETE FROM projects WHERE id=?').run(projectId);
     });
 

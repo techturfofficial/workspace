@@ -13,50 +13,136 @@
   <link rel="preconnect" href="https://unpkg.com">
 
   <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/animations.css">
   <link rel="stylesheet" href="css/responsive.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
   <link
     href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet">
   <style>
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background-color: #f8fafc;
+      background-image: 
+        radial-gradient(circle at 12% 18%, rgba(224, 231, 255, 0.75) 0%, transparent 45%),
+        radial-gradient(circle at 88% 82%, rgba(254, 215, 170, 0.6) 0%, transparent 45%),
+        radial-gradient(circle at 50% 50%, rgba(241, 245, 249, 0.6) 0%, transparent 60%),
+        linear-gradient(135deg, #eef2ff 0%, #f8fafc 45%, #fff7ed 100%);
+      background-attachment: fixed;
+      font-family: var(--font-body);
+      color: var(--text-primary);
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .login-top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: linear-gradient(90deg, #102a96 0%, #172554 28%, #581c87 62%, #c2410c 85%, #ea580c 100%);
+      box-shadow: 0 4px 20px rgba(16, 42, 150, 0.18);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+    }
+
+    .login-top-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #ffffff;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.15rem;
+      letter-spacing: 0.5px;
+    }
+
+    .login-top-brand img {
+      height: 32px;
+      width: auto;
+      border-radius: 6px;
+      background: #ffffff;
+      padding: 2px 4px;
+    }
+
+    .login-top-tag {
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 3px 8px;
+      border-radius: 6px;
+      letter-spacing: 1px;
+    }
+
     .login-container {
-      height: 100vh;
+      min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 96px 24px 32px;
+      box-sizing: border-box;
+      position: relative;
+      z-index: 2;
     }
 
     .login-card {
       width: 100%;
-      max-width: 420px;
-      padding: 40px;
+      max-width: 440px;
+      padding: 40px 36px;
       text-align: center;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 20px;
+      border: 1.5px solid rgba(16, 42, 150, 0.08);
+      box-shadow: 0 20px 50px -10px rgba(16, 42, 150, 0.1), 0 10px 20px rgba(0, 0, 0, 0.03);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .login-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #102a96 0%, #581c87 50%, #ea580c 100%);
     }
 
     .login-logo {
       font-family: var(--font-display);
       font-weight: 900;
-      font-size: 2.5rem;
+      font-size: 2.2rem;
       color: var(--accent-primary);
-      text-shadow: 0 0 20px rgba(16, 42, 150, 0.5);
-      margin-bottom: 8px;
-      letter-spacing: 3px;
+      text-shadow: 0 0 20px rgba(16, 42, 150, 0.2);
+      margin-bottom: 4px;
+      letter-spacing: 2px;
     }
 
     .login-subtitle {
-      font-size: 0.8rem;
+      font-size: 0.75rem;
+      font-weight: 700;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 4px;
-      margin-bottom: 40px;
+      letter-spacing: 3px;
+      margin-bottom: 28px;
     }
 
     .login-form {
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 18px;
     }
 
     .input-group {
@@ -66,69 +152,165 @@
     .input-group label {
       display: block;
       font-size: 0.75rem;
+      font-weight: 700;
       color: var(--text-secondary);
       margin-bottom: 8px;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 0.8px;
     }
 
     .input-wrap {
       position: relative;
+      width: 100%;
+      display: flex;
+      align-items: center;
     }
 
-    .input-wrap i {
+    .input-wrap > i.input-icon-left,
+    .input-wrap > i:first-child {
       position: absolute;
       left: 16px;
       top: 50%;
       transform: translateY(-50%);
       color: var(--text-muted);
+      font-size: 1rem;
+      pointer-events: none;
+      z-index: 2;
     }
 
     .input-wrap input {
       width: 100%;
+      height: 50px;
       background: #ffffff;
-      border:  2px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 12px 16px 12px 44px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 0 16px 0 46px;
       color: var(--text-primary);
-      transition: 0.3s;
+      font-size: 0.95rem;
+      font-family: inherit;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+      box-sizing: border-box;
+    }
+
+    .input-wrap input[type="password"] {
+      padding-right: 48px !important;
     }
 
     .input-wrap select {
       width: 100%;
+      height: 50px;
       background: #ffffff;
-      border:  2px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 12px 16px 12px 44px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 0 40px 0 46px;
       color: var(--text-primary);
-      transition: 0.3s;
+      font-size: 0.95rem;
+      font-family: inherit;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
       appearance: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+      box-sizing: border-box;
     }
 
-    .input-wrap input:focus {
-      border-color: var(--accent-primary);
-      box-shadow: 0 0 15px rgba(16, 42, 150, 0.2);
+    .input-wrap .select-chevron-right {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      pointer-events: none;
+      z-index: 2;
     }
 
+    .input-wrap input:focus,
     .input-wrap select:focus {
+      outline: none;
       border-color: var(--accent-primary);
-      box-shadow: 0 0 15px rgba(16, 42, 150, 0.2);
+      box-shadow: 0 0 0 3.5px rgba(16, 42, 150, 0.15);
+    }
+
+    .password-toggle-btn {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent !important;
+      border: none !important;
+      color: var(--text-muted, #64748b) !important;
+      font-size: 1rem !important;
+      cursor: pointer !important;
+      padding: 8px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      z-index: 10 !important;
+      border-radius: 8px !important;
+      outline: none !important;
+      transition: color 0.2s ease, transform 0.15s ease !important;
+    }
+
+    .password-toggle-btn:hover {
+      color: var(--accent-primary, #102a96) !important;
+      transform: translateY(-50%) scale(1.1) !important;
+    }
+
+    .password-toggle-btn:active {
+      transform: translateY(-50%) scale(0.95) !important;
+    }
+
+    .password-toggle-btn i {
+      position: static !important;
+      transform: none !important;
+      left: auto !important;
+      color: inherit !important;
+      font-size: inherit !important;
+      pointer-events: auto !important;
+    }
+
+    .login-form .btn-primary {
+      height: 50px;
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      border-radius: 12px;
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
     }
 
     .forgot-pw {
-      font-size: 0.8rem;
+      font-size: 0.82rem;
       color: var(--text-muted);
-      margin-top: 16px;
+      margin-top: 20px;
+    }
+
+    .forgot-pw a {
+      color: var(--text-secondary);
+      font-weight: 600;
+      text-decoration: none;
+      transition: color 0.2s ease;
     }
 
     .forgot-pw a:hover {
       color: var(--accent-primary);
+      text-decoration: underline;
     }
-
   </style>
 </head>
 
 <body>
+  <header class="login-top-bar">
+    <div class="login-top-brand">
+      <img src="assets/techturf-logo.png" alt="Tech Turf" onerror="this.style.display='none'">
+      <span>TECH TURF</span>
+    </div>
+    <div class="login-top-tag">COMMAND CENTER</div>
+  </header>
+
   <canvas id="three-bg"></canvas>
   <div class="toast-container" id="toast-container"></div>
 
@@ -139,25 +321,28 @@
 
       <form class="login-form" id="login-form">
         <div class="input-group">
-          <label>Email Address</label>
+          <label for="email">Email Address</label>
           <div class="input-wrap">
-            <i class="fas fa-envelope"></i>
-            <input type="email" id="email" placeholder="name@techturf.com" required>
+            <i class="fas fa-envelope input-icon-left"></i>
+            <input type="email" id="email" placeholder="name@techturf.com" required autocomplete="username">
           </div>
         </div>
 
         <div class="input-group">
-          <label>Password</label>
+          <label for="password">Password</label>
           <div class="input-wrap">
-            <i class="fas fa-lock"></i>
-            <input type="password" id="password" placeholder="••••••••" required>
+            <i class="fas fa-lock input-icon-left"></i>
+            <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password', this)" title="Show password" aria-label="Show password">
+              <i class="fas fa-eye"></i>
+            </button>
           </div>
         </div>
 
         <div class="input-group">
-          <label>Role</label>
+          <label for="role">Role</label>
           <div class="input-wrap">
-            <i class="fas fa-user-tag"></i>
+            <i class="fas fa-user-tag input-icon-left"></i>
             <select id="role" required>
               <option value="admin">Administrator</option>
               <option value="team_leader">Team Leader</option>
@@ -169,6 +354,7 @@
               <option value="backend">Backend</option>
               <option value="frontend_backend">Frontend + Backend</option>
             </select>
+            <i class="fas fa-chevron-down select-chevron-right"></i>
           </div>
         </div>
 

@@ -23,10 +23,23 @@ function getInitials(name) {
   return name.slice(0, 2).toUpperCase();
 }
 
+function parseUtcDate(dateString) {
+  if (!dateString) return null;
+  if (dateString instanceof Date) return dateString;
+  let s = String(dateString).trim();
+  if (!s) return null;
+  // If string is SQLite "YYYY-MM-DD HH:MM:SS" without timezone indicator, treat as UTC
+  if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?(\.\d+)?$/.test(s)) {
+    s = s.replace(' ', 'T') + 'Z';
+  }
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 function formatWhatsAppTime(dateString) {
   if (!dateString) return '';
-  const d = new Date(dateString);
-  if (isNaN(d.getTime())) return '';
+  const d = parseUtcDate(dateString);
+  if (!d) return '';
 
   const now = new Date();
   const isToday = d.toDateString() === now.toDateString();
@@ -56,8 +69,8 @@ function formatWhatsAppTime(dateString) {
 
 function formatMessageDateDivider(dateString) {
   if (!dateString) return 'Today';
-  const d = new Date(dateString);
-  if (isNaN(d.getTime())) return 'Today';
+  const d = parseUtcDate(dateString);
+  if (!d) return 'Today';
 
   const now = new Date();
   if (d.toDateString() === now.toDateString()) return 'Today';

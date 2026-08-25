@@ -23,10 +23,23 @@ function getInitials(name) {
   return name.slice(0, 2).toUpperCase();
 }
 
+function parseUtcDate(dateString) {
+  if (!dateString) return null;
+  if (dateString instanceof Date) return dateString;
+  let s = String(dateString).trim();
+  if (!s) return null;
+  // If string is SQLite "YYYY-MM-DD HH:MM:SS" without timezone indicator, treat as UTC
+  if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?(\.\d+)?$/.test(s)) {
+    s = s.replace(' ', 'T') + 'Z';
+  }
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 function formatWhatsAppTime(dateString) {
   if (!dateString) return '';
-  const d = new Date(dateString);
-  if (isNaN(d.getTime())) return '';
+  const d = parseUtcDate(dateString);
+  if (!d) return '';
 
   const now = new Date();
   const isToday = d.toDateString() === now.toDateString();
@@ -56,8 +69,8 @@ function formatWhatsAppTime(dateString) {
 
 function formatMessageDateDivider(dateString) {
   if (!dateString) return 'Today';
-  const d = new Date(dateString);
-  if (isNaN(d.getTime())) return 'Today';
+  const d = parseUtcDate(dateString);
+  if (!d) return 'Today';
 
   const now = new Date();
   if (d.toDateString() === now.toDateString()) return 'Today';
@@ -233,49 +246,41 @@ function bindUIEvents() {
     };
   }
 
-  // Delete Conversation
+  // Delete Conversation (Works for direct, team group, or client chat - only removes the chat thread)
   const deleteChatBtn = document.getElementById('menu-delete-chat-btn');
   if (deleteChatBtn) {
     deleteChatBtn.onclick = () => {
       chatActionMenu?.classList.remove('active');
       if (activeConversationId) {
         const current = messageConversations.find(c => Number(c.id) === activeConversationId);
-        const title = current ? (current.display_title || current.title || 'this conversation') : 'this conversation';
+        const title = current ? (current.display_title || current.title || 'this chat') : 'this chat';
         deleteConversationById(activeConversationId, title);
       }
     };
   }
 
-  // Delete Team Channel
+  // Delete Team Channel (Deletes the conversation channel only)
   const deleteTeamBtn = document.getElementById('menu-delete-team-btn');
   if (deleteTeamBtn) {
     deleteTeamBtn.onclick = () => {
       chatActionMenu?.classList.remove('active');
       if (activeConversationId) {
         const current = messageConversations.find(c => Number(c.id) === activeConversationId);
-        const title = current ? (current.display_title || current.title || 'this team') : 'this team';
-        if (current?.team_id) {
-          deleteTeamGroup(current.team_id, title);
-        } else {
-          deleteConversationById(activeConversationId, title);
-        }
+        const title = current ? (current.display_title || current.title || 'this team channel') : 'this team channel';
+        deleteConversationById(activeConversationId, title);
       }
     };
   }
 
-  // Delete Client Contact
+  // Delete Client Chat Thread (Deletes the conversation thread only, never the client)
   const deleteContactBtn = document.getElementById('menu-delete-contact-btn');
   if (deleteContactBtn) {
     deleteContactBtn.onclick = () => {
       chatActionMenu?.classList.remove('active');
       if (activeConversationId) {
         const current = messageConversations.find(c => Number(c.id) === activeConversationId);
-        const title = current ? (current.client_name || current.display_title || 'this client') : 'this client';
-        if (current?.client_id) {
-          deleteClientContact(current.client_id, title);
-        } else {
-          deleteConversationById(activeConversationId, title);
-        }
+        const title = current ? (current.client_name || current.display_title || 'this client chat') : 'this client chat';
+        deleteConversationById(activeConversationId, title);
       }
     };
   }
@@ -295,18 +300,22 @@ function bindUIEvents() {
   }
 }
 
+let selectedClientGroupMembers = new Set();
+
 function bindModalTabs() {
   const tabEmp = document.getElementById('modal-tab-employees');
   const tabCli = document.getElementById('modal-tab-clients');
   const tabGrp = document.getElementById('modal-tab-group');
+  const tabCliGrp = document.getElementById('modal-tab-client-group');
 
   const viewEmp = document.getElementById('modal-view-employees');
   const viewCli = document.getElementById('modal-view-clients');
   const viewGrp = document.getElementById('modal-view-group');
+  const viewCliGrp = document.getElementById('modal-view-client-group');
 
   function selectTab(tab, view) {
-    [tabEmp, tabCli, tabGrp].forEach(t => t?.classList.remove('active'));
-    [viewEmp, viewCli, viewGrp].forEach(v => { if (v) v.style.display = 'none'; });
+    [tabEmp, tabCli, tabGrp, tabCliGrp].forEach(t => t?.classList.remove('active'));
+    [viewEmp, viewCli, viewGrp, viewCliGrp].forEach(v => { if (v) v.style.display = 'none'; });
     tab?.classList.add('active');
     if (view) view.style.display = 'flex';
   }
@@ -314,6 +323,7 @@ function bindModalTabs() {
   if (tabEmp) tabEmp.onclick = () => { selectTab(tabEmp, viewEmp); renderModalEmployeesList(searchEmp?.value.trim().toLowerCase() || ''); };
   if (tabCli) tabCli.onclick = () => { selectTab(tabCli, viewCli); renderModalClientsList(searchCli?.value.trim().toLowerCase() || ''); };
   if (tabGrp) tabGrp.onclick = () => { selectTab(tabGrp, viewGrp); renderModalGroupParticipantsList(); };
+  if (tabCliGrp) tabCliGrp.onclick = () => { selectTab(tabCliGrp, viewCliGrp); renderModalClientGroupForm(); };
 
   const searchEmp = document.getElementById('modal-search-employees');
   if (searchEmp) {
@@ -332,6 +342,11 @@ function bindModalTabs() {
   const createGroupBtn = document.getElementById('create-group-submit-btn');
   if (createGroupBtn) {
     createGroupBtn.onclick = handleCreateGroupSubmit;
+  }
+
+  const createClientGroupBtn = document.getElementById('create-client-group-submit-btn');
+  if (createClientGroupBtn) {
+    createClientGroupBtn.onclick = handleCreateClientGroupSubmit;
   }
 }
 
@@ -405,6 +420,23 @@ function updateFilterCounts() {
   if (cCount) cCount.textContent = clients;
 }
 
+function getConversationTitle(c) {
+  if (!c) return 'Conversation';
+  if (c.is_group) {
+    if (c.title && c.title !== 'Group Chat' && c.title !== 'Client Chat Thread' && c.title !== 'Direct Message' && c.title !== 'Mission Control & Admin') {
+      return c.title;
+    }
+    if (c.display_title && c.display_title !== 'Group Chat' && c.display_title !== 'Client Chat Thread') {
+      return c.display_title;
+    }
+    return c.client_name ? `${c.client_name} Squad` : 'Group Channel';
+  }
+  if (c.category === 'clients' || c.client_id) {
+    return c.client_name || c.display_title || (c.title && c.title !== 'Client Chat Thread' ? c.title : 'Client');
+  }
+  return c.display_title || c.title || c.other_name || 'Direct Message';
+}
+
 function renderConversationsList(searchQuery = '') {
   const list = document.getElementById('wa-chat-list');
   if (!list) return;
@@ -419,7 +451,7 @@ function renderConversationsList(searchQuery = '') {
   // Filter by search query
   if (searchQuery) {
     filtered = filtered.filter(c => {
-      const name = (c.display_title || c.title || c.other_name || c.client_name || '').toLowerCase();
+      const name = (getConversationTitle(c) || c.display_title || c.title || c.other_name || c.client_name || '').toLowerCase();
       const lastMsg = (c.last_message || '').toLowerCase();
       const parts = (c.participant_names || '').toLowerCase();
       return name.includes(searchQuery) || lastMsg.includes(searchQuery) || parts.includes(searchQuery);
@@ -447,17 +479,16 @@ function renderConversationsList(searchQuery = '') {
 
   list.innerHTML = filtered.map(c => {
     const isActive = Number(c.id) === Number(activeConversationId);
-    const title = (c.category === 'clients') 
-      ? (c.client_name || (c.title !== 'Client Chat Thread' ? c.title : 'Client'))
-      : (c.display_title || c.title || c.other_name || 'Conversation');
+    const title = getConversationTitle(c);
     const timeStr = formatWhatsAppTime(c.last_message_at || c.updated_at);
     const preview = c.last_message ? c.last_message : (c.participant_names ? `With: ${c.participant_names}` : 'No messages yet');
     const unread = Number(c.unread_count || 0);
 
-    const categoryBadgeClass = c.category === 'teams' ? 'wa-category-teams' : (c.category === 'clients' ? 'wa-category-clients' : 'wa-category-employees');
-    const categoryLabel = c.category === 'teams' ? 'Team' : (c.category === 'clients' ? 'Client' : 'Staff');
+    const isClientGroup = Boolean(c.is_group && (c.client_id || c.category === 'clients'));
+    const categoryBadgeClass = isClientGroup ? 'wa-category-teams' : (c.category === 'teams' ? 'wa-category-teams' : (c.category === 'clients' ? 'wa-category-clients' : 'wa-category-employees'));
+    const categoryLabel = isClientGroup ? 'Client Group' : (c.category === 'teams' ? 'Team' : (c.category === 'clients' ? 'Client' : 'Staff'));
 
-    const avatarUrl = c.other_avatar || (c.category === 'clients' ? c.client_avatar : '');
+    const avatarUrl = c.other_avatar || (c.category === 'clients' && !c.is_group ? c.client_avatar : '');
     const initials = getInitials(title);
 
     return `
@@ -506,14 +537,13 @@ async function selectConversation(conversationId) {
 
   const current = messageConversations.find(c => Number(c.id) === activeConversationId);
   if (current) {
-    const title = (current.category === 'clients')
-      ? (current.client_name || (current.title !== 'Client Chat Thread' ? current.title : 'Client'))
-      : (current.display_title || current.title || current.other_name || 'Conversation');
+    const title = getConversationTitle(current);
     const headerName = document.getElementById('active-chat-name');
     const headerMeta = document.getElementById('active-chat-meta');
     const avatarWrap = document.getElementById('active-avatar-wrap');
-    const avatarUrl = current.other_avatar || (current.category === 'clients' ? current.client_avatar : '');
-    const categoryBadgeClass = current.category === 'teams' ? 'wa-category-teams' : (current.category === 'clients' ? 'wa-category-clients' : 'wa-category-employees');
+    const avatarUrl = current.other_avatar || (current.category === 'clients' && !current.is_group ? current.client_avatar : '');
+    const isClientGroup = Boolean(current.is_group && (current.client_id || current.category === 'clients'));
+    const categoryBadgeClass = isClientGroup ? 'wa-category-teams' : (current.category === 'teams' ? 'wa-category-teams' : (current.category === 'clients' ? 'wa-category-clients' : 'wa-category-employees'));
 
     if (headerName) headerName.textContent = title;
     if (avatarWrap) {
@@ -526,7 +556,9 @@ async function selectConversation(conversationId) {
     }
 
     if (headerMeta) {
-      if (current.category === 'teams') {
+      if (isClientGroup) {
+        headerMeta.textContent = `Client Group • ${current.client_name ? current.client_name + ' • ' : ''}${current.participant_count || 2} members`;
+      } else if (current.category === 'teams') {
         headerMeta.textContent = `${current.participant_count || 'Team'} members • ${current.participant_names || ''}`;
       } else if (current.category === 'clients') {
         headerMeta.textContent = `Client Account • ${current.client_company || 'Active Client'}`;
@@ -567,7 +599,10 @@ async function loadMessagesForActiveConversation(conversationId) {
     renderMessages(messages);
     api.put(`/messages/conversations/${conversationId}/read`, {}).catch(() => {});
   } catch (err) {
-    if (stream) stream.innerHTML = '<div class="empty-state-lite">Failed to load messages</div>';
+    if (stream) stream.innerHTML = `<div class="empty-state-lite">${escapeHtml(err.message || 'Failed to load messages')}</div>`;
+    if (err.message && (err.message.includes('not found') || err.message.includes('not part'))) {
+      loadConversations();
+    }
   }
 }
 
@@ -740,18 +775,12 @@ async function deleteConversationById(id, title = 'this chat') {
 }
 
 async function deleteClientContact(clientId, name = 'this client') {
-  if (!confirm(`Are you sure you want to delete client contact "${name}"?`)) {
-    return;
+  // Find conversation id for this client
+  const conv = messageConversations.find(c => Number(c.client_id) === Number(clientId));
+  if (conv) {
+    return deleteConversationById(conv.id, name);
   }
-  try {
-    await api.delete(`/clients/${clientId}`);
-    showToast('Client contact deleted', 'success');
-    await loadClients();
-    renderModalClientsList(document.getElementById('modal-search-clients')?.value.trim().toLowerCase() || '');
-    await loadConversations();
-  } catch (err) {
-    showToast(err.message || 'Failed to delete client', 'error');
-  }
+  showToast('No active chat thread found for this client', 'info');
 }
 
 async function deleteTeamGroup(teamId, name = 'this team') {
@@ -866,13 +895,8 @@ async function renderModalClientsList(q = '') {
           <span class="wa-card-role-tag" style="color:#fbbf24; background:rgba(245, 158, 11, 0.15); border-color:rgba(245, 158, 11, 0.3);">${c.company || 'Client Account'}</span>
         </div>
       </div>
-      <div style="display:flex; align-items:center; gap:6px;">
-        <button type="button" class="wa-contact-delete-btn" onclick="event.stopPropagation(); deleteClientContact(${c.id}, '${escapeHtml(c.name)}')" title="Delete client contact">
-          <i class="fas fa-trash-alt"></i>
-        </button>
-        <div class="wa-card-action">
-          <i class="fas fa-comment-dots"></i>
-        </div>
+      <div class="wa-card-action">
+        <i class="fas fa-comment-dots"></i>
       </div>
     </div>
   `).join('');
@@ -965,6 +989,69 @@ async function handleCreateGroupSubmit() {
   }
 }
 
+function renderModalClientGroupForm() {
+  const selectClient = document.getElementById('client-group-select-client');
+  if (selectClient) {
+    selectClient.innerHTML = '<option value="">-- Choose Client --</option>' + messageClients.map(c => `
+      <option value="${c.id}">${c.name || 'Client #' + c.id} (${c.company || 'Account'})</option>
+    `).join('');
+  }
+
+  const partList = document.getElementById('modal-client-group-participants-list');
+  if (partList) {
+    partList.innerHTML = messageUsers.map(u => `
+      <label class="wa-contact-card" style="cursor:pointer; user-select:none;">
+        <input type="checkbox" value="${u.id}" ${selectedClientGroupMembers.has(u.id) ? 'checked' : ''} onchange="toggleClientGroupMember(${u.id}, this.checked)" style="margin-right:4px; accent-color:#ea580c; width:16px; height:16px; cursor:pointer;">
+        <div class="wa-card-avatar emp" style="width:34px; height:34px; font-size:0.75rem;">${getInitials(u.name)}</div>
+        <div class="wa-card-info">
+          <div class="wa-card-name" style="font-size:0.86rem;">${u.name}</div>
+          <div class="wa-card-meta">
+            <span class="wa-card-role-tag">${formatRole(u.role)}</span>
+          </div>
+        </div>
+      </label>
+    `).join('');
+  }
+}
+
+window.toggleClientGroupMember = function(userId, isChecked) {
+  if (isChecked) selectedClientGroupMembers.add(Number(userId));
+  else selectedClientGroupMembers.delete(Number(userId));
+};
+
+async function handleCreateClientGroupSubmit() {
+  const selectClient = document.getElementById('client-group-select-client');
+  const clientId = selectClient ? selectClient.value : '';
+  const titleInput = document.getElementById('client-group-title-input');
+  const title = titleInput ? titleInput.value.trim() : '';
+
+  if (!clientId) {
+    showToast('Please select a client', 'error');
+    return;
+  }
+
+  try {
+    const res = await api.post('/messages/conversations/client-group', {
+      client_id: Number(clientId),
+      title: title || undefined,
+      participant_ids: Array.from(selectedClientGroupMembers)
+    });
+
+    document.getElementById('new-chat-modal')?.classList.remove('active');
+    selectedClientGroupMembers.clear();
+    if (titleInput) titleInput.value = '';
+    if (selectClient) selectClient.value = '';
+
+    await loadConversations();
+    if (res.conversation) {
+      selectConversation(res.conversation.id);
+    }
+    showToast('Client group channel created successfully', 'success');
+  } catch (err) {
+    showToast(err.message || 'Failed to create client group', 'error');
+  }
+}
+
 window.initMessages = initMessages;
 window.selectConversation = selectConversation;
 window.startDirectEmployeeChat = startDirectEmployeeChat;
@@ -973,4 +1060,6 @@ window.deleteConversationById = deleteConversationById;
 window.deleteClientContact = deleteClientContact;
 window.deleteTeamGroup = deleteTeamGroup;
 window.clearChatHistory = clearChatHistory;
+window.handleCreateClientGroupSubmit = handleCreateClientGroupSubmit;
+window.renderModalClientGroupForm = renderModalClientGroupForm;
 

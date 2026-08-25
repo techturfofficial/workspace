@@ -14,7 +14,8 @@
     <link rel="stylesheet" href="css/animations.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/responsive.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
     <link
         href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
@@ -73,9 +74,6 @@
             <div class="menu-item admin-only" data-nav="users.html" onclick="window.location.href='users.html'">
               <i class="fas fa-users-cog"></i><span class="menu-text">User Management</span>
             </div>
-            <div class="menu-item admin-only" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
-              <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
-            </div>
           </div>
         </div>
         <div class="menu-item rnd-only" data-nav="nexus_lab.html" onclick="window.location.href='nexus_lab.html'">
@@ -92,6 +90,9 @@
         
         <div class="menu-item" data-nav="workspace.html" onclick="window.location.href='workspace.html'">
           <i class="fas fa-paint-brush"></i><span class="menu-text">Creative Workspace</span>
+        </div>
+        <div class="menu-item" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
+          <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
         </div>
         
         <div class="menu-item admin-only" data-nav="database_viewer.html" id="dbadmin-link" onclick="window.location.href='database_viewer.html'">
@@ -174,9 +175,20 @@
 
                 <!-- Card: Performance Leaderboard (3D Isometric Chart) -->
                 <div class="glass-card dash-card dash-card-wide anim-fade-up">
-                    <div class="card-header-flex">
-                        <div class="card-title-text">TOP PERFORMERS</div>
-                        <i class="fas fa-trophy performer-trophy"></i>
+                    <div class="card-header-flex" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div class="card-title-text" style="margin:0;">TOP PERFORMERS</div>
+                            <span id="performer-month-badge" style="font-size:0.68rem; font-weight:800; color:var(--accent-primary); background:rgba(16,42,150,0.08); padding:3px 10px; border-radius:12px; letter-spacing:0.5px; text-transform:uppercase;">
+                                <i class="far fa-calendar-alt"></i> THIS MONTH
+                            </span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <select id="performers-period-select" onchange="loadTopPerformers(this.value)" style="font-size:0.72rem; font-weight:700; border-radius:8px; border:1px solid rgba(16,42,150,0.15); background:#ffffff; padding:4px 10px; color:var(--text-primary); cursor:pointer; outline:none;">
+                                <option value="month" selected>Current Month</option>
+                                <option value="all">All-Time Cumulative</option>
+                            </select>
+                            <i class="fas fa-trophy performer-trophy" style="position:static; margin:0;"></i>
+                        </div>
                     </div>
                     <div id="dash-performers-list" style="display:none;"></div>
                     <div class="performers-graph-wrapper">
@@ -206,9 +218,224 @@
                 </div>
 
             </div>
+
+            <!-- Weekly Progress Report Generator Section (TT 2.0 Friday Reporting) -->
+            <div style="padding: 0 24px 32px;">
+              <div class="glass-card dash-card anim-fade-up" style="padding: 24px; box-sizing: border-box; width: 100%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; border-bottom: 1.5px solid var(--border); padding-bottom: 16px;">
+                  <div>
+                    <div style="font-family: var(--font-display); font-size: 1.15rem; font-weight: 800; color: var(--accent-primary, #102a96); display: flex; align-items: center; gap: 10px;">
+                      <i class="fas fa-file-invoice" style="color: var(--accent-secondary, #ff6b00);"></i>
+                      <span>WEEKLY PROGRESS REPORT GENERATOR (TT 2.0)</span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
+                      Generate and submit your Friday progress report in official PDF format for Admin review and approval.
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 10px; flex-shrink: 0;">
+                    <button class="btn-primary" onclick="openWeeklyReportModal()" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; font-weight: 700; box-shadow: 0 4px 14px rgba(16, 42, 150, 0.25);">
+                      <i class="fas fa-plus-circle"></i>
+                      <span>Create Weekly Progress Report</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- History / Recent Submissions -->
+                <div>
+                  <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+                    <span>My Recent Weekly Report Submissions</span>
+                    <button type="button" class="btn-secondary" style="padding: 4px 10px; font-size: 0.72rem;" onclick="loadRecentWeeklyReports()"><i class="fas fa-rotate" style="margin-right: 4px;"></i>Refresh</button>
+                  </div>
+                  <div id="recent-weekly-reports-list"></div>
+                </div>
+              </div>
+            </div>
         </main>
     </div>
 
+    <!-- Weekly Progress Report Modal (Popup) -->
+    <div id="weekly-report-modal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center;">
+      <div class="modal-dialog report-modal-dialog">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1.5px solid var(--border); padding-bottom: 12px;">
+          <div>
+            <div style="font-family: var(--font-display); font-size: 1.25rem; font-weight: 800; color: #102a96; display: flex; align-items: center; gap: 8px;">
+              <i class="fas fa-file-pdf" style="color: #ff6b00;"></i>
+              <span>TT 2.0 — Weekly Progress Report</span>
+            </div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); font-style: italic;">Official Friday Reporting Template</div>
+          </div>
+          <button type="button" class="btn-icon" onclick="closeWeeklyReportModal()" style="font-size: 1.1rem; border: none; background: transparent; cursor: pointer;">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <form id="weekly-report-form" onsubmit="submitWeeklyReportToAdmin(event)">
+          <!-- Top Metadata Row -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px;">
+            <div class="form-group">
+              <label style="font-size: 0.75rem; font-weight: 700;">Week</label>
+              <input id="report-week" class="form-control" placeholder="e.g. Week 34 (Aug 2026)" required>
+            </div>
+            <div class="form-group">
+              <label style="font-size: 0.75rem; font-weight: 700;">Workstream</label>
+              <input id="report-workstream" class="form-control" placeholder="e.g. Frontend Engineering" required>
+            </div>
+            <div class="form-group">
+              <label style="font-size: 0.75rem; font-weight: 700;">Owner / Lead</label>
+              <input id="report-owner" class="form-control" placeholder="Your Name" required>
+            </div>
+            <div class="form-group">
+              <label style="font-size: 0.75rem; font-weight: 700;">Date</label>
+              <input type="date" id="report-date" class="form-control" required>
+            </div>
+          </div>
+
+          <!-- Section 1: Completed -->
+          <div class="report-section-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div class="report-section-title" style="margin-bottom: 0;"><i class="fas fa-check-circle" style="color: #22c55e;"></i><span>1. Completed</span></div>
+              <button type="button" class="btn-secondary" onclick="addReportPoint('completed')" style="padding: 4px 10px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fas fa-plus"></i><span>Add Point</span>
+              </button>
+            </div>
+            <div id="report-completed-list" class="report-points-container"></div>
+          </div>
+
+          <!-- Section 2: In Progress -->
+          <div class="report-section-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div class="report-section-title" style="margin-bottom: 0;"><i class="fas fa-spinner" style="color: #3b82f6;"></i><span>2. In Progress</span></div>
+              <button type="button" class="btn-secondary" onclick="addReportPoint('inprogress')" style="padding: 4px 10px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fas fa-plus"></i><span>Add Point</span>
+              </button>
+            </div>
+            <div id="report-inprogress-list" class="report-points-container"></div>
+          </div>
+
+          <!-- Section 3: Blocked / Risks -->
+          <div class="report-section-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div class="report-section-title" style="margin-bottom: 0;"><i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i><span>3. Blocked / Risks</span></div>
+              <button type="button" class="btn-secondary" onclick="addReportPoint('blocked')" style="padding: 4px 10px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fas fa-plus"></i><span>Add Point</span>
+              </button>
+            </div>
+            <div id="report-blocked-list" class="report-points-container"></div>
+          </div>
+
+          <!-- Section 4: Next Week Commitments -->
+          <div class="report-section-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div class="report-section-title" style="margin-bottom: 0;"><i class="fas fa-calendar-alt" style="color: #ff6b00;"></i><span>4. Next Week Commitments</span></div>
+              <button type="button" class="btn-secondary" onclick="addReportPoint('nextweek')" style="padding: 4px 10px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fas fa-plus"></i><span>Add Point</span>
+              </button>
+            </div>
+            <div id="report-nextweek-list" class="report-points-container"></div>
+          </div>
+
+          <!-- Section 5: KPI / Evidence Table -->
+          <div class="report-section-box">
+            <div class="report-section-title"><i class="fas fa-table" style="color: #102a96;"></i><span>5. KPI / Evidence</span></div>
+            <table class="report-kpi-table">
+              <thead>
+                <tr>
+                  <th style="width: 28%;">Metric</th>
+                  <th style="width: 22%;">Target</th>
+                  <th style="width: 22%;">Actual</th>
+                  <th style="width: 28%;">Evidence / Link</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Key deliverables</strong></td>
+                  <td><input id="report-kpi-deliv-target" value="100% on-time" placeholder="Target"></td>
+                  <td><input id="report-kpi-deliv-actual" value="100% complete" placeholder="Actual"></td>
+                  <td><input id="report-kpi-deliv-evidence" value="PR #42 merged" placeholder="Link / Ref"></td>
+                </tr>
+                <tr>
+                  <td><strong>Quality / bugs</strong></td>
+                  <td><input id="report-kpi-quality-target" value="0 critical bugs" placeholder="Target"></td>
+                  <td><input id="report-kpi-quality-actual" value="0 open bugs" placeholder="Actual"></td>
+                  <td><input id="report-kpi-quality-evidence" value="QA pass report" placeholder="Link / Ref"></td>
+                </tr>
+                <tr>
+                  <td><strong>Milestone progress</strong></td>
+                  <td><input id="report-kpi-milestone-target" value="Sprint Milestone" placeholder="Target"></td>
+                  <td><input id="report-kpi-milestone-actual" value="On Schedule" placeholder="Actual"></td>
+                  <td><input id="report-kpi-milestone-evidence" value="Task Board" placeholder="Link / Ref"></td>
+                </tr>
+                <tr>
+                  <td><strong>Other relevant KPI</strong></td>
+                  <td><input id="report-kpi-other-target" value="Team Velocity" placeholder="Target"></td>
+                  <td><input id="report-kpi-other-actual" value="Exceeded" placeholder="Actual"></td>
+                  <td><input id="report-kpi-other-evidence" value="Analytics Log" placeholder="Link / Ref"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Section 6: Decisions / Support Needed -->
+          <div class="report-section-box">
+            <div class="report-section-title"><i class="fas fa-handshake" style="color: #6366f1;"></i><span>6. Decisions / Support Needed</span></div>
+            <div class="form-group" style="margin-bottom: 8px;">
+              <label style="font-size: 0.75rem;">Decision or support required:</label>
+              <input id="report-decision" class="form-control" placeholder="e.g. Approval needed for staging migration / None">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="form-group">
+                <label style="font-size: 0.75rem;">Owner / approver:</label>
+                <input id="report-decision-owner" class="form-control" value="Admin" placeholder="Approver name/role">
+              </div>
+              <div class="form-group">
+                <label style="font-size: 0.75rem;">Needed by:</label>
+                <input id="report-decision-date" class="form-control" placeholder="e.g. Next Monday EOD">
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 7: Overall Status -->
+          <div class="report-section-box">
+            <div class="report-section-title"><i class="fas fa-traffic-light" style="color: #102a96;"></i><span>7. Overall Status</span></div>
+            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+              <label class="status-pill-radio status-track">
+                <input type="radio" name="report-overall-status" value="On Track" checked>
+                <span>🟢 On Track</span>
+              </label>
+              <label class="status-pill-radio status-risk">
+                <input type="radio" name="report-overall-status" value="At Risk">
+                <span>🟡 At Risk</span>
+              </label>
+              <label class="status-pill-radio status-blocked">
+                <input type="radio" name="report-overall-status" value="Blocked">
+                <span>🔴 Blocked</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Actions Footer -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; border-top: 1.5px solid var(--border); padding-top: 16px; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn-secondary" onclick="previewWeeklyReportPDF()" style="display: inline-flex; align-items: center; gap: 6px;">
+                <i class="fas fa-eye"></i><span>Preview PDF</span>
+              </button>
+              <button type="button" class="btn-secondary" onclick="downloadWeeklyReportPDF()" style="display: inline-flex; align-items: center; gap: 6px;">
+                <i class="fas fa-download"></i><span>Download PDF</span>
+              </button>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn-secondary" onclick="closeWeeklyReportModal()">Cancel</button>
+              <button type="submit" id="submit-report-btn" class="btn-primary" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 700; background: linear-gradient(135deg, #102a96 0%, #ff6b00 100%);">
+                <i class="fas fa-paper-plane"></i><span>Submit PDF Report to Admin</span>
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <script src="https://unpkg.com/three@0.128.0/build/three.min.js" defer></script>
     <script src="js/utils.js" defer></script>
@@ -217,6 +444,7 @@
     <script src="js/three-bg.js" defer></script>
     <script src="js/sidebar.js" defer></script>
     <script src="js/dashboard.js" defer></script>
+    <script src="js/report-generator.js" defer></script>
     <script>
         // Module Initialization
         document.addEventListener('DOMContentLoaded', async () => {
@@ -233,6 +461,9 @@
             // Page-specific Logic
             if (window.initDashboard) {
                 window.initDashboard();
+            }
+            if (window.loadRecentWeeklyReports) {
+                window.loadRecentWeeklyReports();
             }
         });
     </script>

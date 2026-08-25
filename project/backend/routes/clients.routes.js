@@ -55,7 +55,10 @@ router.post('/', verifyToken, checkRole('admin', 'client_handler', 'team_leader'
   } = req.body;
   if (!name) return res.status(400).json({ message: 'Name required' });
   try {
-    const loginId = client_login_id && client_login_id.trim() !== '' ? client_login_id.trim() : null;
+    const cleanName = (name || '').toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/^_+|_+$/g, '');
+    const loginId = client_login_id && client_login_id.trim() !== '' 
+      ? client_login_id.trim() 
+      : (cleanName ? `${cleanName}_login` : `client_${Date.now()}`);
     const result = db.prepare(`INSERT INTO clients (
       name, company, client_login_id, phone, phone_alt, email, location, comm_method,
       industry, business_desc, audience, competitors, brand_assets,

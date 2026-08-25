@@ -131,7 +131,7 @@ const drive = {
 
         container.innerHTML = filteredUsers.map(u => {
             const isChecked = this.selectedUserIds.has(u.id);
-            const avatarSrc = u.avatar || (typeof getInitialsAvatar === 'function' ? getInitialsAvatar(u.name, 28) : '');
+            const avatarSrc = u.avatar || (typeof getInitialsAvatar === 'function' ? getInitialsAvatar(u.name, 28, u.role) : '');
             return `
                 <label class="team-member-item ${isChecked ? 'checked' : ''}" id="share-tm-${u.id}" onclick="drive.toggleUserSelection(${u.id}, event)">
                     <div class="team-member-label-left">
@@ -293,7 +293,7 @@ const drive = {
                 return;
             }
             list.innerHTML = perms.map(p => {
-                const avatar = typeof getInitialsAvatar === 'function' ? getInitialsAvatar(p.user_name, 28) : '';
+                const avatar = typeof getInitialsAvatar === 'function' ? getInitialsAvatar(p.user_name, 28, p.user_role) : '';
                 return `
                 <div class="perm-user-item">
                     <div style="display:flex; align-items:center; gap:10px; min-width:0;">

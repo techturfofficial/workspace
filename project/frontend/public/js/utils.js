@@ -1,3 +1,17 @@
+// Resilient FontAwesome Loader for Microsoft Edge and Restricted Browsers
+(function ensureFontAwesome() {
+  if (typeof document === 'undefined') return;
+  const linkId = 'fa-resilient-cdn';
+  if (!document.getElementById(linkId)) {
+    const link = document.createElement('link');
+    link.id = linkId;
+    link.rel = 'stylesheet';
+    link.href = 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css';
+    link.crossOrigin = 'anonymous';
+    document.head.appendChild(link);
+  }
+})();
+
 // ============================================================
 // DRAGGABLE MODAL SYSTEM — Universal drag-to-reposition
 // ============================================================
@@ -204,10 +218,72 @@ function showToast(message, type = 'info') {
   setTimeout(removeToast, 3500);
 }
 
-function getInitialsAvatar(name, size = 120) {
-  const initials = String(name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-  const colors = ['102a96', 'ff6584', '43e97b', 'f9a825', '38b2f5', 'e05cff', 'ff9f43', '00d2ff'];
-  const color = colors[String(name || 'U').charCodeAt(0) % colors.length];
+function getRoleAvatarStyle(role, ctx = null, size = 120) {
+  const r = String(role || '').toLowerCase().trim();
+
+  // 1. Tech Turf Blue Roles: Backend, Front / Frontend, Frontend+Backend
+  if (['backend', 'frontend', 'frontend_backend', 'front'].includes(r)) {
+    return {
+      type: 'solid',
+      color: '#102a96', // Tech Turf Blue
+      border: '#102a96',
+      cssBackground: '#102a96',
+      badgeBg: 'rgba(16, 42, 150, 0.15)',
+      badgeColor: '#102a96'
+    };
+  }
+
+  // 2. Orange Roles: Writer, Media Manager, R&D, Designer
+  if (['writer', 'media_manager', 'rnd', 'designer'].includes(r)) {
+    return {
+      type: 'solid',
+      color: '#ff6a00', // Orange
+      border: '#ff6a00',
+      cssBackground: '#ff6a00',
+      badgeBg: 'rgba(255, 106, 0, 0.15)',
+      badgeColor: '#ff6a00'
+    };
+  }
+
+  // 3. Tech Turf Blue and Orange: Admin and Team Leaders
+  if (['admin', 'team_leader'].includes(r)) {
+    if (ctx && size) {
+      const grad = ctx.createLinearGradient(0, 0, size, size);
+      grad.addColorStop(0, '#102a96'); // Tech Turf Blue
+      grad.addColorStop(1, '#ff6a00'); // Tech Turf Orange
+      return {
+        type: 'gradient',
+        fill: grad,
+        color: '#102a96',
+        border: '#102a96',
+        cssBackground: 'linear-gradient(135deg, #102a96 0%, #ff6a00 100%)',
+        badgeBg: 'linear-gradient(135deg, rgba(16,42,150,0.15), rgba(255,106,0,0.15))',
+        badgeColor: '#102a96'
+      };
+    }
+    return {
+      type: 'gradient',
+      cssBackground: 'linear-gradient(135deg, #102a96 0%, #ff6a00 100%)',
+      color: '#102a96',
+      border: '#102a96',
+      badgeBg: 'rgba(16, 42, 150, 0.15)',
+      badgeColor: '#102a96'
+    };
+  }
+
+  // Fallback (e.g. unassigned, client, custom roles)
+  return {
+    type: 'solid',
+    color: '#102a96',
+    border: '#102a96',
+    cssBackground: '#102a96',
+    badgeBg: 'rgba(16, 42, 150, 0.12)',
+    badgeColor: '#102a96'
+  };
+}
+
+function getInitialsAvatar(name, size = 120, role = null) {
+  const initials = String(name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) || 'U';
 
   try {
     const canvas = document.createElement('canvas');
@@ -216,30 +292,52 @@ function getInitialsAvatar(name, size = 120) {
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas not supported');
 
-    ctx.fillStyle = '#' + color;
+    const style = getRoleAvatarStyle(role, ctx, size);
+    if (style.type === 'gradient' && style.fill) {
+      ctx.fillStyle = style.fill;
+    } else {
+      ctx.fillStyle = style.color || '#102a96';
+    }
     ctx.fillRect(0, 0, size, size);
+
     ctx.fillStyle = '#ffffff';
-    ctx.font = `bold ${size * 0.4}px "Orbitron", sans-serif`;
+    ctx.font = `bold ${Math.round(size * 0.38)}px "Orbitron", sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(initials, size / 2, size / 2);
 
     return canvas.toDataURL('image/png');
   } catch (e) {
-    // Ultimate fallback: Cloud avatar service
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=${color}&color=fff&size=${size}&font-size=0.4&bold=true`;
+    const style = getRoleAvatarStyle(role);
+    const bgHex = (style.color || '102a96').replace('#', '');
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=${bgHex}&color=fff&size=${size}&font-size=0.4&bold=true`;
   }
+}
+
+function parseUtcDate(dateStr) {
+  if (!dateStr) return null;
+  if (dateStr instanceof Date) return dateStr;
+  let s = String(dateStr).trim();
+  if (!s) return null;
+  if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?(\.\d+)?$/.test(s)) {
+    s = s.replace(' ', 'T') + 'Z';
+  }
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
 }
 
 function formatDate(dateStr) {
   if (!dateStr) return '—';
-  const date = new Date(dateStr);
+  const date = parseUtcDate(dateStr);
+  if (!date) return '—';
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 function timeAgo(dateStr) {
   if (!dateStr) return '';
-  const seconds = Math.floor((new Date() - new Date(dateStr)) / 1000);
+  const parsed = parseUtcDate(dateStr);
+  if (!parsed) return '';
+  const seconds = Math.floor((new Date() - parsed) / 1000);
   let interval = seconds / 31536000;
   if (interval > 1) return Math.floor(interval) + "y ago";
   interval = seconds / 2592000;
@@ -258,21 +356,8 @@ function formatRole(role) {
 }
 
 function getRoleColor(role) {
-  const map = {
-    admin: '#e05cff',
-    team_leader: '#f9a825',
-    writer: '#38b2f5',
-    designer: '#ffffff',
-    rnd: '#43e97b',
-    creator: '#ff6584',
-    media_manager: '#aaaacc',
-    client_handler: '#00d2ff',
-    frontend: '#0ea5e9',
-    backend: '#10b981',
-    frontend_backend: '#6366f1',
-    production: '#f59e0b'
-  };
-  return map[role] || '#8888aa';
+  const style = getRoleAvatarStyle(role);
+  return style.border || style.color || '#102a96';
 }
 
 function debounce(fn, delay = 300) {
@@ -446,6 +531,7 @@ function initSharedToolLinks() {
 
 window.showToast = showToast;
 window.getInitialsAvatar = getInitialsAvatar;
+window.getRoleAvatarStyle = getRoleAvatarStyle;
 window.formatDate = formatDate;
 window.timeAgo = timeAgo;
 window.formatRole = formatRole;
@@ -456,15 +542,93 @@ window.debounce = debounce;
 window.escapeHtml = escapeHtml;
 window.safeUrl = safeUrl;
 
+// Universal Password Visibility Toggle System
+function togglePasswordVisibility(target, btn) {
+  let input = null;
+  if (typeof target === 'string') {
+    input = document.getElementById(target);
+  } else if (target instanceof HTMLElement) {
+    input = target;
+  }
+  if (!input && btn) {
+    input = btn.closest('.input-wrapper-icon, .input-wrap, .password-input-wrap, .form-group, .pass-input-group')?.querySelector('input');
+  }
+  if (!input) return;
+
+  const isPassword = input.getAttribute('type') === 'password';
+  input.setAttribute('type', isPassword ? 'text' : 'password');
+
+  const icon = btn?.querySelector('i') || (btn?.tagName === 'I' ? btn : null);
+  if (icon) {
+    if (isPassword) {
+      icon.classList.remove('fa-eye');
+      icon.classList.add('fa-eye-slash');
+      btn.setAttribute('title', 'Hide password');
+      btn.setAttribute('aria-label', 'Hide password');
+    } else {
+      icon.classList.remove('fa-eye-slash');
+      icon.classList.add('fa-eye');
+      btn.setAttribute('title', 'Show password');
+      btn.setAttribute('aria-label', 'Show password');
+    }
+  }
+}
+
+function initPasswordToggles() {
+  document.querySelectorAll('input[type="password"], input[data-pwd-toggle="true"]').forEach(input => {
+    if (input.dataset.pwdToggleInit) return;
+    input.dataset.pwdToggleInit = 'true';
+
+    const parent = input.parentElement;
+    if (!parent) return;
+
+    let existingBtn = parent.querySelector('.password-toggle-btn');
+    if (existingBtn) {
+      existingBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        togglePasswordVisibility(input, existingBtn);
+      };
+      return;
+    }
+
+    const computedPos = window.getComputedStyle(parent).position;
+    if (computedPos === 'static') {
+      parent.style.position = 'relative';
+    }
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'password-toggle-btn';
+    btn.title = 'Show password';
+    btn.setAttribute('aria-label', 'Show password');
+    btn.innerHTML = '<i class="fas fa-eye"></i>';
+    btn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      togglePasswordVisibility(input, btn);
+    };
+
+    input.style.paddingRight = '42px';
+    parent.appendChild(btn);
+  });
+}
+
+window.togglePasswordVisibility = togglePasswordVisibility;
+window.initPasswordToggles = initPasswordToggles;
+
 document.addEventListener('DOMContentLoaded', () => {
   initSharedToolForms();
   initSharedToolLinks();
   // Apply draggable to all modals present at page load
   initAllDraggableModals();
+  // Initialize password toggle buttons across all forms
+  initPasswordToggles();
 
-  // Watch for dynamically injected modals (e.g. from JS render)
+  // Watch for dynamically injected modals and password inputs
   const bodyObserver = new MutationObserver(() => {
     initAllDraggableModals();
+    initPasswordToggles();
   });
   bodyObserver.observe(document.body, { childList: true, subtree: true });
 });

@@ -57,8 +57,8 @@ router.post('/', verifyToken, (req, res) => {
     try {
       const { task_id, content_text, client_id, project_name, external_link } = req.body;
 
-      if (!task_id && (!client_id || !project_name)) {
-        return res.status(400).json({ message: 'Must provide either a Target Task or a Client and Project name.' });
+      if (!task_id && !project_name) {
+        return res.status(400).json({ message: 'Must provide either a Target Task or a Project / Report name.' });
       }
 
       if (task_id) {
@@ -99,10 +99,13 @@ router.post('/', verifyToken, (req, res) => {
         ? ((db.prepare("SELECT MAX(version) as v FROM submissions WHERE task_id=? AND submitted_by=?").get(task_id, req.user.id)?.v || 0) + 1)
         : 1;
 
+      const isDirectReport = !task_id;
+      const initialLeaderStatus = isDirectReport ? 'approved' : 'pending';
+
       const result = db.prepare(`
-      INSERT INTO submissions(task_id,submitted_by,file_path,content_text,version,client_id,project_name,external_link,admin_status)
-      VALUES(?,?,?,?,?,?,?,?,?)
-    `).run(task_id || null, req.user.id, file_paths || null, content_text || null, version, client_id || null, project_name || null, external_link || null, 'pending');
+      INSERT INTO submissions(task_id,submitted_by,file_path,content_text,version,client_id,project_name,external_link,leader_status,admin_status)
+      VALUES(?,?,?,?,?,?,?,?,?,?)
+    `).run(task_id || null, req.user.id, file_paths || null, content_text || null, version, client_id || null, project_name || null, external_link || null, initialLeaderStatus, 'pending');
 
       if (task_id && task_id !== "") {
         db.prepare("UPDATE tasks SET status='submitted' WHERE id=?").run(task_id);
@@ -243,7 +246,7 @@ router.put('/:id/admin-review', verifyToken, checkRole('admin'), async (req, res
   const sub = db.prepare('SELECT * FROM submissions WHERE id=?').get(req.params.id);
   if (!sub) return res.status(404).json({ message: 'Not found' });
 
-  if (sub.leader_status !== 'approved') {
+  if (sub.task_id && sub.leader_status !== 'approved') {
     return res.status(409).json({ message: 'Submission must be approved by team leader before admin review' });
   }
 
@@ -279,10 +282,20 @@ router.put('/:id/admin-review', verifyToken, checkRole('admin'), async (req, res
 });
 
 // DELETE /api/submissions/:id
-router.delete('/:id', verifyToken, checkRole('admin'), (req, res) => {
+router.delete('/:id', verifyToken, (req, res) => {
   try {
+    const sub = db.prepare('SELECT * FROM submissions WHERE id=?').get(req.params.id);
+    if (!sub) return res.status(404).json({ message: 'Submission not found' });
+
+    const isAdmin = req.user.role === 'admin' || (req.user.secondary_roles || '').split(',').includes('admin');
+    const isOwner = sub.submitted_by === req.user.id;
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ message: 'Permission denied: You can only delete your own reports or need admin rights.' });
+    }
+
     db.prepare('DELETE FROM submissions WHERE id=?').run(req.params.id);
-    res.json({ message: 'Submission deleted successfully' });
+    res.json({ message: 'Report / Submission deleted successfully' });
   } catch (err) {
     res.status(500).json({ message: 'Failed to delete submission' });
   }

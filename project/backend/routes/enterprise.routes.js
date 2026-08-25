@@ -329,7 +329,7 @@ router.get('/skills/:userId', verifyToken, (req, res) => {
   res.json(rows);
 });
 
-router.post('/help/articles', verifyToken, checkRole('admin', 'team_leader'), (req, res) => {
+router.post('/help/articles', verifyToken, (req, res) => {
   const { title, content, role_scope, language } = req.body;
   if (!title || !content) return res.status(400).json({ message: 'title and content required' });
   const result = db.prepare('INSERT INTO help_articles(title,content,role_scope,language,created_by) VALUES(?,?,?,?,?)')

@@ -51,13 +51,13 @@ router.get('/', verifyToken, (req, res) => {
 
 // GET /api/users/:id
 router.get('/:id', verifyToken, (req, res) => {
-  const user = db.prepare('SELECT id,name,email,role,secondary_roles,avatar,badge,points,mobile,github_link,linkedin_link,instagram_link,bio,department,branch,site,employment_status,offboarding_note,is_active,created_at FROM users WHERE id=?').get(req.params.id);
+  const user = db.prepare('SELECT id,name,email,personal_email,role,secondary_roles,avatar,badge,points,mobile,github_link,linkedin_link,instagram_link,bio,department,branch,site,employment_status,offboarding_note,is_active,created_at FROM users WHERE id=?').get(req.params.id);
   if (!user) return res.status(404).json({ message: 'Not found' });
   res.json(user);
 });
 
 const handleSelfProfileUpdate = (req, res) => {
-  const { name, mobile, github_link, linkedin_link, instagram_link, bio } = req.body;
+  const { name, mobile, personal_email, github_link, linkedin_link, instagram_link, bio } = req.body;
 
   if (github_link !== undefined && github_link !== null && github_link !== '') {
     const validGitHub = /^https?:\/\/(www\.)?github\.com\/[A-Za-z0-9_.-]+\/?$/i.test(github_link.trim());
@@ -74,6 +74,7 @@ const handleSelfProfileUpdate = (req, res) => {
       SET
         name=COALESCE(?,name),
         mobile=COALESCE(?,mobile),
+        personal_email=COALESCE(?,personal_email),
         github_link=COALESCE(?,github_link),
         linkedin_link=COALESCE(?,linkedin_link),
         instagram_link=COALESCE(?,instagram_link),
@@ -83,6 +84,7 @@ const handleSelfProfileUpdate = (req, res) => {
     `).run(
       name !== undefined ? String(name).trim() : null,
       mobile !== undefined ? String(mobile).trim() : null,
+      personal_email !== undefined ? String(personal_email).trim() : null,
       github_link !== undefined ? String(github_link).trim() : null,
       linkedin_link !== undefined ? String(linkedin_link).trim() : null,
       instagram_link !== undefined ? String(instagram_link).trim() : null,
@@ -91,7 +93,7 @@ const handleSelfProfileUpdate = (req, res) => {
       req.user.id
     );
 
-    const updated = db.prepare('SELECT id,name,email,role,secondary_roles,avatar,badge,points,mobile,github_link,linkedin_link,instagram_link,bio,is_active,created_at FROM users WHERE id=?').get(req.user.id);
+    const updated = db.prepare('SELECT id,name,email,personal_email,role,secondary_roles,avatar,badge,points,mobile,github_link,linkedin_link,instagram_link,bio,is_active,created_at FROM users WHERE id=?').get(req.user.id);
     res.json({ message: 'Profile updated', user: updated });
   } catch (err) {
     console.error('Profile update error:', err);
@@ -157,26 +159,59 @@ router.post('/', verifyToken, checkPermission('users.edit'), async (req, res) =>
 });
 
 // PUT /api/users/:id
-router.put('/:id', verifyToken, checkPermission('users.edit'), (req, res) => {
-  const { name, role, secondary_roles, is_active, badge, points, department, branch, site, employment_status, offboarding_note } = req.body;
+router.put('/:id', verifyToken, checkPermission('users.edit'), async (req, res) => {
+  const { name, email, personal_email, password, role, secondary_roles, is_active, badge, points, department, branch, site, employment_status, offboarding_note } = req.body;
   try {
-    db.prepare('UPDATE users SET name=COALESCE(?,name), role=COALESCE(?,role), secondary_roles=COALESCE(?,secondary_roles), is_active=COALESCE(?,is_active), badge=COALESCE(?,badge), points=COALESCE(?,points), department=COALESCE(?,department), branch=COALESCE(?,branch), site=COALESCE(?,site), employment_status=COALESCE(?,employment_status), offboarding_note=COALESCE(?,offboarding_note) WHERE id=?')
-      .run(
-        name !== undefined ? name : null,
-        role !== undefined ? role : null,
-        secondary_roles !== undefined ? secondary_roles : null,
-        is_active !== undefined ? is_active : null,
-        badge !== undefined ? badge : null,
-        points !== undefined ? points : null,
-        department !== undefined ? department : null,
-        branch !== undefined ? branch : null,
-        site !== undefined ? site : null,
-        employment_status !== undefined ? employment_status : null,
-        offboarding_note !== undefined ? offboarding_note : null,
-        req.params.id
-      );
+    let newHash = null;
+    if (password && typeof password === 'string' && password.trim() !== '') {
+      if (!isStrongPassword(password)) {
+        return res.status(400).json({ message: 'Password must be at least 10 chars and include upper, lower, number, and symbol' });
+      }
+      newHash = await hashPassword(password);
+    }
+
+    const formattedEmail = email && typeof email === 'string' && email.trim() !== '' ? email.toLowerCase().trim() : null;
+    const formattedPersonalEmail = personal_email !== undefined ? (personal_email ? String(personal_email).trim() : '') : null;
+
+    db.prepare(`
+      UPDATE users 
+      SET name=COALESCE(?,name), 
+          email=COALESCE(?,email),
+          personal_email=COALESCE(?,personal_email),
+          password=COALESCE(?,password),
+          role=COALESCE(?,role), 
+          secondary_roles=COALESCE(?,secondary_roles), 
+          is_active=COALESCE(?,is_active), 
+          badge=COALESCE(?,badge), 
+          points=COALESCE(?,points), 
+          department=COALESCE(?,department), 
+          branch=COALESCE(?,branch), 
+          site=COALESCE(?,site), 
+          employment_status=COALESCE(?,employment_status), 
+          offboarding_note=COALESCE(?,offboarding_note) 
+      WHERE id=?
+    `).run(
+      name !== undefined && name !== null ? name : null,
+      formattedEmail,
+      formattedPersonalEmail,
+      newHash,
+      role !== undefined && role !== null ? role : null,
+      secondary_roles !== undefined && secondary_roles !== null ? secondary_roles : null,
+      is_active !== undefined && is_active !== null ? is_active : null,
+      badge !== undefined && badge !== null ? badge : null,
+      points !== undefined && points !== null ? points : null,
+      department !== undefined && department !== null ? department : null,
+      branch !== undefined && branch !== null ? branch : null,
+      site !== undefined && site !== null ? site : null,
+      employment_status !== undefined && employment_status !== null ? employment_status : null,
+      offboarding_note !== undefined && offboarding_note !== null ? offboarding_note : null,
+      req.params.id
+    );
     res.json({ message: 'User updated' });
   } catch(err) {
+    if (err.message && err.message.includes('UNIQUE')) {
+      return res.status(409).json({ message: 'Email address already in use by another account' });
+    }
     console.error('Update User 500 Error:', err);
     res.status(500).json({ message: 'Failed to update user' });
   }

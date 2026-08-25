@@ -44,7 +44,7 @@ function getAvatarUrl(user, size = 120) {
     return user.avatar;
   }
   const name = (user && user.name) ? user.name : 'User';
-  return getInitialsAvatar(name, size);
+  return getInitialsAvatar(name, size, user?.role);
 }
 
 function bindProfileEditForm() {
@@ -83,6 +83,7 @@ function bindProfileEditForm() {
       const payload = new FormData();
       payload.append('name', document.getElementById('edit-profile-name').value || '');
       payload.append('mobile', document.getElementById('edit-profile-mobile').value || '');
+      payload.append('personal_email', document.getElementById('edit-profile-personal-email')?.value?.trim() || '');
       payload.append('github_link', document.getElementById('edit-profile-github').value || '');
       payload.append('linkedin_link', document.getElementById('edit-profile-linkedin').value || '');
       payload.append('instagram_link', document.getElementById('edit-profile-instagram').value || '');
@@ -122,6 +123,19 @@ async function loadProfileData() {
     }
     document.getElementById('profile-name').textContent = user.name;
     document.getElementById('profile-email').textContent = user.email;
+
+    // Sidebar personal email
+    const personalEmailWrap = document.getElementById('profile-personal-email-wrap');
+    const personalEmailEl = document.getElementById('profile-personal-email');
+    if (personalEmailWrap && personalEmailEl) {
+      if (user.personal_email && String(user.personal_email).trim()) {
+        personalEmailEl.textContent = user.personal_email.trim();
+        personalEmailWrap.style.display = 'block';
+      } else {
+        personalEmailWrap.style.display = 'none';
+      }
+    }
+
     document.getElementById('profile-points').textContent = user.points || 0;
     document.getElementById('profile-role-badge').innerHTML = `<div class="badge" style="background:rgba(16,42,150,0.1); color:var(--accent-primary); border:2px solid var(--accent-primary)44;">${formatRole(user.role)}</div>`;
 
@@ -139,6 +153,7 @@ async function loadProfileData() {
 
     const nameInput = document.getElementById('edit-profile-name');
     const mobileInput = document.getElementById('edit-profile-mobile');
+    const personalEmailInput = document.getElementById('edit-profile-personal-email');
     const githubInput = document.getElementById('edit-profile-github');
     const linkedinInput = document.getElementById('edit-profile-linkedin');
     const instagramInput = document.getElementById('edit-profile-instagram');
@@ -146,6 +161,7 @@ async function loadProfileData() {
 
     if (nameInput) nameInput.value = user.name || '';
     if (mobileInput) mobileInput.value = user.mobile || '';
+    if (personalEmailInput) personalEmailInput.value = user.personal_email || '';
     if (githubInput) githubInput.value = user.github_link || '';
     if (linkedinInput) linkedinInput.value = user.linkedin_link || '';
     if (instagramInput) instagramInput.value = user.instagram_link || '';

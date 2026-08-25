@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css');
 
 :root {
   /* Aerospace Theme - Mission Control */
@@ -801,11 +802,123 @@ body.dark-mode .notif-card-item:hover {
 /* ============================================================
    PIXEL-PERFECT HEADER & NAVBAR DESIGN SYSTEM
    ============================================================ */
+.sidebar-header {
+  height: 68px !important;
+  min-height: 68px !important;
+  max-height: 68px !important;
+  box-sizing: border-box !important;
+  padding: 0 18px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  background: #ffffff !important;
+  border-bottom: 1.5px solid rgba(16, 42, 150, 0.08) !important;
+  margin: 0 !important;
+  cursor: pointer;
+}
+
+.sidebar-brand-wrapper {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  text-decoration: none !important;
+  overflow: hidden !important;
+}
+
+.sidebar-logo-icon {
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  border-radius: 10px !important;
+  background: transparent !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  flex-shrink: 0 !important;
+}
+
+.sidebar-logo-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  border-radius: 8px !important;
+}
+
+.sidebar-logo {
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em !important;
+  font-size: 1.25rem !important;
+  color: #0f172a !important;
+  text-transform: uppercase !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  margin: 0 !important;
+}
+
+.sidebar-logo .brand-tech {
+  color: #102a96 !important;
+  font-weight: 900 !important;
+}
+
+.sidebar-logo .brand-turf {
+  color: #ff6a00 !important;
+  font-weight: 900 !important;
+}
+
+.sidebar-logo .brand-tag {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 0.62rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  color: #ff6a00 !important;
+  background: rgba(255, 106, 0, 0.08) !important;
+  border: 1px solid rgba(255, 106, 0, 0.22) !important;
+  padding: 2px 5px !important;
+  border-radius: 4px !important;
+  margin-left: 3px !important;
+  vertical-align: middle !important;
+}
+
+.sidebar.collapsed .sidebar-logo,
+.sidebar.collapsed .sidebar-logo-icon,
+.sidebar.collapsed .sidebar-brand-wrapper {
+  display: none !important;
+}
+
+.sidebar-logo-short {
+  display: none !important;
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 10px !important;
+  background: transparent !important;
+  overflow: hidden !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 auto !important;
+}
+
+.sidebar.collapsed .sidebar-logo-short {
+  display: flex !important;
+}
+
+.sidebar-logo-img-short {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
 .navbar {
   display: flex !important;
   justify-content: space-between !important;
   align-items: center !important;
   height: 68px !important;
+  min-height: 68px !important;
+  max-height: 68px !important;
   padding: 0 28px !important;
   background: #ffffff !important;
   border-bottom: 1.5px solid rgba(16, 42, 150, 0.08) !important;
@@ -1013,6 +1126,272 @@ body.dark-mode .user-nav-role {
   color: #94a3b8 !important;
 }
 
+/* ============================================================
+   ROLE-THEMED HEADER STYLING SYSTEM
+   ============================================================ */
+.navbar.role-theme-blue {
+  background: #102a96 !important;
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 4px 16px rgba(16, 42, 150, 0.22) !important;
+}
+
+.navbar.role-theme-orange {
+  background: #ff6a00 !important;
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 4px 16px rgba(255, 106, 0, 0.22) !important;
+}
+
+.navbar.role-theme-admin {
+  background: linear-gradient(135deg, #102a96 0%, #ff6a00 100%) !important;
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 4px 16px rgba(16, 42, 150, 0.25) !important;
+}
+
+.navbar.role-theme-blue .nav-search,
+.navbar.role-theme-orange .nav-search,
+.navbar.role-theme-admin .nav-search {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12) !important;
+}
+
+.navbar.role-theme-blue .nav-search:focus-within,
+.navbar.role-theme-orange .nav-search:focus-within,
+.navbar.role-theme-admin .nav-search:focus-within {
+  border-color: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35) !important;
+}
+
+.navbar.role-theme-blue .nav-search i,
+.navbar.role-theme-orange .nav-search i,
+.navbar.role-theme-admin .nav-search i {
+  color: #0f172a !important;
+}
+
+.navbar.role-theme-blue .nav-search input,
+.navbar.role-theme-orange .nav-search input,
+.navbar.role-theme-admin .nav-search input {
+  color: #0f172a !important;
+  font-weight: 500 !important;
+}
+
+.navbar.role-theme-blue .nav-search input::placeholder,
+.navbar.role-theme-orange .nav-search input::placeholder,
+.navbar.role-theme-admin .nav-search input::placeholder {
+  color: #64748b !important;
+}
+
+.navbar.role-theme-blue .notification-bell,
+.navbar.role-theme-orange .notification-bell,
+.navbar.role-theme-admin .notification-bell {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.9) !important;
+  color: #0f172a !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12) !important;
+}
+
+.navbar.role-theme-blue .notification-bell:hover,
+.navbar.role-theme-orange .notification-bell:hover,
+.navbar.role-theme-admin .notification-bell:hover {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border-color: #ffffff !important;
+  transform: translateY(-1px) !important;
+}
+
+.navbar.role-theme-blue .user-profile-nav,
+.navbar.role-theme-orange .user-profile-nav,
+.navbar.role-theme-admin .user-profile-nav {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12) !important;
+}
+
+.navbar.role-theme-blue .user-profile-nav:hover,
+.navbar.role-theme-orange .user-profile-nav:hover,
+.navbar.role-theme-admin .user-profile-nav:hover {
+  background: #f8fafc !important;
+  border-color: #ffffff !important;
+  transform: translateY(-1px) !important;
+}
+
+.navbar.role-theme-blue .user-nav-name,
+.navbar.role-theme-orange .user-nav-name,
+.navbar.role-theme-admin .user-nav-name {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+.navbar.role-theme-blue .user-nav-role,
+.navbar.role-theme-orange .user-nav-role,
+.navbar.role-theme-admin .user-nav-role {
+  color: #475569 !important;
+  font-weight: 600 !important;
+}
+
+.navbar.role-theme-blue .avatar-fallback-badge {
+  background: #102a96 !important;
+  color: #ffffff !important;
+  border: 2px solid rgba(16, 42, 150, 0.2) !important;
+}
+
+.navbar.role-theme-orange .avatar-fallback-badge {
+  background: #ff6a00 !important;
+  color: #ffffff !important;
+  border: 2px solid rgba(255, 106, 0, 0.2) !important;
+}
+
+.navbar.role-theme-admin .avatar-fallback-badge {
+  background: linear-gradient(135deg, #102a96, #ff6a00) !important;
+  color: #ffffff !important;
+  border: 2px solid rgba(16, 42, 150, 0.2) !important;
+}
+
+.navbar.role-theme-blue .sidebar-toggle,
+.navbar.role-theme-orange .sidebar-toggle,
+.navbar.role-theme-admin .sidebar-toggle {
+  color: #ffffff !important;
+}
+
+/* ============================================================
+   ROLE-THEMED SIDEBAR ACTIVE SELECTOR SYSTEM
+   ============================================================ */
+.sidebar {
+  background: #ffffff !important;
+}
+
+/* Tech/Dev Roles: Backend, Frontend, Frontend+Backend -> Tech Turf Blue */
+.sidebar.role-theme-blue .menu-item.active,
+.sidebar.role-theme-blue a.menu-item.active,
+body.role-theme-blue .sidebar .menu-item.active,
+body.role-theme-blue .sidebar a.menu-item.active {
+  background: #102a96 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(16, 42, 150, 0.28) !important;
+}
+
+/* Creative/Content Roles: Writer, Media Manager, R&D, Designer -> Orange */
+.sidebar.role-theme-orange .menu-item.active,
+.sidebar.role-theme-orange a.menu-item.active,
+body.role-theme-orange .sidebar .menu-item.active,
+body.role-theme-orange .sidebar a.menu-item.active {
+  background: #ff6a00 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(255, 106, 0, 0.28) !important;
+}
+
+/* Admin/Team Leader Roles -> Tech Turf Blue & Orange Gradient */
+.sidebar.role-theme-admin .menu-item.active,
+.sidebar.role-theme-admin a.menu-item.active,
+body.role-theme-admin .sidebar .menu-item.active,
+body.role-theme-admin .sidebar a.menu-item.active {
+  background: linear-gradient(135deg, #102a96 0%, #ff6a00 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(16, 42, 150, 0.28) !important;
+}
+
+.sidebar.role-theme-blue .menu-item.active i,
+.sidebar.role-theme-blue .menu-item.active span,
+body.role-theme-blue .sidebar .menu-item.active i,
+body.role-theme-blue .sidebar .menu-item.active span,
+.sidebar.role-theme-orange .menu-item.active i,
+.sidebar.role-theme-orange .menu-item.active span,
+body.role-theme-orange .sidebar .menu-item.active i,
+body.role-theme-orange .sidebar .menu-item.active span,
+.sidebar.role-theme-admin .menu-item.active i,
+.sidebar.role-theme-admin .menu-item.active span,
+body.role-theme-admin .sidebar .menu-item.active i,
+body.role-theme-admin .sidebar .menu-item.active span {
+  color: #ffffff !important;
+}
+
+/* ============================================================
+   BLUE USERS CANVAS SYSTEM (#E0E7FF Optimized)
+   For Backend, Frontend, Frontend+Backend
+   ============================================================ */
+body.role-theme-blue,
+body.role-theme-blue .dashboard-container,
+body.role-theme-blue .main-content,
+body.role-theme-blue .page-content,
+body.role-theme-blue .page-container,
+body.role-theme-blue .page-wrapper {
+  background-color: #e0e7ff !important;
+  background: linear-gradient(180deg, #e0e7ff 0%, #edf2ff 35%, #f8faff 100%) !important;
+  background-attachment: fixed !important;
+}
+
+body.role-theme-blue .glass-card,
+body.role-theme-blue .dash-card,
+body.role-theme-blue .card,
+body.role-theme-blue .panel-card {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid rgba(16, 42, 150, 0.14) !important;
+  box-shadow: 0 4px 20px rgba(16, 42, 150, 0.06), 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+}
+
+body.role-theme-blue .sidebar {
+  background: #ffffff !important;
+  border-right: 1px solid rgba(16, 42, 150, 0.14) !important;
+}
+
+/* ============================================================
+   ORANGE USERS CANVAS SYSTEM (#FFE0C2 Optimized)
+   For Writer, Media Manager, R&D, Designer
+   ============================================================ */
+body.role-theme-orange,
+body.role-theme-orange .dashboard-container,
+body.role-theme-orange .main-content,
+body.role-theme-orange .page-content,
+body.role-theme-orange .page-container,
+body.role-theme-orange .page-wrapper {
+  background-color: #fff6ee !important;
+  background: linear-gradient(180deg, #ffe0c2 0%, #fff7f0 35%, #fffaf5 100%) !important;
+  background-attachment: fixed !important;
+}
+
+body.role-theme-orange .glass-card,
+body.role-theme-orange .dash-card,
+body.role-theme-orange .card,
+body.role-theme-orange .panel-card {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid rgba(255, 166, 102, 0.22) !important;
+  box-shadow: 0 4px 20px rgba(255, 107, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+}
+
+body.role-theme-orange .sidebar {
+  background: #ffffff !important;
+  border-right: 1px solid rgba(255, 166, 102, 0.2) !important;
+}
+
+/* ============================================================
+   ADMIN & TEAM LEADER CANVAS SYSTEM (Tech Turf Dual Fusion)
+   For Admin, Team Leader
+   ============================================================ */
+body.role-theme-admin,
+body.role-theme-admin .dashboard-container,
+body.role-theme-admin .main-content,
+body.role-theme-admin .page-content,
+body.role-theme-admin .page-container,
+body.role-theme-admin .page-wrapper {
+  background-color: #edf1fe !important;
+  background: linear-gradient(135deg, #e4eafc 0%, #edf1fe 40%, #fdf0e6 75%, #fff6ef 100%) !important;
+  background-attachment: fixed !important;
+}
+
+body.role-theme-admin .glass-card,
+body.role-theme-admin .dash-card,
+body.role-theme-admin .card,
+body.role-theme-admin .panel-card {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid rgba(16, 42, 150, 0.12) !important;
+  box-shadow: 0 4px 20px rgba(16, 42, 150, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+}
+
+body.role-theme-admin .sidebar {
+  background: #ffffff !important;
+  border-right: 1px solid rgba(16, 42, 150, 0.12) !important;
+}
+
 .user-avatar {
   width: 32px !important;
   height: 32px !important;
@@ -1026,12 +1405,12 @@ body.dark-mode .user-nav-role {
   width: 32px !important;
   height: 32px !important;
   border-radius: 50% !important;
-  background: linear-gradient(135deg, #ff6584, #f43f5e) !important;
+  background: linear-gradient(135deg, #102a96, #ff6a00);
   color: #ffffff !important;
   font-weight: 800 !important;
   font-size: 0.85rem !important;
   font-family: 'Orbitron', var(--font-display), sans-serif !important;
-  border: 2px solid #102a96 !important;
+  border: 2px solid rgba(16, 42, 150, 0.3) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;

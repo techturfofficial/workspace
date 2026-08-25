@@ -165,10 +165,23 @@ async function initUsers() {
       e.preventDefault();
       const id = document.getElementById('edit-user-id').value;
       const newName = document.getElementById('edit-user-name').value;
+      const newEmail = document.getElementById('edit-user-email')?.value?.trim();
+      const newPassword = document.getElementById('edit-user-password')?.value;
       const newRole = document.getElementById('edit-user-primary-role').value;
       const secondary_roles = Array.from(editSelectedRoles).join(',');
+
+      const payload = {
+        name: newName,
+        email: newEmail,
+        role: newRole,
+        secondary_roles
+      };
+      if (newPassword && newPassword.trim()) {
+        payload.password = newPassword;
+      }
+
       try {
-        await api.put(`/users/${id}`, { name: newName, role: newRole, secondary_roles });
+        await api.put(`/users/${id}`, payload);
         showToast('User updated successfully', 'success');
         closeModal('edit-user-modal');
         loadUsers();
@@ -213,7 +226,7 @@ async function loadUsers() {
         <tr onclick="openUserPerformance(${u.id})">
           <td>
             <div class="user-cell">
-              <img src="${getInitialsAvatar(u.name, 38)}" class="user-avatar-img" style="border: 2px solid ${roleColor};">
+              <img src="${getInitialsAvatar(u.name, 38, u.role)}" class="user-avatar-img" style="border: 2px solid ${roleColor};">
               <div>
                 <div class="user-name-text">${u.name}</div>
                 <div class="user-email-text">${u.email}</div>
@@ -236,13 +249,11 @@ async function loadUsers() {
               <span class="badge badge-${u.is_active ? 'approved' : 'rejected'}" style="font-size:0.65rem; font-weight:700; padding:4px 10px; border-radius:12px;">${u.is_active ? 'ACTIVE' : 'INACTIVE'}</span>
             </div>
           </td>
-          <td>
+          <td onclick="event.stopPropagation();">
             <div class="table-actions-cell">
               ${auth.hasRole('admin') ? `
-                <i class="fas fa-edit-user fas fa-edit" title="Edit User" style="color:var(--accent-primary);" onclick="event.stopPropagation(); editUser(${u.id}, '${u.name}', '${u.role}', '${u.secondary_roles || ''}')"></i>
-                <i class="fas fa-key" title="Reset Password" style="color:var(--text-muted);" onclick="event.stopPropagation(); resetUserPassword(${u.id}, '${u.email}')"></i>
-                <i class="fas fa-user-slash" title="Deactivate Account" style="color:var(--accent-secondary);" onclick="event.stopPropagation(); deactivateUser(${u.id})"></i>
-                <i class="fas fa-trash-alt" title="Permanent Delete" style="color:var(--accent-danger);" onclick="event.stopPropagation(); deleteUser(${u.id})"></i>
+                <i class="fas fa-edit-user fas fa-edit" title="Edit User" style="color:var(--accent-primary);" onclick="event.stopPropagation(); editUser(${u.id}, '${escapeHtml(u.name)}', '${escapeHtml(u.role)}', '${escapeHtml(u.secondary_roles || '')}', '${escapeHtml(u.email || '')}', '${escapeHtml(u.personal_email || '')}')"></i>
+                <i class="fas fa-trash-alt" title="Delete User" style="color:var(--accent-danger, #ef4444);" onclick="event.stopPropagation(); deleteUser(${u.id})"></i>
               ` : `
                 <i class="fas fa-lock" title="Permission Required" style="color:var(--text-muted); opacity:0.5;"></i>
               `}
@@ -269,7 +280,7 @@ async function loadRoleArchitect() {
 
   try {
     const rawData = await api.get('/admin/roles-users');
-    const data = (Array.isArray(rawData) ? rawData : []).filter(group => !REMOVED_ROLES.has(group.role));
+    const data = (Array.isArray(rawData) ? rawData : []).filter(group => !REMOVED_ROLES.has(group.role) && !['admin_archive'].includes(group.role));
     container.innerHTML = data.map((group, idx) => {
       const activeUsers = (group.users || []).filter(u => 
         u.name !== '[Deleted User]' && 
@@ -277,6 +288,8 @@ async function loadRoleArchitect() {
         u.is_active !== -1
       );
       const activeCount = activeUsers.filter(u => u.is_active === 1).length;
+      const groupRoleStyle = typeof getRoleAvatarStyle === 'function' ? getRoleAvatarStyle(group.role) : null;
+      const groupAvatarBg = groupRoleStyle ? (groupRoleStyle.cssBackground || groupRoleStyle.color) : '#102a96';
 
       return `
       <div class="role-accordion" id="role-acc-${idx}">
@@ -295,7 +308,7 @@ async function loadRoleArchitect() {
             ? `<div class="role-acc-empty"><i class="fas fa-ghost"></i> No users assigned</div>`
             : activeUsers.map(user => `
               <div class="role-acc-user" onclick="openUserPerformance(${user.id})">
-                <div class="role-acc-avatar">${(user.name || 'U').charAt(0).toUpperCase()}</div>
+                <div class="role-acc-avatar" style="background:${groupAvatarBg}; color:#ffffff;">${(user.name || 'U').charAt(0).toUpperCase()}</div>
                 <div class="role-acc-details">
                   <div class="role-acc-uname">${user.name}</div>
                   <div class="role-acc-email">${user.email}</div>
@@ -307,6 +320,7 @@ async function loadRoleArchitect() {
     `;
     }).join('');
   } catch (err) {
+    console.error('loadRoleArchitect error:', err);
     container.innerHTML = '<div class="role-acc-empty">Failed to load roles.</div>';
   }
 }
@@ -377,19 +391,23 @@ window.deleteUser = async function(id) {
 };
 
 // Edit user in a modern side drawer modal
-window.editUser = function(id, name, primaryRole, secondaryRolesStr) {
+window.editUser = function(id, name, primaryRole, secondaryRolesStr, email) {
   const allRoleOptions = getRoleOptions();
   const secRoles = (secondaryRolesStr || '').split(',').map(r => r.trim()).filter(Boolean);
 
   const idInput = document.getElementById('edit-user-id');
   const nameInput = document.getElementById('edit-user-name');
+  const emailInput = document.getElementById('edit-user-email');
+  const passwordInput = document.getElementById('edit-user-password');
   const primSelect = document.getElementById('edit-user-primary-role');
   const avatarEl = document.getElementById('edit-user-avatar');
   const displayNameEl = document.getElementById('edit-user-display-name');
   const displaySubEl = document.getElementById('edit-user-display-sub');
 
   if (idInput) idInput.value = id;
-  if (nameInput) nameInput.value = name;
+  if (nameInput) nameInput.value = name || '';
+  if (emailInput) emailInput.value = email || '';
+  if (passwordInput) passwordInput.value = '';
   if (displayNameEl) displayNameEl.textContent = name || 'User';
   if (displaySubEl) displaySubEl.textContent = `Primary: ${typeof formatRole === 'function' ? formatRole(primaryRole || '') : (primaryRole || '')}`;
   if (avatarEl) {

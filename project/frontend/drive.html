@@ -10,7 +10,8 @@
     <link rel="stylesheet" href="css/animations.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/responsive.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
     <link
         href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
@@ -491,9 +492,6 @@
             <div class="menu-item admin-only" data-nav="users.html" onclick="window.location.href='users.html'">
               <i class="fas fa-users-cog"></i><span class="menu-text">User Management</span>
             </div>
-            <div class="menu-item admin-only" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
-              <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
-            </div>
           </div>
         </div>
         <div class="menu-item rnd-only" data-nav="nexus_lab.html" onclick="window.location.href='nexus_lab.html'">
@@ -510,6 +508,9 @@
         
         <div class="menu-item" data-nav="workspace.html" onclick="window.location.href='workspace.html'">
           <i class="fas fa-paint-brush"></i><span class="menu-text">Creative Workspace</span>
+        </div>
+        <div class="menu-item" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
+          <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
         </div>
         
         <div class="menu-item admin-only" data-nav="database_viewer.html" id="dbadmin-link" onclick="window.location.href='database_viewer.html'">
@@ -578,7 +579,7 @@
                     <div class="breadcrumb">Resources / Secure Core</div>
                     <div class="page-title">DRIVE STORAGE</div>
                 </div>
-                <div class="admin-tl-create flex-gap-12">
+                <div class="page-header-actions flex-gap-12" style="display:flex; align-items:center;">
                     <button class="btn-primary" onclick="document.getElementById('file-upload-input').click()">
                         <i class="fas fa-cloud-upload-alt"></i><span>Upload File</span>
                     </button>

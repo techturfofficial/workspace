@@ -31,6 +31,7 @@ async function initDashboard() {
 
         // Load common modules for all users
         loadKpiMetrics();
+        loadTopPerformers();
         loadMyTasks();
         loadProjectProgress();
         loadNexusLatest();
@@ -38,13 +39,8 @@ async function initDashboard() {
         loadAnnouncements();
         loadNotifications(); // Initial call
 
-
         // Load specialized modules based on role
         loadRoleHub();
-
-        if (['admin', 'team_leader'].includes(user.role)) {
-            loadTopPerformers();
-        }
 
         if (user.role === 'admin') {
             loadAnalyticsSummary();
@@ -424,17 +420,25 @@ function draw3DIsometricBarChart(canvas, users, hoveredIndex = -1) {
     });
 }
 
-async function loadTopPerformers() {
+async function loadTopPerformers(period = 'month') {
     const chartCanvas = document.getElementById('top-performers-chart');
     if (!chartCanvas) return;
     try {
-        const users = await api.get('/users');
-        if (!users) return;
-        const sorted = users.sort((a, b) => b.points - a.points).slice(0, 4);
-        window.topPerformersData = sorted;
+        const res = await api.get(`/analytics/top-performers?period=${encodeURIComponent(period)}`);
+        const performers = res?.performers || [];
+        window.topPerformersData = performers;
+
+        const badgeEl = document.getElementById('performer-month-badge');
+        if (badgeEl) {
+            if (period === 'month') {
+                badgeEl.innerHTML = `<i class="far fa-calendar-alt"></i> ${res.month_label || 'THIS MONTH'}`;
+            } else {
+                badgeEl.innerHTML = `<i class="fas fa-infinity"></i> ALL-TIME`;
+            }
+        }
 
         // Draw 3D Isometric Bar Chart
-        draw3DIsometricBarChart(chartCanvas, sorted);
+        draw3DIsometricBarChart(chartCanvas, performers);
 
         // Attach interactive mouse move listener for hover effects
         if (!chartCanvas.dataset.hoverAttached) {
@@ -443,7 +447,7 @@ async function loadTopPerformers() {
                 const rect = chartCanvas.getBoundingClientRect();
                 const mouseX = e.clientX - rect.left;
                 const N = Math.min(window.topPerformersData?.length || 4, 4);
-                const colWidth = rect.width / N;
+                const colWidth = rect.width / Math.max(1, N);
                 const hoveredIdx = Math.floor(mouseX / colWidth);
                 draw3DIsometricBarChart(chartCanvas, window.topPerformersData, hoveredIdx);
             });

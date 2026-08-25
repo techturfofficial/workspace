@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <style>
+    .mobile-hamburger {
+      display: none;
+      background: none;
+      color: var(--text-primary);
+      font-size: 1.2rem;
+    }
+
+    @media(max-width:768px) {
+      .mobile-hamburger {
+        display: flex;
+      }
+    }
+  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tech Turf | Client Reports & Sync Hub</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    /* --- MODERNIZED CLIENT REPORTS DASHBOARD THEME --- */
+    
+    .reports-control-panel {
+      background: #ffffff;
+      border: 1.5px solid rgba(16, 42, 150, 0.08);
+      border-radius: 16px;
+      padding: 16px 20px;
+      margin: 0 24px 20px;
+      box-shadow: 0 10px 30px -5px rgba(2, 6, 23, 0.04);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .search-filter-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #f8fafc;
+      border: 1px solid rgba(16, 42, 150, 0.1);
+      border-radius: 10px;
+      padding: 8px 14px;
+      flex: 1;
+      min-width: 260px;
+      transition: all 0.2s ease;
+    }
+
+    .search-filter-box:focus-within {
+      background: #ffffff;
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(16, 42, 150, 0.1);
+    }
+
+    .search-filter-box input {
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      width: 100%;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .dropdown-filter-select {
+      background: #f8fafc;
+      border: 1px solid rgba(16, 42, 150, 0.1);
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      outline: none;
+      cursor: pointer;
+      min-width: 160px;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.2s ease;
+    }
+
+    .dropdown-filter-select:hover,
+    .dropdown-filter-select:focus {
+      background: #ffffff;
+      border-color: var(--accent-primary);
+    }
+
+    /* Segmented Tabs Navigation Pill */
+    .tab-pill-container {
+      display: inline-flex;
+      background: #f1f5f9;
+      border-radius: 12px;
+      padding: 4px;
+      gap: 4px;
+      margin: 0 24px 22px;
+      border: 1px solid rgba(16, 42, 150, 0.06);
+    }
+
+    .tab-pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 18px;
+      border-radius: 9px;
+      border: none;
+      background: transparent;
+      color: #64748b;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .tab-pill-btn:hover {
+      color: var(--text-primary);
+    }
+
+    .tab-pill-btn.active {
+      background: #ffffff;
+      color: var(--accent-primary);
+      box-shadow: 0 4px 14px rgba(16, 42, 150, 0.12);
+    }
+
+    .tab-pill-btn.active i {
+      color: var(--accent-primary);
+    }
+
+    /* Review Cards Grid */
+    .review-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 22px;
+      padding: 0 24px 30px;
+    }
+
+    .modern-review-card {
+      background: #ffffff;
+      border: 1px solid rgba(16, 42, 150, 0.08);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 10px 30px -5px rgba(2, 6, 23, 0.04);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .modern-review-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, #102a96, #ff6b00);
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    .modern-review-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px -10px rgba(16, 42, 150, 0.1);
+      border-color: rgba(16, 42, 150, 0.18);
+    }
+
+    .modern-review-card:hover::before {
+      opacity: 1;
+    }
+
+    .review-client-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+
+    .review-avatar-ring {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #102a96, #2563eb);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 1rem;
+      box-shadow: 0 6px 14px rgba(16, 42, 150, 0.25);
+      flex-shrink: 0;
+    }
+
+    .rating-pill-gold {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      color: #b45309;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 800;
+      font-size: 0.8rem;
+    }
+
+    .rating-pill-gold i {
+      color: #f59e0b;
+    }
+
+    .review-quote-bubble {
+      background: #f8fafc;
+      border: 1px solid rgba(16, 42, 150, 0.06);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin: 14px 0;
+      font-size: 0.86rem;
+      color: #334155;
+      line-height: 1.5;
+      position: relative;
+    }
+
+    .review-quote-bubble::before {
+      content: '"';
+      position: absolute;
+      top: 6px;
+      left: 8px;
+      font-size: 2rem;
+      color: rgba(16, 42, 150, 0.08);
+      font-family: serif;
+      line-height: 1;
+    }
+
+    /* Strategic Syncs Grid */
+    .meetings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 22px;
+      padding: 0 24px 30px;
+    }
+
+    .modern-sync-card {
+      background: #ffffff;
+      border: 1px solid rgba(16, 42, 150, 0.08);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 10px 30px -5px rgba(2, 6, 23, 0.04);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .modern-sync-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px -10px rgba(16, 42, 150, 0.1);
+    }
+
+    .modern-sync-card.pending {
+      border-left: 5px solid #f59e0b;
+    }
+
+    .modern-sync-card.approved,
+    .modern-sync-card.confirmed {
+      border-left: 5px solid #22c55e;
+    }
+
+    .modern-sync-card.completed {
+      border-left: 5px solid #3b82f6;
+    }
+
+    .modern-sync-card.cancelled,
+    .modern-sync-card.rejected {
+      border-left: 5px solid #ef4444;
+    }
+
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-chip.pending {
+      background: rgba(245, 158, 11, 0.12);
+      color: #b45309;
+      border: 1px solid rgba(245, 158, 11, 0.25);
+    }
+
+    .status-chip.approved,
+    .status-chip.confirmed {
+      background: rgba(34, 197, 94, 0.12);
+      color: #15803d;
+      border: 1px solid rgba(34, 197, 94, 0.25);
+    }
+
+    .status-chip.completed {
+      background: rgba(59, 130, 246, 0.12);
+      color: #1d4ed8;
+      border: 1px solid rgba(59, 130, 246, 0.25);
+    }
+
+    .status-chip.cancelled,
+    .status-chip.rejected {
+      background: rgba(239, 68, 68, 0.12);
+      color: #b91c1c;
+      border: 1px solid rgba(239, 68, 68, 0.25);
+    }
+
+    /* Modern Analytics Grid & Cards */
+    .analytics-card {
+      background: #ffffff;
+      border: 1px solid rgba(16, 42, 150, 0.08);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 10px 30px -5px rgba(2, 6, 23, 0.04);
+      transition: all 0.25s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .analytics-card:hover {
+      box-shadow: 0 16px 36px -8px rgba(16, 42, 150, 0.08);
+      border-color: rgba(16, 42, 150, 0.16);
+    }
+
+    .analytics-card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 22px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(16, 42, 150, 0.06);
+    }
+
+    .analytics-icon-badge {
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+
+    .analytics-icon-badge.gold {
+      background: rgba(245, 158, 11, 0.12);
+      color: #d97706;
+      border: 1px solid rgba(245, 158, 11, 0.25);
+    }
+
+    .analytics-icon-badge.blue {
+      background: rgba(16, 42, 150, 0.08);
+      color: #102a96;
+      border: 1px solid rgba(16, 42, 150, 0.2);
+    }
+
+    .analytics-card-title {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 1.15rem;
+      color: var(--text-primary);
+      margin: 0;
+      line-height: 1.2;
+    }
+
+    .analytics-card-subtitle {
+      font-size: 0.76rem;
+      color: #64748b;
+      margin: 2px 0 0;
+      font-weight: 500;
+    }
+
+    .csat-score-capsule {
+      background: #f8fafc;
+      border: 1px solid rgba(16, 42, 150, 0.08);
+      border-radius: 16px;
+      padding: 20px 16px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 140px;
+    }
+
+    .rating-row-modern {
+      display: grid;
+      grid-template-columns: 28px 1fr 60px;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .rating-track-bg {
+      height: 9px;
+      background: #f1f5f9;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+    }
+
+    .rating-track-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #f59e0b, #fbbf24);
+      border-radius: 6px;
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .health-metric-row {
+      background: #f8fafc;
+      border: 1px solid rgba(16, 42, 150, 0.06);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .health-metric-row:hover {
+      background: #ffffff;
+      border-color: rgba(16, 42, 150, 0.15);
+      box-shadow: 0 4px 14px rgba(16, 42, 150, 0.05);
+    }
+
+    /* Modal Backdrop */
+    .custom-modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(6px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Three.js Background Canvas -->
+  <canvas id="three-bg"></canvas>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <div class="dashboard-container">
+
+    <!-- Universal Modern Glass Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header" onclick="window.location.href='dashboard.html'">
+        <div class="sidebar-brand-wrapper">
+          <div class="sidebar-logo-icon">
+            <i class="fas fa-satellite"></i>
+          </div>
+          <div class="sidebar-logo">
+            <span class="brand-tech">TECH</span> <span class="brand-turf">TURF</span> <span class="brand-tag">CRM</span>
+          </div>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu" id="main-sidebar-nav"></nav>
+
+      <div class="sidebar-footer">
+        <div class="menu-item" id="logout-btn" onclick="auth.logout()">
+          <i class="fas fa-sign-out-alt"></i>
+          <span class="menu-text">Logout</span>
+        </div>
+      </div>
+
+      <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" title="Expand/Collapse Sidebar">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <header class="navbar">
+        <div class="nav-left">
+          <button id="mobile-toggle" class="mobile-hamburger"><i class="fas fa-bars"></i></button>
+          <div class="nav-search">
+            <i class="fas fa-search"></i>
+            <input type="text" id="global-search-input" placeholder="Search client reports, reviews, syncs...">
+          </div>
+        </div>
+        <div class="nav-actions">
+          <div class="nav-badge-pill">
+            <span class="pulse-dot"></span>
+            <span>LIVE SYNC ACTIVE</span>
+          </div>
+
+          <div class="notification-bell" id="notification-bell">
+            <i class="fas fa-bell"></i>
+            <span class="notification-badge" id="notification-badge" style="display:none;">0</span>
+            <div class="notification-dropdown glass-card" id="notification-dropdown">
+              <div class="notification-header">
+                <span class="notification-title"><i class="fas fa-bell" style="color:var(--accent-primary); margin-right:6px;"></i>Activity & Alerts</span>
+                <span class="notification-mark-read" onclick="markAllNotificationsRead()">Mark all read</span>
+              </div>
+              <div id="notification-list" class="notification-list-scroll"></div>
+            </div>
+          </div>
+
+          <div class="user-profile-nav" data-nav="profile.html" onclick="window.location.href='profile.html'">
+            <div class="user-nav-text">
+              <div id="nav-user-name" class="user-nav-name">Staff Member</div>
+              <div id="nav-user-role" class="user-nav-role">Role</div>
+            </div>
+            <div class="avatar-fallback-badge" id="nav-avatar-badge">TT</div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Header -->
+      <div class="page-header" style="padding: 24px 24px 16px;">
+        <div>
+          <div class="breadcrumb" style="font-size:0.75rem; font-weight:800; color:var(--accent-secondary); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">
+            <i class="fas fa-chart-line"></i> COMMAND CENTER / CLIENT REPORTS & REVIEWS
+          </div>
+          <div class="page-title" style="font-size:1.85rem; font-weight:800;">
+            Client Reports & Feedback Hub
+          </div>
+        </div>
+        <div style="display:flex; gap:12px; align-items:center;">
+          <button class="btn-secondary" onclick="clientReportsApp.refreshAllData()" style="padding:10px 18px; border-radius:10px;">
+            <i class="fas fa-sync-alt"></i> <span>Refresh Live Data</span>
+          </button>
+          <button class="btn-primary" onclick="clientReportsApp.exportExecutiveSummary()" style="padding:10px 20px; border-radius:10px;">
+            <i class="fas fa-download"></i> <span>Export Executive Report</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Modernized KPI Cards Grid -->
+      <div class="kpi-grid" style="padding: 0 24px 22px;">
+        
+        <div class="kpi-card purple">
+          <div class="kpi-card-info">
+            <span class="kpi-card-title">Average Client CSAT</span>
+            <span class="kpi-card-value" id="hud-csat-rating">5.0 ★</span>
+          </div>
+          <i class="fas fa-star kpi-card-icon"></i>
+        </div>
+
+        <div class="kpi-card orange">
+          <div class="kpi-card-info">
+            <span class="kpi-card-title">Reviews Recorded</span>
+            <span class="kpi-card-value" id="hud-total-reviews">0</span>
+          </div>
+          <i class="fas fa-star-half-alt kpi-card-icon"></i>
+        </div>
+
+        <div class="kpi-card green">
+          <div class="kpi-card-info">
+            <span class="kpi-card-title">Pending Syncs</span>
+            <span class="kpi-card-value" id="hud-pending-syncs">0</span>
+          </div>
+          <i class="fas fa-calendar-check kpi-card-icon"></i>
+        </div>
+
+        <div class="kpi-card blue">
+          <div class="kpi-card-info">
+            <span class="kpi-card-title">Milestone Reports</span>
+            <span class="kpi-card-value" id="hud-total-deliverables">0</span>
+          </div>
+          <i class="fas fa-file-contract kpi-card-icon"></i>
+        </div>
+
+      </div>
+
+      <!-- Modern Filter Capsule Bar -->
+      <div class="reports-control-panel">
+        <div class="search-filter-box">
+          <i class="fas fa-search" style="color:#94a3b8;"></i>
+          <input type="text" id="report-search-filter" placeholder="Search by client name, project, feedback keyword..." onkeyup="clientReportsApp.applyFilters()">
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <select id="report-client-filter" class="dropdown-filter-select" onchange="clientReportsApp.applyFilters()">
+            <option value="">All Clients</option>
+          </select>
+
+          <select id="report-rating-filter" class="dropdown-filter-select" onchange="clientReportsApp.applyFilters()">
+            <option value="">All Ratings (1★ - 5★)</option>
+            <option value="5">5 Stars (Delighted)</option>
+            <option value="4">4 Stars (Satisfied)</option>
+            <option value="3">3 Stars (Neutral)</option>
+            <option value="2">2 Stars (Critical)</option>
+            <option value="1">1 Star (Urgent)</option>
+          </select>
+
+          <select id="report-sync-status-filter" class="dropdown-filter-select" onchange="clientReportsApp.applyFilters()">
+            <option value="">All Sync Statuses</option>
+            <option value="pending">Pending Confirmation</option>
+            <option value="approved">Confirmed / Scheduled</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+
+          <button class="btn-secondary" onclick="clientReportsApp.resetFilters()" style="padding:8px 12px; border-radius:10px;" title="Reset filters">
+            <i class="fas fa-undo"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Segmented Tabs Navigation Pill -->
+      <div class="tab-pill-container">
+        <button class="tab-pill-btn active" id="tab-btn-reviews" onclick="clientReportsApp.switchTab('reviews')">
+          <i class="fas fa-star-half-alt"></i> Client Reviews & CSAT Ledger
+        </button>
+        <button class="tab-pill-btn" id="tab-btn-syncs" onclick="clientReportsApp.switchTab('syncs')">
+          <i class="fas fa-calendar-alt"></i> Strategic Syncs & Meetings
+          <span class="status-chip pending" id="syncs-count-badge" style="display:none; padding:2px 8px; font-size:0.65rem; margin-left:4px;">0</span>
+        </button>
+        <button class="tab-pill-btn" id="tab-btn-analytics" onclick="clientReportsApp.switchTab('analytics')">
+          <i class="fas fa-chart-bar"></i> CSAT & Sentiment Analytics
+        </button>
+        <button class="tab-pill-btn" id="tab-btn-deliverables" onclick="clientReportsApp.switchTab('deliverables')">
+          <i class="fas fa-file-signature"></i> Milestone Reports & Sign-offs
+        </button>
+      </div>
+
+      <!-- Tab 1: Client Reviews Grid -->
+      <section id="panel-reviews" class="report-tab-panel">
+        <div id="reviews-cards-container" class="review-grid"></div>
+      </section>
+
+      <!-- Tab 2: Strategic Syncs & Meetings Grid -->
+      <section id="panel-syncs" class="report-tab-panel" style="display:none;">
+        <div id="syncs-cards-container" class="meetings-grid"></div>
+      </section>
+
+      <!-- Tab 3: Analytics & Sentiment -->
+      <section id="panel-analytics" class="report-tab-panel" style="display:none; padding: 0 24px 30px;">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap:24px;">
+          
+          <!-- Card 1: Client Satisfaction Score -->
+          <div class="analytics-card">
+            <div class="analytics-card-header">
+              <div class="analytics-icon-badge gold">
+                <i class="fas fa-smile-beam"></i>
+              </div>
+              <div>
+                <h3 class="analytics-card-title">Client Satisfaction Score (CSAT)</h3>
+                <p class="analytics-card-subtitle">Aggregated from verified client reviews</p>
+              </div>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:24px; flex-wrap:wrap;">
+              <div class="csat-score-capsule">
+                <div class="csat-score-big" id="analytics-csat-val" style="font-family:'Outfit',sans-serif; font-size:3.2rem; font-weight:900; color:var(--accent-primary); line-height:1;">5.0</div>
+                <div style="color:#f59e0b; font-size:1.1rem; margin:6px 0 4px;">
+                  ★★★★★
+                </div>
+                <div style="font-size:0.75rem; color:#64748b; font-weight:600;">Out of 5.0 Rating</div>
+                <div style="margin-top:10px; background:rgba(34,197,94,0.12); color:#15803d; border:1px solid rgba(34,197,94,0.25); padding:3px 10px; border-radius:12px; font-size:0.7rem; font-weight:800;">
+                  <i class="fas fa-check-circle"></i> 100% Delight
+                </div>
+              </div>
+
+              <div style="flex:1; min-width:200px;">
+                <div class="rating-row-modern">
+                  <span style="color:#f59e0b;">5★</span>
+                  <div class="rating-track-bg"><div id="bar-5-star" class="rating-track-fill" style="width:100%;"></div></div>
+                  <span id="count-5-star" style="text-align:right; font-size:0.75rem; color:#475569;">3</span>
+                </div>
+                <div class="rating-row-modern">
+                  <span style="color:#f59e0b;">4★</span>
+                  <div class="rating-track-bg"><div id="bar-4-star" class="rating-track-fill" style="width:0%;"></div></div>
+                  <span id="count-4-star" style="text-align:right; font-size:0.75rem; color:#94a3b8;">0</span>
+                </div>
+                <div class="rating-row-modern">
+                  <span style="color:#f59e0b;">3★</span>
+                  <div class="rating-track-bg"><div id="bar-3-star" class="rating-track-fill" style="width:0%;"></div></div>
+                  <span id="count-3-star" style="text-align:right; font-size:0.75rem; color:#94a3b8;">0</span>
+                </div>
+                <div class="rating-row-modern">
+                  <span style="color:#f59e0b;">2★</span>
+                  <div class="rating-track-bg"><div id="bar-2-star" class="rating-track-fill" style="width:0%;"></div></div>
+                  <span id="count-2-star" style="text-align:right; font-size:0.75rem; color:#94a3b8;">0</span>
+                </div>
+                <div class="rating-row-modern">
+                  <span style="color:#f59e0b;">1★</span>
+                  <div class="rating-track-bg"><div id="bar-1-star" class="rating-track-fill" style="width:0%;"></div></div>
+                  <span id="count-1-star" style="text-align:right; font-size:0.75rem; color:#94a3b8;">0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Quality & Delivery Health Matrix -->
+          <div class="analytics-card">
+            <div class="analytics-card-header">
+              <div class="analytics-icon-badge blue">
+                <i class="fas fa-chart-line"></i>
+              </div>
+              <div>
+                <h3 class="analytics-card-title">Quality & Delivery Health Matrix</h3>
+                <p class="analytics-card-subtitle">Live milestone velocity & SLA performance</p>
+              </div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <div class="health-metric-row">
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.84rem; font-weight:700; margin-bottom:8px;">
+                  <span style="display:flex; align-items:center; gap:8px; color:var(--text-primary);">
+                    <i class="fas fa-check-circle" style="color:#22c55e;"></i> Client Delight Ratio
+                  </span>
+                  <span id="metric-delight-ratio" style="color:#15803d; font-weight:800;">100% (Optimal)</span>
+                </div>
+                <div class="rating-track-bg" style="height:8px;"><div id="bar-delight-ratio" style="height:100%; width:100%; background:linear-gradient(90deg, #22c55e, #16a34a); border-radius:6px;"></div></div>
+              </div>
+
+              <div class="health-metric-row">
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.84rem; font-weight:700; margin-bottom:8px;">
+                  <span style="display:flex; align-items:center; gap:8px; color:var(--text-primary);">
+                    <i class="fas fa-bolt" style="color:#ff6b00;"></i> Meeting Response Velocity
+                  </span>
+                  <span style="color:#c2410c; font-weight:800;">96.0% (Under 2h)</span>
+                </div>
+                <div class="rating-track-bg" style="height:8px;"><div style="height:100%; width:96%; background:linear-gradient(90deg, #ff6b00, #ea580c); border-radius:6px;"></div></div>
+              </div>
+
+              <div class="health-metric-row">
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.84rem; font-weight:700; margin-bottom:8px;">
+                  <span style="display:flex; align-items:center; gap:8px; color:var(--text-primary);">
+                    <i class="fas fa-clipboard-check" style="color:#102a96;"></i> Milestone Acceptance Rate
+                  </span>
+                  <span style="color:#102a96; font-weight:800;">98.4% (First-Pass)</span>
+                </div>
+                <div class="rating-track-bg" style="height:8px;"><div style="height:100%; width:98.4%; background:linear-gradient(90deg, #102a96, #2563eb); border-radius:6px;"></div></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Tab 4: Deliverables & Milestone Sign-offs -->
+      <section id="panel-deliverables" class="report-tab-panel" style="display:none; padding: 0 24px 30px;">
+        <div class="glass-card" style="padding:0; overflow:hidden;">
+          <div style="padding:18px 24px; border-bottom:1px solid rgba(16,42,150,0.08); background:#fafbfc;">
+            <h3 style="font-family:'Outfit',sans-serif; font-weight:800; font-size:1.05rem; margin:0; color:var(--text-primary);">
+              <i class="fas fa-file-contract" style="color:var(--accent-primary); margin-right:8px;"></i> Approved Client Deliverables & Milestone Reports
+            </h3>
+          </div>
+          <div class="table-responsive">
+            <table class="modern-table">
+              <thead>
+                <tr>
+                  <th>Deliverable Title</th>
+                  <th>Client / Organization</th>
+                  <th>Project Context</th>
+                  <th>Delivery Date</th>
+                  <th>Status</th>
+                  <th style="text-align:right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="deliverables-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Modern Meeting Action Modal -->
+  <div class="custom-modal-backdrop" id="modal-meeting-action" style="display:none;">
+    <div class="glass-card" style="width:100%; max-width:500px; margin:20px; background:#ffffff; border-radius:20px; box-shadow:0 25px 50px -12px rgba(15, 23, 42, 0.25); overflow:hidden; padding:0;">
+      <div style="padding:18px 22px; border-bottom:1px solid rgba(16,42,150,0.08); display:flex; justify-content:space-between; align-items:center; background:#fafbfc;">
+        <h3 style="font-family:'Outfit',sans-serif; font-weight:800; font-size:1.1rem; color:var(--text-primary); margin:0;" id="modal-meeting-title">
+          <i class="fas fa-calendar-check" style="color:var(--accent-primary); margin-right:8px;"></i> Manage Sync Request
+        </h3>
+        <button type="button" class="btn-secondary" onclick="clientReportsApp.closeMeetingModal()" style="padding:6px 10px; font-size:0.75rem; border-radius:8px;"><i class="fas fa-times"></i></button>
+      </div>
+      <div style="padding:22px;">
+        <form id="form-meeting-action" onsubmit="clientReportsApp.submitMeetingAction(event)">
+          <input type="hidden" id="modal-meeting-id" value="">
+          
+          <div class="form-group" style="margin-bottom:16px;">
+            <label style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; display:block;">Action Status</label>
+            <select id="modal-meeting-status" class="dropdown-filter-select" required style="width:100%;">
+              <option value="approved">Approve & Confirm Meeting</option>
+              <option value="pending">Mark Pending / Need More Info</option>
+              <option value="completed">Mark Completed</option>
+              <option value="cancelled">Cancel Request</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom:16px;">
+            <label style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; display:block;">Confirm or Adjust Time</label>
+            <input type="datetime-local" id="modal-meeting-datetime" class="dropdown-filter-select" style="width:100%;">
+          </div>
+
+          <div class="form-group" style="margin-bottom:16px;">
+            <label style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; display:block;">Google Meet / Zoom URL</label>
+            <input type="url" id="modal-meeting-url" class="dropdown-filter-select" placeholder="https://meet.google.com/abc-defg-hij" style="width:100%;">
+          </div>
+
+          <div class="form-group" style="margin-bottom:20px;">
+            <label style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; display:block;">Message / Agenda Notes for Client</label>
+            <textarea id="modal-meeting-notes" class="dropdown-filter-select" rows="3" placeholder="Add talking points, agenda, or preparation notes..." style="width:100%; resize:vertical;"></textarea>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:12px;">
+            <button type="button" class="btn-secondary" onclick="clientReportsApp.closeMeetingModal()" style="padding:10px 18px; border-radius:10px;">Cancel</button>
+            <button type="submit" class="btn-primary" style="padding:10px 22px; border-radius:10px;"><i class="fas fa-check"></i> Save & Notify Client</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+  <script src="js/three-bg.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script src="js/client_reports.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof initThreeBg === 'function') initThreeBg();
+      if (typeof initSidebar === 'function') initSidebar();
+      clientReportsApp.init();
+    });
+  </script>
+</body>
+</html>

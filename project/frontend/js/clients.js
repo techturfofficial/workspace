@@ -940,7 +940,7 @@ function populatePickerDropdown(dropdownId, pickerKey) {
     ? `<div style="padding:10px 14px;color:var(--text-muted);font-size:0.8rem;">No users found</div>`
     : filtered.map(u => `
         <div class="picker-option ${selected.includes(u.id) ? 'selected' : ''}" onclick="toggleMember('${pickerKey}', ${u.id}, '${u.name.replace(/'/g, "\\'")}', '${u.role}')">
-          <img src="${getInitialsAvatar(u.name, 24)}" alt="${u.name}">
+          <img src="${getInitialsAvatar(u.name, 24, u.role)}" alt="${u.name}">
           <div>
             <div style="font-weight:700;">${u.name}</div>
             <div style="font-size:0.7rem;color:var(--text-muted);">${formatRole(u.role)}</div>
@@ -981,7 +981,7 @@ function renderChips(pickerKey) {
       const chip = document.createElement('div');
       chip.className = 'member-chip';
       chip.innerHTML = `
-        <img src="${getInitialsAvatar(u.name, 18)}" alt="${u.name}">
+        <img src="${getInitialsAvatar(u.name, 18, u.role)}" alt="${u.name}">
         <span>${u.name}</span>
         <i class="fas fa-times chip-remove" onclick="removeMember('${pickerKey}', ${u.id})"></i>
       `;

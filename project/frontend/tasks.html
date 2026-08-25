@@ -24,7 +24,8 @@
   <link rel="stylesheet" href="css/animations.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/responsive.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
   <link
     href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet">
@@ -500,9 +501,6 @@
             <div class="menu-item admin-only" data-nav="users.html" onclick="window.location.href='users.html'">
               <i class="fas fa-users-cog"></i><span class="menu-text">User Management</span>
             </div>
-            <div class="menu-item admin-only" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
-              <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
-            </div>
           </div>
         </div>
         <div class="menu-item rnd-only" data-nav="nexus_lab.html" onclick="window.location.href='nexus_lab.html'">
@@ -519,6 +517,9 @@
         
         <div class="menu-item" data-nav="workspace.html" onclick="window.location.href='workspace.html'">
           <i class="fas fa-paint-brush"></i><span class="menu-text">Creative Workspace</span>
+        </div>
+        <div class="menu-item" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
+          <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
         </div>
         
         <div class="menu-item admin-only" data-nav="database_viewer.html" id="dbadmin-link" onclick="window.location.href='database_viewer.html'">
@@ -634,21 +635,21 @@
     </main>
   </div>
 
-  <!-- New Task Modal -->
-  <div class="modal" id="new-task-modal">
-    <div class="glass-card modal-content">
+  <!-- New Task Modal (Side Drawer) -->
+  <div class="modal modal-drawer" id="new-task-modal" onclick="if(event.target===this) closeModal('new-task-modal')">
+    <div class="modal-content side-drawer-panel" onclick="event.stopPropagation()">
       <div class="modal-header">
         <div class="modal-title">CREATE TASK</div>
         <i class="fas fa-times close-modal" onclick="closeModal('new-task-modal')"></i>
       </div>
       <form id="new-task-form">
-        <div class="form-group"><label>Client</label><select class="form-control" title="Task Client" id="task-project"
+        <div class="form-group"><label for="task-project">Client</label><select class="form-control" title="Task Client" id="task-project"
             required></select>
         </div>
-        <div class="form-group"><label>Task Title</label><input type="text" class="form-control" id="task-title"
+        <div class="form-group"><label for="task-title">Task Title</label><input type="text" class="form-control" id="task-title"
             title="Task Title" placeholder="Enter task title" required></div>
-        <div class="form-group"><label>Description</label><textarea class="form-control" id="task-desc"
-            title="Task Description" placeholder="Enter task description" rows="2"></textarea></div>
+        <div class="form-group"><label for="task-desc">Description</label><textarea class="form-control" id="task-desc"
+            title="Task Description" placeholder="Enter task description" rows="3"></textarea></div>
         <div class="form-group">
           <label>Assign Members</label>
           <div class="member-picker-wrap">
@@ -663,25 +664,25 @@
           </div>
           <input type="hidden" id="new-task-members">
         </div>
-        <div class="ui-style-11">
-          <div class="form-group"><label>Priority</label><select class="form-control" id="task-priority"
+        <div class="form-row-grid">
+          <div class="form-group"><label for="task-priority">Priority</label><select class="form-control" id="task-priority"
               title="Task Priority">
               <option value="low">Low</option>
               <option value="normal" selected>Normal</option>
               <option value="urgent">Urgent</option>
             </select></div>
-          <div class="form-group"><label>Deadline</label><input type="date" title="Task Deadline" class="form-control"
+          <div class="form-group"><label for="task-deadline">Deadline</label><input type="date" title="Task Deadline" class="form-control"
               id="task-deadline">
           </div>
         </div>
-        <button type="submit" class="btn-primary ui-style-12">Create Task</button>
+        <button type="submit" class="btn-primary btn-drawer-submit">Create Task</button>
       </form>
     </div>
   </div>
 
-  <!-- Submit Modal -->
-  <div class="modal" id="submit-modal">
-    <div class="glass-card modal-content">
+  <!-- Submit Modal (Side Drawer) -->
+  <div class="modal modal-drawer" id="submit-modal" onclick="if(event.target===this) closeModal('submit-modal')">
+    <div class="modal-content side-drawer-panel" onclick="event.stopPropagation()">
       <div class="modal-header">
         <div class="modal-title">SUBMIT WORK</div>
         <i class="fas fa-times close-modal" onclick="closeModal('submit-modal')"></i>
@@ -689,7 +690,7 @@
       <div id="submit-task-info" class="ui-style-13"></div>
       <form id="submit-form">
         <input type="hidden" id="submit-task-id">
-        <div class="form-group"><label>Content / Notes</label><textarea class="form-control" id="submit-text" rows="4"
+        <div class="form-group"><label for="submit-text">Content / Notes</label><textarea class="form-control" id="submit-text" rows="4"
             placeholder="Describe your work or paste content here..."></textarea></div>
         <div class="form-group">
           <label>File Attachment</label>
@@ -699,7 +700,7 @@
           </div>
           <div class="upload-preview ui-style-15" id="upload-preview"></div>
         </div>
-        <button type="submit" class="btn-primary ui-style-12" id="submit-btn">Submit for
+        <button type="submit" class="btn-primary btn-drawer-submit" id="submit-btn">Submit for
           Review</button>
       </form>
 
@@ -708,23 +709,23 @@
           NEXUS AI EVALUATION</div>
         <div id="nexus-ring-container"></div>
         <div id="nexus-feedback" class="ui-style-18"></div>
-        <button class="btn-primary ui-style-19" onclick="finishSubmissionReview()">Done</button>
+        <button class="btn-primary btn-drawer-submit" onclick="finishSubmissionReview()">Done</button>
       </div>
     </div>
   </div>
 
-  <!-- Edit Task Modal -->
-  <div class="modal" id="edit-task-modal">
-    <div class="glass-card modal-content">
+  <!-- Edit Task Modal (Side Drawer) -->
+  <div class="modal modal-drawer" id="edit-task-modal" onclick="if(event.target===this) closeModal('edit-task-modal')">
+    <div class="modal-content side-drawer-panel" onclick="event.stopPropagation()">
       <div class="modal-header">
         <div class="modal-title">EDIT TASK</div>
         <i class="fas fa-times close-modal" onclick="closeModal('edit-task-modal')"></i>
       </div>
       <form id="edit-task-form">
         <input type="hidden" id="edit-task-id">
-        <div class="form-group"><label>Task Title</label><input type="text" class="form-control" id="edit-task-title"
+        <div class="form-group"><label for="edit-task-title">Task Title</label><input type="text" class="form-control" id="edit-task-title"
             title="Task Title" placeholder="Enter task title" required></div>
-        <div class="form-group"><label>Description</label><textarea class="form-control" id="edit-task-desc"
+        <div class="form-group"><label for="edit-task-desc">Description</label><textarea class="form-control" id="edit-task-desc"
             title="Task Description" placeholder="Enter task description" rows="3"></textarea></div>
         <div class="form-group">
           <label>Assign Members</label>
@@ -740,22 +741,20 @@
           </div>
           <input type="hidden" id="edit-task-members">
         </div>
-        <div class="ui-style-11">
-          <div class="form-group"><label>Priority</label><select class="form-control" title="Task Priority"
+        <div class="form-row-grid">
+          <div class="form-group"><label for="edit-task-priority">Priority</label><select class="form-control" title="Task Priority"
               id="edit-task-priority">
               <option value="low">Low</option>
               <option value="normal">Normal</option>
               <option value="urgent">Urgent</option>
             </select></div>
-          <div class="form-group"><label>Max Revisions</label><input type="number" min="1" max="10"
+          <div class="form-group"><label for="edit-task-max-revisions">Max Revisions</label><input type="number" min="1" max="10"
               title="Max Revisions" placeholder="Max Revisions" class="form-control" id="edit-task-max-revisions"
               value="3"></div>
         </div>
-        <div class="ui-style-11">
-          <div class="form-group"><label>Deadline</label><input type="date" title="Task Deadline" class="form-control"
-              id="edit-task-deadline"></div>
-        </div>
-        <button type="submit" class="btn-primary ui-style-12">Save Changes</button>
+        <div class="form-group"><label for="edit-task-deadline">Deadline</label><input type="date" title="Task Deadline" class="form-control"
+            id="edit-task-deadline"></div>
+        <button type="submit" class="btn-primary btn-drawer-submit">Save Changes</button>
       </form>
     </div>
   </div>

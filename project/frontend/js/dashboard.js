@@ -6,22 +6,41 @@
 async function initDashboard() {
     try {
         console.log("Initializing Dashboard...");
-        const user = auth.getUser();
-        if (!user) return;
+        let user = auth.getUser();
+
+        // Always resolve latest profile from backend so role/status changes made by
+        // admins are reflected immediately on existing sessions.
+        if (auth.getToken()) {
+            try {
+                const latestUser = await api.get('/auth/me');
+                if (latestUser) {
+                    user = latestUser;
+                    auth.setUser(latestUser);
+                    auth.initNavbar();
+                }
+            } catch {
+                auth.logout();
+                return;
+            }
+        }
+
+        if (!user) {
+            auth.logout();
+            return;
+        }
 
         // Load common modules for all users
+        loadKpiMetrics();
+        loadTopPerformers();
         loadMyTasks();
         loadProjectProgress();
         loadNexusLatest();
+        loadDriveFiles();
         loadAnnouncements();
         loadNotifications(); // Initial call
 
         // Load specialized modules based on role
         loadRoleHub();
-
-        if (['admin', 'team_leader'].includes(user.role)) {
-            loadTopPerformers();
-        }
 
         if (user.role === 'admin') {
             loadAnalyticsSummary();
@@ -48,7 +67,7 @@ async function loadMyTasks() {
                 <div class="empty-state">
                     <i class="fas fa-tasks"></i>
                     <div class="empty-title">No active tasks</div>
-                    <div class="empty-action"><button class="btn-primary" onclick="window.location.href='tasks.html'">View All Tasks</button></div>
+                    <div class="empty-action"><button class="btn-primary" onclick="loadPage('tasks.html')">View All Tasks</button></div>
                 </div>
             `;
             return;
@@ -77,7 +96,7 @@ async function loadProjectProgress() {
                 <div class="empty-state">
                     <i class="fas fa-project-diagram"></i>
                     <div class="empty-title">No active projects</div>
-                    <div class="empty-action"><button class="btn-primary" onclick="window.location.href='projects.html'">View Projects</button></div>
+                    <div class="empty-action"><button class="btn-primary" onclick="loadPage('projects.html')">View Projects</button></div>
                 </div>
             `;
             return;
@@ -112,7 +131,7 @@ async function loadNexusLatest() {
                 <div class="empty-state">
                     <i class="fas fa-file-upload"></i>
                     <div class="empty-title">No submissions yet</div>
-                    <div class="empty-action"><button class="btn-primary" onclick="window.location.href='submissions.html'">Submit Work</button></div>
+                    <div class="empty-action"><button class="btn-primary" onclick="loadPage('submissions.html')">Submit Work</button></div>
                 </div>
             `;
             return;
@@ -143,6 +162,37 @@ async function loadNexusLatest() {
         });
     } catch (e) {
         container.innerHTML = '<div class="error-text">Error loading nexus updates</div>';
+    }
+}
+
+async function loadDriveFiles() {
+    const container = document.getElementById('dash-drive-list');
+    if (!container) return;
+    try {
+        const items = await api.get('/drive/items');
+        if (!items || items.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-folder-open"></i>
+                    <div class="empty-title">No drive files</div>
+                    <div class="empty-action"><button class="btn-primary" onclick="loadPage('drive.html')">Open Drive</button></div>
+                </div>
+            `;
+            return;
+        }
+
+        const latest = items.slice(0, 5);
+        container.innerHTML = latest.map(item => `
+            <div class="dashboard-list-item" style="align-items:flex-start;">
+                <div>
+                    <div class="item-title">${item.name}</div>
+                    <div class="item-subtitle">${item.type}${item.file_size ? ` • ${Math.round(item.file_size / 1024)} KB` : ''}</div>
+                </div>
+                <div class="badge badge-info">LIVE</div>
+            </div>
+        `).join('');
+    } catch (e) {
+        container.innerHTML = '<div class="error-text">Error loading drive files</div>';
     }
 }
 
@@ -370,17 +420,25 @@ function draw3DIsometricBarChart(canvas, users, hoveredIndex = -1) {
     });
 }
 
-async function loadTopPerformers() {
+async function loadTopPerformers(period = 'month') {
     const chartCanvas = document.getElementById('top-performers-chart');
     if (!chartCanvas) return;
     try {
-        const users = await api.get('/users');
-        if (!users) return;
-        const sorted = users.sort((a, b) => b.points - a.points).slice(0, 4);
-        window.topPerformersData = sorted;
+        const res = await api.get(`/analytics/top-performers?period=${encodeURIComponent(period)}`);
+        const performers = res?.performers || [];
+        window.topPerformersData = performers;
+
+        const badgeEl = document.getElementById('performer-month-badge');
+        if (badgeEl) {
+            if (period === 'month') {
+                badgeEl.innerHTML = `<i class="far fa-calendar-alt"></i> ${res.month_label || 'THIS MONTH'}`;
+            } else {
+                badgeEl.innerHTML = `<i class="fas fa-infinity"></i> ALL-TIME`;
+            }
+        }
 
         // Draw 3D Isometric Bar Chart
-        draw3DIsometricBarChart(chartCanvas, sorted);
+        draw3DIsometricBarChart(chartCanvas, performers);
 
         // Attach interactive mouse move listener for hover effects
         if (!chartCanvas.dataset.hoverAttached) {
@@ -389,7 +447,7 @@ async function loadTopPerformers() {
                 const rect = chartCanvas.getBoundingClientRect();
                 const mouseX = e.clientX - rect.left;
                 const N = Math.min(window.topPerformersData?.length || 4, 4);
-                const colWidth = rect.width / N;
+                const colWidth = rect.width / Math.max(1, N);
                 const hoveredIdx = Math.floor(mouseX / colWidth);
                 draw3DIsometricBarChart(chartCanvas, window.topPerformersData, hoveredIdx);
             });
@@ -551,6 +609,7 @@ async function loadRoleHub() {
 }
 
 window.initDashboard = initDashboard;
+window.loadDriveFiles = loadDriveFiles;
 window.loadNotifications = async function () {
     // Basic placeholder if not defined elsewhere
     const badge = document.getElementById('notification-badge');
@@ -569,10 +628,76 @@ window.loadNotifications = async function () {
             return;
         }
         list.innerHTML = notifs.map(n => `
-            <div class="notification-item ${n.is_read ? '' : 'unread'}" style="padding:10px; border-bottom:1px solid var(--border); font-size:0.85rem;">
+            <div class="notification-item ${n.is_read ? '' : 'unread'}" style="padding:10px; border-bottom:2px solid var(--border); font-size:0.85rem;">
                 <div style="margin-bottom:4px;">${n.message}</div>
                 <div style="font-size:0.7rem; color:var(--text-muted);">${window.timeAgo ? timeAgo(n.created_at) : ''}</div>
             </div>
         `).join('');
     } catch { }
 };
+
+async function loadKpiMetrics() {
+    const container = document.getElementById('kpi-grid');
+    if (!container) return;
+    try {
+        // Fetch stats from analytics summary
+        const stats = await api.get('/analytics/summary');
+        if (!stats) return;
+
+        // Fetch payments list to sum total revenue
+        let totalRevenue = 0;
+        try {
+            const payments = await api.get('/payments');
+            if (payments && payments.length) {
+                totalRevenue = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+            }
+        } catch (e) {
+            console.warn('Failed to fetch payments for revenue KPI:', e);
+            totalRevenue = 0;
+        }
+
+        // Format revenue nicely in Rupees (INR)
+        const formattedRevenue = new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            maximumFractionDigits: 0
+        }).format(totalRevenue);
+
+        container.innerHTML = `
+            <div class="kpi-card blue">
+                <div class="kpi-card-info">
+                    <span class="kpi-card-title">Projects</span>
+                    <span class="kpi-card-value">${stats.projects || 0}</span>
+                </div>
+                <i class="fas fa-project-diagram kpi-card-icon"></i>
+            </div>
+            <div class="kpi-card orange">
+                <div class="kpi-card-info">
+                    <span class="kpi-card-title">Employees</span>
+                    <span class="kpi-card-value">${stats.users || 0}</span>
+                </div>
+                <i class="fas fa-users kpi-card-icon"></i>
+            </div>
+            <div class="kpi-card green">
+                <div class="kpi-card-info">
+                    <span class="kpi-card-title">Revenue</span>
+                    <span class="kpi-card-value">${formattedRevenue}</span>
+                </div>
+                <i class="fas fa-rupee-sign kpi-card-icon"></i>
+            </div>
+            <div class="kpi-card purple">
+                <div class="kpi-card-info">
+                    <span class="kpi-card-title">Tasks</span>
+                    <span class="kpi-card-value">${stats.tasks || 0}</span>
+                </div>
+                <i class="fas fa-tasks kpi-card-icon"></i>
+            </div>
+        `;
+    } catch (e) {
+        console.error('Error loading KPI metrics:', e);
+        container.innerHTML = '';
+    }
+}
+
+window.loadKpiMetrics = loadKpiMetrics;
+

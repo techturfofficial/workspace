@@ -40,7 +40,8 @@ async function loadSubmissions() {
       return;
     }
 
-    const currentRole = auth.getUser().role;
+    const currentUser = (window.auth && auth.getUser) ? auth.getUser() : { id: 0, role: 'member' };
+    const currentRole = currentUser.role;
     const isTeamLeader = currentRole === 'team_leader';
     const isAdmin = currentRole === 'admin';
 
@@ -69,6 +70,9 @@ async function loadSubmissions() {
           workflowState === 'rework' ? 'warning' :
             workflowState === 'rejected' ? 'danger' : 'pending';
 
+      const isOwner = s.submitted_by === currentUser.id;
+      const canDelete = isAdmin || isOwner;
+
       let actionsHtml = '';
       if (isTeamLeader && s.leader_status === 'pending') {
         actionsHtml = `
@@ -76,6 +80,7 @@ async function loadSubmissions() {
             <button class="btn-primary" style="background:var(--accent-green); flex:1;" onclick="event.stopPropagation(); reviewSubmission(${s.id}, 'approved')">APPROVE</button>
             <button class="btn-secondary" style="background:var(--accent-orange); flex:1;" onclick="event.stopPropagation(); reviewSubmission(${s.id}, 'rework')">REWORK</button>
             <button class="btn-danger" style="flex:1;" onclick="event.stopPropagation(); reviewSubmission(${s.id}, 'rejected')">REJECT</button>
+            ${canDelete ? `<button class="btn-danger" style="flex:0.35;" onclick="event.stopPropagation(); deleteSubmission(${s.id})" title="Delete Submission"><i class="fas fa-trash"></i></button>` : ''}
           </div>
         `;
       } else if (isAdmin && s.leader_status === 'approved' && s.admin_status !== 'approved') {
@@ -84,76 +89,65 @@ async function loadSubmissions() {
             <button class="btn-primary" style="background:var(--accent-green); flex:1;" onclick="event.stopPropagation(); adminReviewSubmission(${s.id}, 'approved')">FINAL APPROVE</button>
             <button class="btn-secondary" style="background:var(--accent-orange); flex:1;" onclick="event.stopPropagation(); adminReviewSubmission(${s.id}, 'rework')">SEND BACK</button>
             <button class="btn-danger" style="flex:1;" onclick="event.stopPropagation(); adminReviewSubmission(${s.id}, 'rejected')">REJECT</button>
+            ${canDelete ? `<button class="btn-danger" style="flex:0.35;" onclick="event.stopPropagation(); deleteSubmission(${s.id})" title="Delete Submission"><i class="fas fa-trash"></i></button>` : ''}
           </div>
         `;
-      } else if (isAdmin || isTeamLeader) {
-        if (workflowState === 'awaiting_admin' && isAdmin) {
-          actionsHtml = `
-            <div class="submission-actions" style="opacity:0.8;">
-              <button class="btn-secondary" style="flex:1;" disabled>Awaiting final admin decision</button>
-            </div>
-          `;
-        } else if (workflowState === 'pending' && isTeamLeader) {
-          actionsHtml = `
-            <div class="submission-actions">
-              <button class="btn-primary" style="background:var(--accent-green); flex:1;" onclick="event.stopPropagation(); reviewSubmission(${s.id}, 'approved')">APPROVE</button>
-              <button class="btn-secondary" style="background:var(--accent-orange); flex:1;" onclick="event.stopPropagation(); reviewSubmission(${s.id}, 'rework')">REWORK</button>
-              <button class="btn-danger" style="flex:1;" onclick="event.stopPropagation(); reviewSubmission(${s.id}, 'rejected')">REJECT</button>
-            </div>
-          `;
-        } else {
-          actionsHtml = `
-            <div class="submission-actions" style="opacity:0.8;">
-              <button class="btn-secondary" style="flex:1;" disabled>${workflowState === 'approved' ? 'Approved' : 'In review'}</button>
-              ${isAdmin ? `<button class="btn-danger" style="flex:0.3;" onclick="event.stopPropagation(); deleteSubmission(${s.id})"><i class="fas fa-trash"></i></button>` : ''}
-            </div>
-          `;
-        }
+      } else {
+        actionsHtml = `
+          <div class="submission-actions" style="opacity:0.95;">
+            <button class="btn-secondary" style="flex:1;" disabled>${workflowState === 'approved' ? 'Approved' : (workflowState === 'rejected' ? 'Rejected' : (workflowState === 'rework' ? 'Needs Rework' : 'In Review'))}</button>
+            ${canDelete ? `<button class="btn-danger" style="flex:0.35;" onclick="event.stopPropagation(); deleteSubmission(${s.id})" title="Delete Submission"><i class="fas fa-trash"></i></button>` : ''}
+          </div>
+        `;
       }
+
+      const displayTitle = s.project_name || s.task_title || 'Work Submission';
+      const isWeeklyReport = (s.project_name && s.project_name.toLowerCase().includes('weekly')) || (s.content_text && s.content_text.includes('WEEKLY PROGRESS REPORT'));
+
+      let attachedFiles = [];
+      try {
+        attachedFiles = typeof s.file_path === 'string' ? JSON.parse(s.file_path) : (s.file_path || []);
+      } catch {
+        if (s.file_path) attachedFiles = [s.file_path];
+      }
+      const pdfPath = attachedFiles.find(f => typeof f === 'string' && f.toLowerCase().endsWith('.pdf'));
 
       return `
         <div class="glass-card submission-card anim-fade-up sub-card-clickable" onclick="viewSubmissionDetails(${s.id})">
           <div class="submission-header">
-            <div>
-              <div class="submission-title">${s.task_title}</div>
-              <div class="submission-project">${s.project_title || 'General'} • Version ${s.version}</div>
+            <div style="flex:1; min-width:0;">
+              <div class="submission-title" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:85%;">${displayTitle}</span>
+                ${isWeeklyReport ? '<span class="badge" style="background:rgba(255,107,0,0.1); color:#ff6b00; border:1px solid rgba(255,107,0,0.25); font-size:0.6rem; font-weight:800; padding:2px 6px;"><i class="fas fa-file-invoice" style="margin-right:3px;"></i>TT 2.0</span>' : ''}
+              </div>
+              <div class="submission-project">${s.project_title || s.project_name || 'General Operations'} • v${s.version}</div>
             </div>
-            <div class="badge badge-${statusClass}">${getBadgeLabel(s)}</div>
+            <div class="badge badge-${statusClass}" style="font-size:0.65rem; padding:3px 8px; flex-shrink:0;">${getBadgeLabel(s)}</div>
           </div>
 
           <div class="submitter-info">
-            <img src="${getInitialsAvatar(s.submitter_name || '?', 32)}" style="width:32px; height:32px; border-radius:50%; border:2px solid var(--border);">
-            <div>
-              <div style="font-weight:700; font-size:0.85rem;">${s.submitter_name || 'Unknown'}</div>
+            <img src="${getInitialsAvatar(s.submitter_name || '?', 28, s.submitter_role)}" style="width:28px; height:28px; border-radius:50%; border:1.5px solid var(--border);">
+            <div style="flex:1; min-width:0;">
+              <div style="font-weight:700; font-size:0.8rem; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.submitter_name || 'Unknown'}</div>
               <div style="font-size:0.65rem; color:var(--text-muted);">${formatRole(s.submitter_role || 'member')} • ${timeAgo(s.submitted_at)}</div>
             </div>
           </div>
 
-          <div id="ring-${s.id}" class="score-ring-placeholder"></div>
-
-          <div class="feedback-box">
-            <div class="feedback-item">
-              <span class="feedback-label" style="color:var(--accent-green);">✅ NEXUS: WHAT WORKED</span>
-              <div style="font-size:0.8rem;">${feedback.what_worked || 'Processing evaluation...'}</div>
-            </div>
-            <div class="feedback-item">
-              <span class="feedback-label" style="color:var(--accent-orange);">⚠️ NEXUS: IMPROVEMENTS</span>
-              <div style="font-size:0.8rem;">${feedback.improvements || 'No critical issues found.'}</div>
-            </div>
-          </div>
-
           ${s.content_text ? `
-            <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:8px; font-size:0.8rem; border:2px solid var(--border);">
-              <div style="font-size:0.6rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px;">Submitted Content:</div>
-              <div style="white-space:pre-wrap;">${s.content_text}</div>
+            <div class="sub-summary-box">
+              ${escapeHtml(s.content_text.substring(0, 160))}
             </div>
           ` : ''}
 
-          ${s.file_path || s.external_link ? `
-            <button onclick="event.stopPropagation(); viewWorkAssets(${s.id})" class="btn-secondary" style="font-size:0.75rem; display:flex; align-items:center; justify-content:center; gap:8px;">
-              <i class="fas fa-cubes"></i> Review Attached Assets
+          ${pdfPath ? `
+            <button type="button" onclick="event.stopPropagation(); window.open('${pdfPath}', '_blank')" class="sub-btn-pdf">
+              <i class="fas fa-file-pdf"></i><span>View PDF Report</span>
             </button>
-          ` : ''}
+          ` : (s.file_path || s.external_link ? `
+            <button type="button" onclick="event.stopPropagation(); viewWorkAssets(${s.id})" class="btn-secondary" style="font-size:0.72rem; padding:6px 10px; height:32px; display:flex; align-items:center; justify-content:center; gap:6px;">
+              <i class="fas fa-cubes"></i><span>Review Assets</span>
+            </button>
+          ` : '')}
 
           ${actionsHtml}
         </div>
@@ -377,6 +371,101 @@ async function viewSubmissionDetails(id) {
   if (!s) return;
 
   const container = document.getElementById('submission-detail-body');
+  const isWeeklyReport = (s.project_name && s.project_name.toLowerCase().includes('weekly')) || (s.content_text && s.content_text.includes('WEEKLY PROGRESS REPORT'));
+
+  let paths = [];
+  if (s.file_path) {
+    if (typeof s.file_path === 'string' && s.file_path.startsWith('[')) {
+      try { paths = JSON.parse(s.file_path); } catch (e) { paths = [s.file_path]; }
+    } else {
+      paths = Array.isArray(s.file_path) ? s.file_path : [s.file_path];
+    }
+  }
+  const pdfPath = paths.find(f => typeof f === 'string' && f.toLowerCase().endsWith('.pdf')) || paths[0];
+  const currentRole = (window.auth && auth.getUser) ? auth.getUser().role : 'member';
+  const isAdmin = currentRole === 'admin';
+  if (isWeeklyReport) {
+    const isOwner = s.submitted_by === (window.auth && auth.getUser ? auth.getUser().id : 0);
+    container.innerHTML = `
+      <div class="drawer-meta-grid">
+        <div class="drawer-meta-tile">
+          <div class="drawer-meta-title"><i class="fas fa-user" style="color:var(--accent-primary); margin-right:4px;"></i>Submitted By</div>
+          <div class="drawer-meta-value">${escapeHtml(s.submitter_name)}</div>
+          <div style="font-size:0.68rem; color:var(--text-muted);">${formatRole(s.submitter_role || 'member')}</div>
+        </div>
+        <div class="drawer-meta-tile">
+          <div class="drawer-meta-title"><i class="fas fa-file-alt" style="color:#ff6b00; margin-right:4px;"></i>Report Title</div>
+          <div class="drawer-meta-value" title="${escapeHtml(s.project_name || 'Weekly Progress Report')}">${escapeHtml(s.project_name || 'Weekly Progress Report')}</div>
+          <div style="font-size:0.68rem; color:var(--text-muted);">Version ${s.version}</div>
+        </div>
+        <div class="drawer-meta-tile">
+          <div class="drawer-meta-title"><i class="fas fa-shield-alt" style="color:#22c55e; margin-right:4px;"></i>Admin Status</div>
+          <div class="drawer-meta-value">
+            <span class="badge ${s.admin_status === 'approved' ? 'badge-approved' : (s.admin_status === 'rejected' ? 'badge-rejected' : 'badge-pending')}" style="font-size:0.7rem; padding:2px 8px;">
+              ${(s.admin_status || 'pending').toUpperCase()}
+            </span>
+          </div>
+        </div>
+        <div class="drawer-meta-tile">
+          <div class="drawer-meta-title"><i class="fas fa-clock" style="color:#6366f1; margin-right:4px;"></i>Submitted Time</div>
+          <div class="drawer-meta-value">${timeAgo(s.submitted_at)}</div>
+          <div style="font-size:0.68rem; color:var(--text-muted);">${(s.submitted_at || '').substring(0, 10)}</div>
+        </div>
+      </div>
+
+      ${pdfPath ? `
+        <div class="drawer-pdf-container">
+          <div class="drawer-pdf-toolbar">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div style="width:30px; height:30px; border-radius:8px; background:rgba(255,107,0,0.12); color:#ff6b00; display:flex; align-items:center; justify-content:center; font-size:1rem;">
+                <i class="fas fa-file-pdf"></i>
+              </div>
+              <div>
+                <div style="font-weight:800; font-size:0.88rem; color:#102a96;">Weekly Progress Report (Official PDF)</div>
+                <div style="font-size:0.68rem; color:var(--text-muted);">Rendered in High-Fidelity A4 Document Mode</div>
+              </div>
+            </div>
+            <a href="${pdfPath}" target="_blank" class="btn-primary" style="padding:6px 14px; font-size:0.72rem; text-decoration:none; display:inline-flex; align-items:center; gap:6px; border-radius:8px; font-weight:700;">
+              <i class="fas fa-external-link-alt"></i><span>Open Fullscreen</span>
+            </a>
+          </div>
+          <iframe src="${pdfPath}" class="drawer-pdf-iframe"></iframe>
+        </div>
+      ` : ''}
+
+      <div style="margin-top:14px;">
+        <div style="font-size:0.75rem; font-weight:800; color:#102a96; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">
+          <i class="fas fa-align-left" style="color:var(--accent-primary); margin-right:4px;"></i>Report Summary
+        </div>
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; font-size:0.78rem; color:#334155; line-height:1.45; white-space:pre-wrap; max-height:140px; overflow-y:auto;">${escapeHtml(s.content_text || 'No text summary provided.')}</div>
+      </div>
+
+      <div class="drawer-sticky-footer">
+        ${isAdmin && s.admin_status !== 'approved' ? `
+          <div style="display:flex; gap:6px; flex:1;">
+            <button class="btn-primary" style="background:var(--accent-green); flex:1; height:36px; font-weight:800; font-size:0.72rem; border-radius:8px;" onclick="adminReviewSubmission(${s.id}, 'approved'); closeModal('submission-detail-modal');">
+              <i class="fas fa-check" style="margin-right:4px;"></i>FINAL APPROVE
+            </button>
+            <button class="btn-secondary" style="background:var(--accent-orange); flex:1; height:36px; font-weight:800; font-size:0.72rem; border-radius:8px;" onclick="adminReviewSubmission(${s.id}, 'rework'); closeModal('submission-detail-modal');">
+              <i class="fas fa-redo" style="margin-right:4px;"></i>SEND BACK
+            </button>
+            <button class="btn-danger" style="flex:1; height:36px; font-weight:800; font-size:0.72rem; border-radius:8px;" onclick="adminReviewSubmission(${s.id}, 'rejected'); closeModal('submission-detail-modal');">
+              <i class="fas fa-times" style="margin-right:4px;"></i>REJECT
+            </button>
+          </div>
+        ` : '<div></div>'}
+        ${(isAdmin || isOwner) ? `
+          <button type="button" class="btn-danger" style="padding:8px 14px; font-weight:800; font-size:0.72rem; height:36px; display:inline-flex; align-items:center; gap:6px; border-radius:8px;" onclick="deleteSubmission(${s.id}); closeModal('submission-detail-modal');" title="Delete Report">
+            <i class="fas fa-trash-alt"></i><span>DELETE REPORT</span>
+          </button>
+        ` : ''}
+      </div>
+    `;
+
+    openModal('submission-detail-modal');
+    return;
+  }
+
   const feedback = s.nexus_feedback || {};
 
   container.innerHTML = `
@@ -387,11 +476,11 @@ async function viewSubmissionDetails(id) {
       </div>
       <div class="detail-meta-box">
         <div class="detail-meta-title">Task / Project</div>
-        <div class="detail-meta-value">${s.task_title}</div>
+        <div class="detail-meta-value">${s.task_title || s.project_name || 'General Task'}</div>
       </div>
       <div class="detail-meta-box">
         <div class="detail-meta-title">Leader Status</div>
-        <div class="detail-meta-value">${s.leader_status.toUpperCase()}</div>
+        <div class="detail-meta-value">${(s.leader_status || 'pending').toUpperCase()}</div>
       </div>
       <div class="detail-meta-box">
         <div class="detail-meta-title">Admin Status</div>

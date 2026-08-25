@@ -58,6 +58,29 @@ const auth = {
   initNavbar() {
     const user = this.getUser();
     if (!user) return;
+    const r = String(user.role || '').toLowerCase().trim();
+    let themeClass = 'role-theme-blue';
+    if (['writer', 'media_manager', 'rnd', 'designer'].includes(r)) {
+      themeClass = 'role-theme-orange';
+    } else if (['admin', 'team_leader'].includes(r)) {
+      themeClass = 'role-theme-admin';
+    }
+
+    const header = document.querySelector('header.navbar') || document.querySelector('header');
+    if (header) {
+      header.classList.remove('role-theme-blue', 'role-theme-orange', 'role-theme-admin');
+      header.classList.add(themeClass);
+    }
+
+    const sidebar = document.querySelector('.sidebar') || document.querySelector('aside');
+    if (sidebar) {
+      sidebar.classList.remove('role-theme-blue', 'role-theme-orange', 'role-theme-admin');
+      sidebar.classList.add(themeClass);
+    }
+
+    document.body.classList.remove('role-theme-blue', 'role-theme-orange', 'role-theme-admin');
+    document.body.classList.add(themeClass);
+
     const avatar = document.getElementById('nav-avatar');
     const badge = document.getElementById('nav-avatar-badge');
     const name = document.getElementById('nav-user-name');
@@ -68,6 +91,21 @@ const auth = {
 
     const initials = (user.name || 'Admin').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'A';
 
+    const setBadgeStyle = () => {
+      if (!badge) return;
+      badge.textContent = initials;
+      badge.style.display = 'flex';
+      const rStyle = typeof getRoleAvatarStyle === 'function' ? getRoleAvatarStyle(user.role) : null;
+      if (rStyle) {
+        const bg = rStyle.cssBackground || rStyle.color || '#102a96';
+        badge.style.setProperty('background', bg, 'important');
+        if (rStyle.border) {
+          badge.style.setProperty('border-color', rStyle.border, 'important');
+        }
+        badge.style.setProperty('color', '#ffffff', 'important');
+      }
+    };
+
     if (avatar) {
       if (user.avatar && user.avatar.trim() !== '' && user.avatar !== 'null') {
         avatar.src = user.avatar;
@@ -75,14 +113,10 @@ const auth = {
         if (badge) badge.style.display = 'none';
       } else {
         avatar.style.display = 'none';
-        if (badge) {
-          badge.textContent = initials;
-          badge.style.display = 'flex';
-        }
+        setBadgeStyle();
       }
     } else if (badge) {
-      badge.textContent = initials;
-      badge.style.display = 'flex';
+      setBadgeStyle();
     }
 
     const toggleVisibility = (selector, ...roles) => {
@@ -121,3 +155,29 @@ const auth = {
 };
 
 window.auth = auth;
+
+// Immediate Theme Initialization to prevent flicker
+(function applyImmediateRoleTheme() {
+  try {
+    const raw = localStorage.getItem('tt_user');
+    if (!raw) return;
+    const u = JSON.parse(raw);
+    if (!u || !u.role) return;
+    const r = String(u.role).toLowerCase().trim();
+    let themeClass = 'role-theme-blue';
+    if (['writer', 'media_manager', 'rnd', 'designer'].includes(r)) {
+      themeClass = 'role-theme-orange';
+    } else if (['admin', 'team_leader'].includes(r)) {
+      themeClass = 'role-theme-admin';
+    }
+    if (document.body) {
+      document.body.classList.remove('role-theme-blue', 'role-theme-orange', 'role-theme-admin');
+      document.body.classList.add(themeClass);
+    } else {
+      document.addEventListener('DOMContentLoaded', () => {
+        document.body.classList.remove('role-theme-blue', 'role-theme-orange', 'role-theme-admin');
+        document.body.classList.add(themeClass);
+      });
+    }
+  } catch (e) {}
+})();

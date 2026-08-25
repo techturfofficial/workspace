@@ -16,15 +16,19 @@ function initSidebar() {
       localStorage.setItem('tt_sidebar_collapsed', sidebar.classList.contains('collapsed'));
     };
 
-    // Modernize brand header with actual logo image
-    const logo = sidebarHeader.querySelector('.sidebar-logo');
-    if (logo && !sidebarHeader.querySelector('.sidebar-logo-icon')) {
-      const iconWrap = document.createElement('div');
-      iconWrap.className = 'sidebar-logo-icon';
-      iconWrap.innerHTML = '<img src="assets/techturf-logo.png" alt="Tech Turf" class="sidebar-logo-img" />';
-      sidebarHeader.insertBefore(iconWrap, logo);
-      logo.innerHTML = '<span class="brand-tech">TECH</span> <span class="brand-turf">TURF</span> <span class="brand-tag">CRM</span>';
-    }
+    sidebarHeader.innerHTML = `
+      <div class="sidebar-brand-wrapper">
+        <div class="sidebar-logo-icon">
+          <img src="assets/techturf-logo.png" alt="Tech Turf" class="sidebar-logo-img" />
+        </div>
+        <div class="sidebar-logo">
+          <span class="brand-tech">TECH</span> <span class="brand-turf">TURF</span> <span class="brand-tag">CRM</span>
+        </div>
+      </div>
+      <div class="sidebar-logo-short">
+        <img src="assets/techturf-logo.png" alt="TT" class="sidebar-logo-img-short" />
+      </div>
+    `;
   }
 
   if (mobileToggle && sidebar) {
@@ -84,9 +88,6 @@ function initSidebar() {
             <div class="menu-item admin-only" data-nav="users.html" onclick="window.location.href='users.html'">
               <i class="fas fa-users-cog"></i><span class="menu-text">User Management</span>
             </div>
-            <div class="menu-item admin-only" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
-              <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
-            </div>
             <div class="menu-item admin-only" data-nav="database_viewer.html" id="dbadmin-link" onclick="window.location.href='database_viewer.html'">
               <i class="fas fa-database"></i><span class="menu-text">Database Viewer</span>
             </div>
@@ -109,6 +110,9 @@ function initSidebar() {
           </div>
           <div class="menu-item" data-nav="workspace.html" onclick="window.location.href='workspace.html'">
             <i class="fas fa-paint-brush"></i><span class="menu-text">Creative Workspace</span>
+          </div>
+          <div class="menu-item" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
+            <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
           </div>
         </div>
 

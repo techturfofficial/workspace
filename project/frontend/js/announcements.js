@@ -60,24 +60,24 @@ async function loadAnnouncements() {
       `;
       return;
     }
-    container.innerHTML = filtered.map(a => `
+        container.innerHTML = filtered.map(a => `
       <div class="glass-card announcement-card anim-fade-up${a.pinned ? ' pinned' : ''}">
         ${a.pinned ? '<i class="fas fa-thumbtack pin-icon"></i>' : ''}
         <div class="announcement-header">
-          <img src="${window.safeUrl(getInitialsAvatar(a.author_name, 48))}" class="announcement-author-avatar">
+          <img src="${getInitialsAvatar(a.author_name, 48, a.author_role || 'admin')}" class="announcement-author-avatar">
           <div>
-            <div style="font-weight:700; font-size:1.1rem;">${window.escapeHtml(a.author_name || 'Admin')}</div>
-            <div style="font-size:0.75rem; color:var(--text-muted);">${window.escapeHtml(timeAgo(a.created_at))}</div>
+            <div style="font-weight:700; font-size:1.1rem;">${a.author_name || 'Admin'}</div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">${timeAgo(a.created_at)}</div>
           </div>
         </div>
-        <div class="announcement-title">${window.escapeHtml(a.title || '')}</div>
-        <div class="announcement-body">${window.escapeHtml(a.body || '')}</div>
+        <div class="announcement-title">${a.title}</div>
+        <div class="announcement-body">${a.body}</div>
         <div class="announcement-footer">
           <span>Tech Turf Internal Feed</span>
-          ${auth.getUser().role === 'admin' ? `
+          ${['admin', 'media_manager', 'production'].includes(auth.getUser().role) ? `
             <div style="display:flex; gap:16px;">
-              <span style="cursor:pointer; color:var(--accent-primary);" onclick="togglePin(${Number(a.id)},${a.pinned ? 0 : 1})">${a.pinned ? 'Unpin' : 'Pin'}</span>
-              <span style="cursor:pointer; color:var(--accent-secondary);" onclick="deleteAnnouncement(${Number(a.id)})">Delete</span>
+              <span style="cursor:pointer; color:var(--accent-primary);" onclick="togglePin(${a.id},${a.pinned ? 0 : 1})">${a.pinned ? 'Unpin' : 'Pin'}</span>
+              <span style="cursor:pointer; color:var(--accent-secondary);" onclick="deleteAnnouncement(${a.id})">Delete</span>
             </div>
           ` : ''}
         </div>

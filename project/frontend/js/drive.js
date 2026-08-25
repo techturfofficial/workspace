@@ -131,7 +131,7 @@ const drive = {
 
         container.innerHTML = filteredUsers.map(u => {
             const isChecked = this.selectedUserIds.has(u.id);
-            const avatarSrc = u.avatar || (typeof getInitialsAvatar === 'function' ? getInitialsAvatar(u.name, 28) : '');
+            const avatarSrc = u.avatar || (typeof getInitialsAvatar === 'function' ? getInitialsAvatar(u.name, 28, u.role) : '');
             return `
                 <label class="team-member-item ${isChecked ? 'checked' : ''}" id="share-tm-${u.id}" onclick="drive.toggleUserSelection(${u.id}, event)">
                     <div class="team-member-label-left">
@@ -293,7 +293,7 @@ const drive = {
                 return;
             }
             list.innerHTML = perms.map(p => {
-                const avatar = typeof getInitialsAvatar === 'function' ? getInitialsAvatar(p.user_name, 28) : '';
+                const avatar = typeof getInitialsAvatar === 'function' ? getInitialsAvatar(p.user_name, 28, p.user_role) : '';
                 return `
                 <div class="perm-user-item">
                     <div style="display:flex; align-items:center; gap:10px; min-width:0;">
@@ -327,6 +327,14 @@ const drive = {
         }
     },
 
+    openPreviewTab(item) {
+        const url = `drive_preview.html?id=${encodeURIComponent(item.id)}`;
+        const popup = window.open(url, '_blank', 'noopener,noreferrer');
+        if (!popup) {
+            showToast('Popup blocked. Please allow popups for preview tabs.', 'error');
+        }
+    },
+
     async deleteItem(id) {
         if (!confirm('Permanently delete this item? This cannot be undone.')) return;
         try {
@@ -342,154 +350,139 @@ const drive = {
         const file = event.target.files[0];
         if (!file) return;
 
-        // Show progress bar
-        let progressBar = document.getElementById('drive-upload-progress');
-        if (!progressBar) {
-            progressBar = document.createElement('div');
-            progressBar.id = 'drive-upload-progress';
-            progressBar.style = 'width: 100%; background: #222; border-radius: 8px; margin: 10px 0; height: 24px; position: relative; overflow: hidden;';
-            progressBar.innerHTML = '<div id="drive-upload-bar" style="height:100%;width:0;background:#4f46e5;transition:width 0.2s;"></div>' +
-                '<span id="drive-upload-label" style="position:absolute;left:50%;top:0;transform:translateX(-50%);color:#fff;font-size:0.9rem;line-height:24px;">0%</span>' +
-                '<button id="drive-upload-cancel" style="position:absolute;right:8px;top:2px;background:#e53e3e;color:#fff;border:none;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:0.8rem;">Cancel</button>' +
-                '<button id="drive-upload-resume" style="display:none;position:absolute;right:80px;top:2px;background:#38a169;color:#fff;border:none;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:0.8rem;">Resume Upload</button>';
-            document.getElementById('drive-items-grid').parentElement.insertBefore(progressBar, document.getElementById('drive-items-grid'));
-        }
-        document.getElementById('drive-upload-bar').style.width = '0%';
-        document.getElementById('drive-upload-label').textContent = '0%';
-        document.getElementById('drive-upload-resume').style.display = 'none';
-        progressBar.style.display = '';
+        const progressContainer = document.getElementById('upload-progress-container');
+        const progressBar = document.getElementById('upload-progress-bar');
+        const progressText = document.getElementById('upload-progress-text');
+        const cancelBtn = document.getElementById('upload-cancel-btn');
+        progressBar.style.width = '0%';
+        progressText.textContent = '0%';
+        progressContainer.style.display = 'block';
 
-        // Chunked upload for files > 5MB
-        const CHUNK_SIZE = 1024 * 1024 * 2; // 2MB
-        if (file.size > 5 * 1024 * 1024) {
+        let cancelRequested = false;
+        let currentXhr = null;
+        cancelBtn.disabled = false;
+        cancelBtn.style.opacity = 1;
+        cancelBtn.onclick = () => {
+            cancelRequested = true;
+            if (currentXhr) currentXhr.abort();
+            progressContainer.style.display = 'none';
+            showToast('Upload canceled', 'error');
+        };
+
+        // Use chunked upload for files > 10MB
+        const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
+        if (file.size > CHUNK_SIZE) {
             const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-            // Use a deterministic uploadId for resume support (hash of name+size or similar)
-            const uploadId = (
-                (file.name + '_' + file.size + '_' + file.lastModified)
-            ).replace(/[^a-zA-Z0-9_]/g, '');
-            let canceled = false;
-            document.getElementById('drive-upload-cancel').onclick = () => {
-                canceled = true;
-                showToast('Upload canceled', 'error');
-                document.getElementById('drive-upload-resume').style.display = '';
-                document.getElementById('drive-upload-cancel').style.display = 'none';
-            };
-            // Resume button logic
-            document.getElementById('drive-upload-resume').onclick = () => {
-                // Show file picker to select the same file
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.style.display = 'none';
-                document.body.appendChild(input);
-                input.onchange = (e) => {
-                    const selected = e.target.files[0];
-                    if (selected && selected.name === file.name && selected.size === file.size) {
-                        document.getElementById('drive-upload-cancel').style.display = '';
-                        document.getElementById('drive-upload-resume').style.display = 'none';
-                        this.handleFileUpload({ target: { files: [selected] } });
-                    } else {
-                        showToast('Please select the same file to resume.', 'error');
-                    }
-                    document.body.removeChild(input);
-                };
-                input.click();
-            };
-
-            // Resume support: check which chunks are already uploaded
-            let uploadedChunks = [];
-            try {
-                const resp = await fetch(`/api/drive/upload-chunk/status?uploadId=${encodeURIComponent(uploadId)}&totalChunks=${totalChunks}`, {
-                    headers: { 'Authorization': `Bearer ${auth.getToken()}` }
+            const uploadId = Math.random().toString(36).substring(2) + Date.now();
+            let uploaded = 0;
+            for (let chunk = 0; chunk < totalChunks; chunk++) {
+                if (cancelRequested) break;
+                const start = chunk * CHUNK_SIZE;
+                const end = Math.min(file.size, start + CHUNK_SIZE);
+                const blob = file.slice(start, end);
+                await new Promise((resolveChunk, rejectChunk) => {
+                    const xhr = new XMLHttpRequest();
+                    currentXhr = xhr;
+                    xhr.open('POST', api.BASE + '/drive/upload-chunk', true);
+                    const token = auth.getToken();
+                    if (token) xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+                    xhr.setRequestHeader('x-chunk-number', chunk);
+                    xhr.setRequestHeader('x-total-chunks', totalChunks);
+                    xhr.setRequestHeader('x-file-name', encodeURIComponent(file.name));
+                    xhr.setRequestHeader('x-upload-id', uploadId);
+                    xhr.upload.onprogress = function (e) {
+                        if (e.lengthComputable) {
+                            const percent = Math.round(((uploaded + e.loaded) / file.size) * 100);
+                            progressBar.style.width = percent + '%';
+                            progressText.textContent = percent + '%';
+                        }
+                    };
+                    xhr.onload = () => {
+                        uploaded += blob.size;
+                        const percent = Math.round((uploaded / file.size) * 100);
+                        progressBar.style.width = percent + '%';
+                        progressText.textContent = percent + '%';
+                        resolveChunk();
+                    };
+                    xhr.onerror = () => {
+                        if (!cancelRequested) {
+                            showToast('Chunk upload failed', 'error');
+                        }
+                        progressContainer.style.display = 'none';
+                        rejectChunk();
+                    };
+                    xhr.onabort = () => {
+                        // No toast here, handled by cancelBtn
+                        resolveChunk();
+                    };
+                    xhr.send(blob);
                 });
-                if (resp.ok) {
-                    const data = await resp.json();
-                    uploadedChunks = data.uploaded || [];
-                }
-            } catch {}
-
-            // Parallel upload settings
-            const MAX_PARALLEL = 4;
-            let inProgress = 0;
-            let nextChunk = 0;
-            let completedChunks = uploadedChunks.length;
-            let totalLoaded = completedChunks * CHUNK_SIZE;
-            let chunkStatus = Array(totalChunks).fill(false);
-            uploadedChunks.forEach(i => chunkStatus[i] = true);
-
-            function updateProgressBar() {
-                const pct = Math.min(100, Math.round((totalLoaded / file.size) * 100));
-                document.getElementById('drive-upload-bar').style.width = pct + '%';
-                document.getElementById('drive-upload-label').textContent = pct + '%';
             }
-
-            await new Promise((resolve, reject) => {
-                function uploadNext() {
-                    if (canceled) return reject('canceled');
-                    // All chunks done
-                    if (completedChunks === totalChunks) return resolve();
-                    // Start new uploads if slots available
-                    while (inProgress < MAX_PARALLEL && nextChunk < totalChunks) {
-                        if (chunkStatus[nextChunk]) { nextChunk++; continue; }
-                        const i = nextChunk++;
-                        inProgress++;
-                        const chunk = file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-                        const xhr = new XMLHttpRequest();
-                        xhr.open('POST', '/api/drive/upload-chunk', true);
-                        xhr.setRequestHeader('x-chunk-number', i);
-                        xhr.setRequestHeader('x-total-chunks', totalChunks);
-                        xhr.setRequestHeader('x-file-name', encodeURIComponent(file.name));
-                        xhr.setRequestHeader('x-upload-id', uploadId);
-                        xhr.setRequestHeader('Authorization', `Bearer ${auth.getToken()}`);
-                        xhr.setRequestHeader('x-parent-id', this.currentParentId || '');
-                        xhr.upload.onprogress = (e) => {
-                            if (e.lengthComputable) {
-                                // Estimate total loaded
-                                const loadedNow = (completedChunks * CHUNK_SIZE) + e.loaded;
-                                const pct = Math.min(100, Math.round((loadedNow / file.size) * 100));
-                                document.getElementById('drive-upload-bar').style.width = pct + '%';
-                                document.getElementById('drive-upload-label').textContent = pct + '%';
-                            }
-                        };
-                        xhr.onload = () => {
-                            inProgress--;
-                            if (xhr.status >= 200 && xhr.status < 300) {
-                                chunkStatus[i] = true;
-                                completedChunks++;
-                                totalLoaded += chunk.size || (CHUNK_SIZE);
-                                updateProgressBar();
-                                uploadNext();
-                            } else {
-                                reject(new Error(xhr.responseText || 'Upload failed'));
-                            }
-                        };
-                        xhr.onerror = () => { inProgress--; reject(new Error('Network error')); };
-                        xhr.send(chunk);
-                    }
-                }
-                uploadNext();
-            });
-            if (!canceled) {
-                document.getElementById('drive-upload-bar').style.width = '100%';
-                document.getElementById('drive-upload-label').textContent = '100%';
+            if (!cancelRequested) {
+                progressBar.style.width = '100%';
+                progressText.textContent = '100%';
+                setTimeout(() => { progressContainer.style.display = 'none'; }, 800);
                 showToast('Upload successful', 'success');
-                setTimeout(() => { progressBar.style.display = 'none'; }, 1000);
                 this.loadItems(this.currentParentId);
             }
-        } else {
-            // Small file: simple upload
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('parentId', this.currentParentId || '');
-            try {
-                await api.upload('/drive/upload', formData);
-                showToast('Upload successful', 'success');
-                progressBar.style.display = 'none';
-                this.loadItems(this.currentParentId);
-            } catch (e) {
-                showToast(e.message, 'error');
-                progressBar.style.display = 'none';
-            }
+            cancelBtn.disabled = true;
+            cancelBtn.style.opacity = 0.5;
+            return;
         }
+
+        // Fallback to normal upload for small files
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('parentId', this.currentParentId || '');
+        return new Promise((resolve) => {
+            const xhr = new XMLHttpRequest();
+            currentXhr = xhr;
+            xhr.open('POST', api.BASE + '/drive/upload', true);
+            const token = auth.getToken();
+            if (token) xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+            xhr.upload.onprogress = function (e) {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    progressBar.style.width = percent + '%';
+                    progressText.textContent = percent + '%';
+                }
+            };
+            xhr.onload = () => {
+                progressBar.style.width = '100%';
+                progressText.textContent = '100%';
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                }, 800);
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    showToast('Upload successful', 'success');
+                    this.loadItems(this.currentParentId);
+                    resolve();
+                } else {
+                    let msg = 'Upload failed';
+                    try { msg = JSON.parse(xhr.responseText).message || msg; } catch {}
+                    showToast(msg, 'error');
+                    resolve();
+                }
+                cancelBtn.disabled = true;
+                cancelBtn.style.opacity = 0.5;
+            };
+            xhr.onerror = () => {
+                if (!cancelRequested) {
+                    showToast('Upload failed', 'error');
+                }
+                progressContainer.style.display = 'none';
+                resolve();
+                cancelBtn.disabled = true;
+                cancelBtn.style.opacity = 0.5;
+            };
+            xhr.onabort = () => {
+                // No toast here, handled by cancelBtn
+                resolve();
+                cancelBtn.disabled = true;
+                cancelBtn.style.opacity = 0.5;
+            };
+            xhr.send(formData);
+        });
     },
 
     downloadFile(id) {

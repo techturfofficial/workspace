@@ -1,113 +1,287 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Client Connect | Tech Turf CRM</title>
-  <!-- Typography -->
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
-  <!-- Styles -->
-  <link rel="stylesheet" href="css/client-portal.css?v=logo-fix-20260622">
-  <!-- FontAwesome for UI Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body>
+  <title>Tech Turf | Client Connect Hub</title>
+  
+  <!-- Typography (Matching Employee CRM Theme) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
 
-  <div id="app-layout">
-    <!-- Sidebar Navigation -->
-    <aside id="sidebar">
-      <div class="brand-section">
-        <div class="brand-logo">
-          <img src="assets/logo.jpg" alt="Tech Turf">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/client-portal.css?v=admin-theme-2026">
+</head>
+
+<body>
+  <!-- Ambient Three.js Background Canvas -->
+  <canvas id="three-bg"></canvas>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <div class="dashboard-container">
+    
+    <!-- ========================================================
+         SIDEBAR (Admin Mission Control Theme)
+    ======================================================== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header" onclick="portalApp.switchView('home')">
+        <div class="sidebar-brand-wrapper">
+          <div class="sidebar-logo-icon">
+            <i class="fas fa-satellite"></i>
+          </div>
+          <div class="sidebar-logo-text">
+            <span class="brand-title">TECH TURF</span>
+            <span class="sidebar-brand-badge">CLIENT CONNECT</span>
+          </div>
         </div>
       </div>
 
-      <nav style="display: flex; flex-direction: column; flex-grow: 1;">
-        <ul class="nav-links">
-          <li class="nav-item" id="nav-home">
-            <a href="#home"><i class="fa-solid fa-house"></i> Home</a>
-          </li>
-          <li class="nav-item" id="nav-workspace">
-            <a href="#workspace"><i class="fa-solid fa-briefcase"></i> Workspace</a>
-          </li>
-          <li class="nav-item" id="nav-reviews">
-            <a href="#reviews"><i class="fa-solid fa-star"></i> Review Center</a>
-          </li>
-          <li class="nav-item" id="nav-communication">
-            <a href="#communication"><i class="fa-solid fa-comments"></i> Communication Hub</a>
-          </li>
-          <li class="nav-item" id="nav-payments">
-            <a href="#payments"><i class="fa-solid fa-credit-card"></i> Payments</a>
-          </li>
-          <li class="nav-item" id="nav-support">
-            <a href="#support"><i class="fa-solid fa-circle-question"></i> Support</a>
-          </li>
-        </ul>
+      <nav class="sidebar-menu" id="main-sidebar-nav">
+        <div class="sidebar-section-title">COMMAND CENTER</div>
+
+        <a href="#home" class="menu-item" id="nav-home">
+          <i class="fas fa-th-large"></i>
+          <span class="menu-text">Overview Dashboard</span>
+        </a>
+
+        <a href="#workspace" class="menu-item" id="nav-workspace">
+          <i class="fas fa-project-diagram"></i>
+          <span class="menu-text">Project Workspace</span>
+        </a>
+
+        <a href="#reviews" class="menu-item" id="nav-reviews">
+          <i class="fas fa-star-half-alt"></i>
+          <span class="menu-text">Review & Approvals</span>
+        </a>
+
+        <a href="#communication" class="menu-item" id="nav-communication">
+          <i class="fas fa-comments"></i>
+          <span class="menu-text">Communication Hub</span>
+        </a>
+
+        <hr class="sidebar-divider">
+        <div class="sidebar-section-title">OPERATIONS & BILLING</div>
+
+        <a href="#payments" class="menu-item" id="nav-payments">
+          <i class="fas fa-receipt"></i>
+          <span class="menu-text">Invoices & Statements</span>
+        </a>
+
+        <a href="#support" class="menu-item" id="nav-support">
+          <i class="fas fa-headset"></i>
+          <span class="menu-text">Support & Helpdesk</span>
+        </a>
       </nav>
 
-      <div class="client-profile-summary">
-        <div class="client-name-label" id="profile-client-name">Loading...</div>
-        <div class="client-company-label" id="profile-client-company">Company Ltd.</div>
-        <div style="margin-top: 15px;">
-          <a href="#change-password" style="font-size: 0.75rem; color: var(--accent-secondary); font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
-            <i class="fa-solid fa-key"></i> UPDATE PASSWORD
-          </a>
-        </div>
-        <div style="margin-top: 10px;">
-          <button onclick="portalApp.logout()" class="btn-secondary" style="font-size: 0.7rem; padding: 6px 12px; width: 100%; border-color: var(--accent-pink); color: var(--accent-pink);">
-            <i class="fa-solid fa-sign-out-alt"></i> LOGOUT
-          </button>
+      <!-- Client Account Profile Badge -->
+      <div class="client-sidebar-card">
+        <div class="client-sidebar-name" id="profile-client-name">Loading Partner...</div>
+        <div class="client-sidebar-company" id="profile-client-company">Company Ltd.</div>
+        <div class="client-sidebar-tag" id="profile-client-tag" onclick="portalApp.copyClientId()" title="Click to copy ID">
+          <i class="fas fa-fingerprint"></i> <span id="topbar-client-id-sidebar">TT-CLI-00000</span>
+          <i class="fas fa-copy" style="margin-left:auto; font-size:0.6rem; opacity:0.7;"></i>
         </div>
       </div>
+
+      <div class="sidebar-footer">
+        <button onclick="portalApp.logout()" class="logout-btn-custom">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout Portal</span>
+        </button>
+      </div>
+
+      <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" onclick="portalApp.toggleSidebarCollapse()" title="Expand/Collapse Sidebar">
+        <i class="fas fa-chevron-left"></i>
+      </button>
     </aside>
 
-    <!-- Main Workspace Area -->
-    <main id="main-content">
-      <header>
-        <div class="header-title" id="header-view-title">CONNECT HUB</div>
-        <div class="header-actions">
-          <span style="font-size: 0.9rem; color: var(--text-secondary);" id="topbar-client-id">TT-CLI-00000</span>
-          <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-weight: 700; color: white;" id="topbar-avatar">C</div>
+    <!-- ========================================================
+         MAIN CONTENT AREA
+    ======================================================== -->
+    <main class="main-content">
+      
+      <!-- Top Navbar -->
+      <header class="navbar">
+        <div class="nav-left">
+          <button id="mobile-toggle" class="mobile-hamburger" onclick="portalApp.toggleMobileSidebar()" title="Toggle Menu">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="nav-search">
+            <i class="fas fa-search"></i>
+            <input type="text" id="portal-global-search" placeholder="Search projects, documents, tickets..." onkeyup="portalApp.filterWorkspace(this.value)">
+            <span class="search-shortcut-badge">⌘K</span>
+          </div>
+        </div>
+
+        <div class="nav-actions">
+          <div class="nav-badge-pill">
+            <span class="pulse-dot"></span>
+            <span>SECURE LIVE MATRIX</span>
+          </div>
+
+          <!-- Notification Bell Dropdown -->
+          <div class="notification-bell" id="notification-bell" onclick="portalApp.toggleNotificationDropdown(event)">
+            <i class="fas fa-bell"></i>
+            <span class="notification-badge" id="notification-badge" style="display:none;">0</span>
+            <div class="notification-dropdown glass-card" id="notification-dropdown" onclick="event.stopPropagation()">
+              <div class="notification-header">
+                <span class="notification-title"><i class="fas fa-bell" style="color:var(--accent-primary); margin-right:6px;"></i>Activity & Alerts</span>
+                <span class="notification-mark-read" onclick="portalApp.markAllNotificationsRead()">Mark all read</span>
+              </div>
+              <div id="notification-list" class="notification-list-scroll">
+                <div class="notif-empty-state">No unread notifications</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="user-profile-nav">
+            <div class="user-nav-text">
+              <div id="nav-client-name" class="user-nav-name">Client Partner</div>
+              <div id="nav-client-company" class="user-nav-role">Verified Access</div>
+            </div>
+            <div class="avatar-badge" id="nav-avatar-badge">C</div>
+          </div>
         </div>
       </header>
 
-      <!-- View Container -->
-      <div class="view-container">
+      <!-- Page Header & Breadcrumbs -->
+      <div class="page-header-container">
+        <div>
+          <div class="breadcrumb-sub" id="page-breadcrumb">
+            <i class="fas fa-cubes"></i> CLIENT CONNECT / OVERVIEW
+          </div>
+          <h1 class="page-main-title" id="header-view-title">CONNECT HUB OVERVIEW</h1>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button class="btn-secondary" onclick="portalApp.refreshCurrentView()">
+            <i class="fas fa-sync-alt"></i> Sync Live Stream
+          </button>
+        </div>
+      </div>
+
+      <!-- Modern Aerospace KPI Grid (Command Center Theme) -->
+      <div class="kpi-grid">
+        
+        <div class="kpi-card purple">
+          <div class="kpi-card-info">
+            <span class="kpi-card-title">Active Engagements</span>
+            <span class="kpi-card-value" id="hud-active-projects">0</span>
+          </div>
+          <i class="fas fa-rocket kpi-card-icon"></i>
+        </div>
+
+        <div class="kpi-card orange">
+          <div class="kpi-card-info">
+            <span class="kpi-card-title">Deliverables & Reports</span>
+            <span class="kpi-card-value" id="hud-deliverables-count">0</span>
+          </div>
+          <i class="fas fa-file-contract kpi-card-icon"></i>
+        </div>
+
+        <div class="kpi-card green">
+          <div class="kpi-card-info">
+            <span class="kpi-card-title">Settled Invoices</span>
+            <span class="kpi-card-value" id="hud-invoices-paid">0</span>
+          </div>
+          <i class="fas fa-file-invoice-dollar kpi-card-icon"></i>
+        </div>
+
+        <div class="kpi-card blue">
+          <div class="kpi-card-info">
+            <span class="kpi-card-title">Support & Syncs</span>
+            <span class="kpi-card-value" id="hud-open-tickets">0</span>
+          </div>
+          <i class="fas fa-headset kpi-card-icon"></i>
+        </div>
+
+      </div>
+
+      <!-- ========================================================
+           VIEWS CONTAINER
+      ======================================================== -->
+      <div class="views-wrapper">
 
         <!-- 1. HOME VIEW -->
         <section id="view-home" class="portal-view active">
           <!-- Banner carousel (Dynamic Promos/Banners) -->
           <div class="banner-carousel" id="banners-list">
-            <!-- Rendered dynamically -->
+            <!-- Injected by JS -->
           </div>
 
-          <!-- Active Projects -->
-          <div class="glass-card panel-body">
-            <h3 class="card-title">
-              <span><i class="fa-solid fa-bars-progress" style="color:var(--accent-secondary);"></i> Active Projects</span>
-            </h3>
-            <div id="home-active-projects" class="project-card-list">
-              <!-- Rendered dynamically -->
+          <!-- Active Projects Panel -->
+          <div class="glass-card" style="margin-bottom: 24px;">
+            <div class="card-header-bar">
+              <h3 class="card-heading"><i class="fas fa-layer-group"></i> Active Strategic Projects</h3>
+              <a href="#workspace" class="btn-secondary" style="font-size: 0.76rem; padding: 6px 14px; border-radius: 8px;">
+                View All in Workspace <i class="fas fa-arrow-right"></i>
+              </a>
+            </div>
+            <div class="card-body-content">
+              <div id="home-active-projects" class="project-card-list">
+                <!-- Rendered dynamically -->
+              </div>
             </div>
           </div>
         </section>
 
         <!-- 2. WORKSPACE VIEW -->
         <section id="view-workspace" class="portal-view">
-          <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 30px;" id="workspace-grid-layout">
-            <!-- Projects list -->
-            <div class="glass-card panel-body">
-              <h3 class="card-title"><span><i class="fa-solid fa-folder-open" style="color: var(--accent-secondary);"></i> All Projects</span></h3>
-              <div id="workspace-projects-list" style="display:flex; flex-direction:column; gap:16px;">
-                <!-- Rendered dynamically -->
+          <div style="display: grid; grid-template-columns: 1fr 1.3fr; gap: 24px;" id="workspace-layout-grid">
+            
+            <!-- Left: Projects List -->
+            <div class="glass-card">
+              <div class="card-header-bar">
+                <h3 class="card-heading"><i class="fas fa-folder-tree"></i> Project Portfolios</h3>
+              </div>
+              <div class="card-body-content">
+                <div id="workspace-projects-list" class="project-card-list">
+                  <!-- Rendered dynamically -->
+                </div>
               </div>
             </div>
 
-            <!-- Selected Project Details -->
-            <div class="glass-card panel-body" id="workspace-project-details-panel">
-              <div class="empty-state">
-                <i class="fa-solid fa-hand-pointer"></i>
-                <div class="empty-title">Select a project to view overview</div>
+            <!-- Right: Project Detail & Team -->
+            <div class="glass-card" id="workspace-project-details-panel">
+              <div class="card-header-bar">
+                <h3 class="card-heading"><i class="fas fa-clipboard-list"></i> Engagement Dossier</h3>
+              </div>
+              <div class="card-body-content" id="workspace-detail-body">
+                <div style="text-align: center; color: var(--text-muted); padding: 40px 20px;">
+                  Select a project from the left to inspect deliverables, timelines, and assigned leaders.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Deliverables & Reports Table -->
+          <div class="glass-card" style="margin-top: 24px;">
+            <div class="card-header-bar">
+              <h3 class="card-heading"><i class="fas fa-file-signature"></i> Approved Deliverables & Milestone Reports</h3>
+            </div>
+            <div class="card-body-content" style="padding: 0;">
+              <div class="table-responsive">
+                <table class="modern-table">
+                  <thead>
+                    <tr>
+                      <th>Document / Deliverable</th>
+                      <th>Project Context</th>
+                      <th>Version</th>
+                      <th>Delivery Date</th>
+                      <th>Status</th>
+                      <th style="text-align: right;">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="workspace-reports-tbody">
+                    <!-- Injected by JS -->
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -115,41 +289,58 @@
 
         <!-- 3. REVIEW CENTER VIEW -->
         <section id="view-reviews" class="portal-view">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
-            <!-- Review submission form -->
-            <div class="glass-card panel-body">
-              <h3 class="card-title"><span><i class="fa-solid fa-star-half-stroke"></i> Share Your Feedback</span></h3>
-              <form id="review-form">
-                <div class="form-group">
-                  <label for="review-project-select">Target Project</label>
-                  <select id="review-project-select" class="form-control" required>
-                    <option value="">Select a project...</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label>Rapport Rating</label>
-                  <div class="star-rating" id="star-rating-container">
-                    <span class="star" data-rating="1"><i class="fa-solid fa-star"></i></span>
-                    <span class="star" data-rating="2"><i class="fa-solid fa-star"></i></span>
-                    <span class="star" data-rating="3"><i class="fa-solid fa-star"></i></span>
-                    <span class="star" data-rating="4"><i class="fa-solid fa-star"></i></span>
-                    <span class="star" data-rating="5"><i class="fa-solid fa-star"></i></span>
+          <div style="display: grid; grid-template-columns: 1fr 1.3fr; gap: 24px;">
+            
+            <!-- Left: Submit Review -->
+            <div class="glass-card">
+              <div class="card-header-bar">
+                <h3 class="card-heading"><i class="fas fa-star"></i> Submit Feedback & CSAT</h3>
+              </div>
+              <div class="card-body-content">
+                <form id="review-form">
+                  <div class="form-group">
+                    <label for="review-project-select">Select Project Engagement</label>
+                    <select id="review-project-select" class="form-control" required>
+                      <option value="">Choose an active engagement...</option>
+                    </select>
                   </div>
-                  <input type="hidden" id="selected-rating" required>
-                </div>
-                <div class="form-group">
-                  <label for="review-feedback">Feedback & Suggestions</label>
-                  <textarea id="review-feedback" class="form-control" placeholder="Describe your experience working with us, quality of deliverables, etc." required></textarea>
-                </div>
-                <button type="submit" class="btn-primary">SUBMIT FEEDBACK</button>
-              </form>
+
+                  <div class="form-group">
+                    <label>Overall Satisfaction Rating</label>
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 12px; padding: 12px 16px; margin-top: 4px;">
+                      <div class="star-rating-box" id="star-rating-container">
+                        <i class="fas fa-star star active" data-rating="1"></i>
+                        <i class="fas fa-star star active" data-rating="2"></i>
+                        <i class="fas fa-star star active" data-rating="3"></i>
+                        <i class="fas fa-star star active" data-rating="4"></i>
+                        <i class="fas fa-star star active" data-rating="5"></i>
+                      </div>
+                      <span id="star-sentiment-label" style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 0.82rem; color: #b45309; background: rgba(245,158,11,0.12); padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(245,158,11,0.25);">
+                        5.0 ★ Exceptional Delight
+                      </span>
+                    </div>
+                    <input type="hidden" id="selected-rating-value" value="5">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="review-text">Feedback & Delivery Evaluation</label>
+                    <textarea id="review-text" class="form-control" rows="5" placeholder="Share your insights on delivery velocity, code quality, and responsiveness..." required></textarea>
+                  </div>
+
+                  <button type="submit" class="btn-primary w-100" style="padding: 12px; justify-content: center; font-size: 0.88rem;">
+                    <i class="fas fa-paper-plane"></i> SUBMIT VERIFIED REVIEW
+                  </button>
+                </form>
+              </div>
             </div>
 
-            <!-- Feedback ledger -->
-            <div class="glass-card panel-body">
-              <h3 class="card-title"><span><i class="fa-solid fa-clock-rotate-left"></i> Feedback Ledger</span></h3>
-              <div id="reviews-history" style="display:flex; flex-direction:column; gap:15px; max-height:450px; overflow-y:auto; padding-right:10px;">
-                <!-- Rendered dynamically -->
+            <!-- Right: Review Ledger -->
+            <div class="glass-card">
+              <div class="card-header-bar">
+                <h3 class="card-heading"><i class="fas fa-history"></i> Feedback Ledger</h3>
+              </div>
+              <div class="card-body-content" id="reviews-history-container" style="max-height: 480px; overflow-y: auto;">
+                <!-- Injected by JS -->
               </div>
             </div>
           </div>
@@ -157,148 +348,225 @@
 
         <!-- 4. COMMUNICATION HUB VIEW -->
         <section id="view-communication" class="portal-view">
-          <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 30px;">
-            <!-- Chat panel -->
-            <div class="glass-card panel-body">
-              <h3 class="card-title"><span><i class="fa-solid fa-comment-dots"></i> Live Chat with Team Lead</span></h3>
-              <div class="chat-wrapper">
-                <div class="chat-messages" id="chat-messages-container">
-                  <!-- Messages rendered dynamically -->
+          <div style="display: grid; grid-template-columns: 280px 1fr 300px; gap: 20px;" id="comm-hub-grid">
+            
+            <!-- Channels / Groups Column -->
+            <div class="glass-card" style="height: 560px; display: flex; flex-direction: column;">
+              <div class="card-header-bar" style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 class="card-heading" style="font-size: 0.95rem;">
+                  <i class="fas fa-satellite-dish"></i> Channels
+                </h3>
+                <button type="button" class="btn-primary" onclick="portalApp.openNewSquadGroupModal()" style="padding: 4px 8px; font-size: 0.72rem; border-radius: 6px;">
+                  <i class="fas fa-plus"></i> New Group
+                </button>
+              </div>
+              <div class="card-body-content" style="padding: 12px; flex: 1; overflow-y: auto;">
+                <div style="font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px;">
+                  Authorized Channels
                 </div>
-                <form id="chat-input-form" class="chat-input-area">
-                  <input type="text" id="chat-message-input" placeholder="Type a message to dispatch..." required autocomplete="off">
-                  <button type="submit" class="btn-primary" style="font-size:0.75rem; border-radius:0;">SEND</button>
+                <div id="comm-channels-list" style="display: flex; flex-direction: column; gap: 6px;">
+                  <!-- Injected by JS -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Real-Time Team Messenger Terminal -->
+            <div class="messenger-container" style="height: 560px;">
+              <div class="messenger-header">
+                <div class="chat-partner-info">
+                  <div class="chat-partner-avatar" id="chat-header-avatar"><i class="fas fa-user-shield"></i></div>
+                  <div>
+                    <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);" id="chat-header-title">Mission Control & Admin</div>
+                    <div style="font-size: 0.72rem; color: #16a34a; font-weight: 600; display: flex; align-items: center; gap: 6px;" id="chat-header-sub">
+                      <span class="pulse-dot" style="display:inline-block; width:6px; height:6px; background:#22c55e; border-radius:50%;"></span> 
+                      <span>Direct Admin Channel</span>
+                    </div>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <button class="btn-secondary" onclick="portalApp.loadChatMessages()" style="padding: 6px 12px; font-size: 0.75rem;">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                  </button>
+                </div>
+              </div>
+
+              <!-- Channel Participants Bar -->
+              <div id="chat-participants-bar" style="padding: 8px 20px; background: #f8fafc; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; gap: 8px; font-size: 0.72rem; color: var(--text-secondary); flex-wrap: wrap;">
+                <span style="font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Participants:</span>
+                <span id="chat-participants-badges" style="display: flex; gap: 6px; flex-wrap: wrap;"></span>
+              </div>
+
+              <div class="chat-messages-scroll" id="chat-messages-container">
+                <!-- Injected by JS -->
+              </div>
+
+              <form id="chat-input-form" class="chat-input-bar">
+                <input type="hidden" id="active-chat-conversation-id" value="">
+                <input type="text" id="chat-message-input" class="chat-input-field" placeholder="Type message to this channel..." autocomplete="off" required>
+                <button type="submit" class="btn-primary" style="border-radius: 20px; padding: 10px 18px;">
+                  <i class="fas fa-paper-plane"></i> Send
+                </button>
+              </form>
+            </div>
+
+            <!-- Schedule Strategic Meeting Column -->
+            <div class="glass-card" style="height: 560px; display: flex; flex-direction: column;">
+              <div class="card-header-bar">
+                <h3 class="card-heading" style="font-size: 0.92rem;"><i class="fas fa-calendar-alt"></i> Schedule Sync</h3>
+              </div>
+              <div class="card-body-content" style="padding: 16px; flex: 1; overflow-y: auto;">
+                <form id="meeting-form" style="margin-bottom: 16px;">
+                  <div class="form-group">
+                    <label for="meeting-host-select">Select Host (Admin / Team Lead)</label>
+                    <select id="meeting-host-select" class="form-control" style="font-size: 0.8rem; padding: 6px 10px;">
+                      <option value="">Assigned Team Leader (Default)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="meeting-title">Topic / Agenda</label>
+                    <input type="text" id="meeting-title" class="form-control" placeholder="e.g. Milestone Review" required style="font-size: 0.82rem; padding: 6px 10px;">
+                  </div>
+                  <div class="form-group">
+                    <label for="meeting-time">Date & Time</label>
+                    <input type="datetime-local" id="meeting-time" class="form-control" required style="font-size: 0.82rem; padding: 6px 10px;">
+                  </div>
+                  <div class="form-group">
+                    <label for="meeting-desc">Notes</label>
+                    <textarea id="meeting-desc" class="form-control" rows="2" placeholder="Talking points..." style="font-size: 0.82rem; padding: 6px 10px;"></textarea>
+                  </div>
+                  <button type="submit" class="btn-primary w-100" style="padding: 8px 12px; font-size: 0.8rem; justify-content: center;">
+                    <i class="fas fa-calendar-check"></i> PROPOSE SYNC
+                  </button>
+                </form>
+
+                <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">
+                  Upcoming Syncs
+                </div>
+                <div id="scheduled-meetings-list" style="display: flex; flex-direction: column; gap: 8px;">
+                  <!-- Injected by JS -->
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- 5. PAYMENTS & BILLING VIEW -->
+        <section id="view-payments" class="portal-view">
+          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px; margin-bottom: 24px;">
+            
+            <!-- Contract Terms Overview -->
+            <div class="glass-card">
+              <div class="card-header-bar">
+                <h3 class="card-heading"><i class="fas fa-file-signature"></i> Engagement Terms</h3>
+              </div>
+              <div class="card-body-content" id="payment-contract-card">
+                <!-- Injected by JS -->
+              </div>
+            </div>
+
+            <!-- Invoices Ledger -->
+            <div class="glass-card">
+              <div class="card-header-bar">
+                <h3 class="card-heading"><i class="fas fa-receipt"></i> Statement Ledger</h3>
+                <button onclick="portalApp.generateStatement()" class="btn-primary" style="font-size: 0.78rem; padding: 7px 16px;">
+                  <i class="fas fa-file-invoice"></i> Download Statement
+                </button>
+              </div>
+              <div class="card-body-content" style="padding: 0;">
+                <div class="table-responsive">
+                  <table class="modern-table">
+                    <thead>
+                      <tr>
+                        <th>Invoice / Ref</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Date</th>
+                        <th>Method</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody id="payments-history-tbody">
+                      <!-- Injected by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- 6. SUPPORT TICKETS VIEW -->
+        <section id="view-support" class="portal-view">
+          <div style="display: grid; grid-template-columns: 1fr 1.6fr; gap: 24px;">
+            
+            <!-- Raise Ticket Form -->
+            <div class="glass-card">
+              <div class="card-header-bar">
+                <h3 class="card-heading"><i class="fas fa-plus-circle"></i> Create Support Ticket</h3>
+              </div>
+              <div class="card-body-content">
+                <form id="ticket-form">
+                  <div class="form-group">
+                    <label for="ticket-title">Ticket Subject</label>
+                    <input type="text" id="ticket-title" class="form-control" placeholder="Brief issue summary..." required>
+                  </div>
+                  <div class="form-group">
+                    <label for="ticket-category">Category</label>
+                    <select id="ticket-category" class="form-control" required>
+                      <option value="General Support">General Support</option>
+                      <option value="Billing & Payments">Billing & Payments</option>
+                      <option value="Bug / Defect">Bug / Defect</option>
+                      <option value="Feature Request">Feature Request</option>
+                      <option value="Deliverables Access">Deliverables Access</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="ticket-priority">Priority</label>
+                    <select id="ticket-priority" class="form-control" required>
+                      <option value="normal">Normal</option>
+                      <option value="low">Low</option>
+                      <option value="urgent">Urgent Priority</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="ticket-desc">Detailed Description</label>
+                    <textarea id="ticket-desc" class="form-control" rows="4" placeholder="Explain what assistance is needed..." required></textarea>
+                  </div>
+                  <button type="submit" class="btn-primary w-100">
+                    <i class="fas fa-ticket-alt"></i> SUBMIT TICKET
+                  </button>
                 </form>
               </div>
             </div>
 
-            <!-- Propose meeting slot -->
-            <div class="glass-card panel-body">
-              <h3 class="card-title"><span><i class="fa-solid fa-calendar-check"></i> Propose a Meeting</span></h3>
-              <form id="meeting-form" style="margin-bottom: 25px;">
-                <div class="form-group">
-                  <label for="meeting-title">Agenda / Title</label>
-                  <input type="text" id="meeting-title" class="form-control" placeholder="e.g. Milestone Review, Deliverable Alignment" required>
-                </div>
-                <div class="form-group">
-                  <label for="meeting-desc">Brief Description</label>
-                  <textarea id="meeting-desc" class="form-control" placeholder="What would you like to discuss?" style="min-height:80px;"></textarea>
-                </div>
-                <div class="form-group">
-                  <label for="meeting-time">Date & Time</label>
-                  <input type="datetime-local" id="meeting-time" class="form-control" required>
-                </div>
-                <button type="submit" class="btn-primary">PROPOSE TIME</button>
-              </form>
-
-              <h4 style="font-family:var(--font-display); font-size:0.9rem; margin-bottom:15px; color:var(--text-secondary); text-transform:uppercase;">Meeting Ledger</h4>
-              <div id="meetings-list" style="display:flex; flex-direction:column; gap:10px; max-height:220px; overflow-y:auto;">
-                <!-- Rendered dynamically -->
+            <!-- Tickets Ledger -->
+            <div class="glass-card">
+              <div class="card-header-bar">
+                <h3 class="card-heading"><i class="fas fa-tasks"></i> Active & Historical Tickets</h3>
               </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 5. PAYMENTS VIEW -->
-        <section id="view-payments" class="portal-view">
-          <div style="display: grid; grid-template-columns: 1.2fr 2fr; gap: 30px; margin-bottom: 30px;">
-            <!-- Contract details -->
-            <div class="glass-card panel-body">
-              <h3 class="card-title"><span><i class="fa-solid fa-file-signature"></i> Contract Parameters</span></h3>
-              <div id="contract-details" style="display:flex; flex-direction:column; gap:15px; font-size:0.95rem;">
-                <!-- Rendered dynamically -->
+              <div class="card-body-content" style="padding: 0;">
+                <div class="table-responsive">
+                  <table class="modern-table">
+                    <thead>
+                      <tr>
+                        <th>Ticket ID</th>
+                        <th>Subject</th>
+                        <th>Category</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tickets-list-tbody">
+                      <!-- Injected by JS -->
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
-            <!-- Invoices / Transactions list -->
-            <div class="glass-card panel-body">
-              <h3 class="card-title">
-                <span><i class="fa-solid fa-receipt"></i> Transaction History</span>
-                <button onclick="portalApp.generateStatement()" class="btn-secondary" style="font-size:0.7rem; padding:6px 14px;">GENERATE STATEMENT</button>
-              </h3>
-              <table class="vault-table" id="payments-table">
-                <thead>
-                  <tr>
-                    <th>Ref ID</th>
-                    <th>Payment Date</th>
-                    <th>Payment Method</th>
-                    <th>Notes</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="payments-tbody">
-                  <!-- Rendered dynamically -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        <!-- 6. SUPPORT VIEW -->
-        <section id="view-support" class="portal-view">
-          <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 30px;">
-            <!-- Raise Ticket form -->
-            <div class="glass-card panel-body">
-              <h3 class="card-title"><span><i class="fa-solid fa-ticket"></i> Log Support Incident</span></h3>
-              <form id="ticket-form">
-                <div class="form-group">
-                  <label for="ticket-title">Issue Summary</label>
-                  <input type="text" id="ticket-title" class="form-control" placeholder="Describe the issue in a few words" required>
-                </div>
-                <div class="form-group">
-                  <label for="ticket-priority">Urgency Priority</label>
-                  <select id="ticket-priority" class="form-control">
-                    <option value="low">Low - General query</option>
-                    <option value="normal" selected>Normal - Needs review</option>
-                    <option value="urgent">Urgent - Blocking progression</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label for="ticket-category">Category</label>
-                  <select id="ticket-category" class="form-control">
-                    <option value="Billing">Billing & Payments</option>
-                    <option value="Content">Content Delivery</option>
-                    <option value="Design">Visual/Design Vault</option>
-                    <option value="General" selected>General Support</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label for="ticket-desc">Detailed Description</label>
-                  <textarea id="ticket-desc" class="form-control" placeholder="Provide context, links, or instructions to help resolve the issue." required></textarea>
-                </div>
-                <button type="submit" class="btn-primary">CREATE TICKET</button>
-              </form>
-            </div>
-
-            <!-- Incidents history -->
-            <div class="glass-card panel-body">
-              <h3 class="card-title"><span><i class="fa-solid fa-headset"></i> Incident Ledger</span></h3>
-              <div id="tickets-list" style="display:flex; flex-direction:column; gap:15px; max-height:500px; overflow-y:auto;">
-                <!-- Rendered dynamically -->
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 7. UPDATE PASSWORD VIEW -->
-        <section id="view-change-password" class="portal-view">
-          <div style="max-width: 500px; margin: 0 auto;" class="glass-card panel-body">
-            <h3 class="card-title"><span><i class="fa-solid fa-key"></i> Update Access Credentials</span></h3>
-            <form id="change-pass-form">
-              <div class="form-group">
-                <label for="new-password">New Password</label>
-                <input type="password" id="new-password" class="form-control" placeholder="Minimum 12 characters" required autocomplete="new-password">
-              </div>
-              <div class="form-group">
-                <label for="confirm-password">Confirm Password</label>
-                <input type="password" id="confirm-password" class="form-control" placeholder="Confirm your new password" required autocomplete="new-password">
-              </div>
-              <p style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:20px; line-height:1.5;">
-                * Password requirements: At least 12 characters, including uppercase, lowercase, numbers, and symbols.
-              </p>
-              <button type="submit" class="btn-primary">UPDATE PASSWORD</button>
-            </form>
           </div>
         </section>
 
@@ -306,12 +574,53 @@
     </main>
   </div>
 
-  <!-- Toast Container -->
-  <div class="toast-container" id="toast-container"></div>
+  <!-- Create Squad Group Modal -->
+  <div class="modal-overlay" id="modal-create-squad-group" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="glass-card" style="width: 480px; max-width: 90vw; background: #ffffff; padding: 24px; border-radius: 16px; box-shadow: var(--shadow-lg);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-subtle);">
+        <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+          <i class="fas fa-users-cog" style="color: var(--accent-primary);"></i> Create Squad Group
+        </h3>
+        <button type="button" style="background: none; border: none; font-size: 1.1rem; color: var(--text-muted); cursor: pointer;" onclick="document.getElementById('modal-create-squad-group').style.display='none'">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <form id="form-create-squad-group">
+        <div class="form-group" style="margin-bottom: 14px; text-align: left;">
+          <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 6px;">Group Name *</label>
+          <input type="text" id="squad-group-title" class="form-control" placeholder="e.g. Design & UI Sync Squad" required>
+        </div>
+        <div class="form-group" style="margin-bottom: 14px; text-align: left;">
+          <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 6px;">Project Context</label>
+          <select id="squad-group-project-select" class="form-control">
+            <option value="">-- General Account Squad --</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 18px; text-align: left;">
+          <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 6px;">Select Assigned Staff Members</label>
+          <div id="squad-group-staff-list" style="max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px; background: #f8fafc;">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button type="button" class="btn-secondary" onclick="document.getElementById('modal-create-squad-group').style.display='none'">Cancel</button>
+          <button type="submit" class="btn-primary"><i class="fas fa-check"></i> Create Squad Group</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-  <!-- API connection -->
+  <!-- Scripts -->
+  <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+  <script src="js/three-bg.js"></script>
   <script src="js/api.js"></script>
-  <!-- Application router & controller -->
   <script src="js/portal.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof initThreeBg === 'function') {
+        initThreeBg();
+      }
+    });
+  </script>
 </body>
 </html>

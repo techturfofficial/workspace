@@ -54,11 +54,11 @@ async function startServer() {
     app.use(express.json({ limit: '10mb' }));
     app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-    // Request logging in development
-    const logPath = path.join(__dirname, 'server.log');
+    // Request logging in development (stored outside backend/ to avoid watcher trigger)
+    const logPath = path.join(__dirname, '../server.log');
     const logToFile = (msg) => {
         const time = new Date().toLocaleTimeString();
-        fs.appendFileSync(logPath, `[${time}] ${msg}\n`);
+        try { fs.appendFileSync(logPath, `[${time}] ${msg}\n`); } catch(_) {}
     };
     app.use((req, res, next) => {
         req.requestId = crypto.randomUUID();
@@ -92,6 +92,7 @@ async function startServer() {
     app.use('/api/workspace', require('./routes/workspace.routes'));
     app.use('/api/client-connect', require('./routes/client_connect.routes'));
     app.use('/api/client-portal', require('./routes/client_portal.routes'));
+    app.use('/api/client-reports', require('./routes/client_reports.routes'));
     app.use('/api/enterprise', require('./routes/enterprise.routes'));
 
     // --- FRONTEND STUDIO ROUTES ---
@@ -101,6 +102,54 @@ async function startServer() {
     app.use('/api/frontend', frontendStudioRoutes);
 
     // --- ANALYTICS (Injected Routes) ---
+    app.get('/api/analytics/top-performers', (req, res) => {
+        try {
+            const period = (req.query.period || 'month').toLowerCase();
+            const now = new Date();
+            const currentMonthName = now.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+            let query = '';
+            if (period === 'month') {
+                // Monthly points aggregated from performance_log for the current calendar month
+                query = `
+                    SELECT 
+                        u.id, u.name, u.role, u.avatar,
+                        COALESCE(SUM(pl.score), 0) as points,
+                        u.points as lifetime_points
+                    FROM users u
+                    LEFT JOIN performance_log pl ON pl.user_id = u.id 
+                        AND strftime('%Y-%m', pl.created_at) = strftime('%Y-%m', 'now')
+                    WHERE u.is_active = 1
+                    GROUP BY u.id
+                    ORDER BY points DESC, lifetime_points DESC, u.name ASC
+                    LIMIT 4
+                `;
+            } else {
+                // All-time cumulative points
+                query = `
+                    SELECT 
+                        u.id, u.name, u.role, u.avatar,
+                        u.points as points,
+                        u.points as lifetime_points
+                    FROM users u
+                    WHERE u.is_active = 1
+                    ORDER BY u.points DESC, u.name ASC
+                    LIMIT 4
+                `;
+            }
+
+            const topPerformers = db.prepare(query).all();
+            res.json({
+                period,
+                month_label: currentMonthName,
+                performers: topPerformers
+            });
+        } catch (e) {
+            console.error('Top performers error:', e);
+            res.status(500).json({ error: 'Failed to load top performers' });
+        }
+    });
+
     app.get('/api/analytics/summary', (req, res) => {
         try {
             const users = db.prepare('SELECT COUNT(*) as count FROM users WHERE is_active=1').get().count;
@@ -167,11 +216,14 @@ async function startServer() {
     });
 
     // --- STATIC FILES ---
-    const uploadsDir = path.join(__dirname, '../storage/uploads');
-    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+    const uploadsDir1 = path.join(__dirname, '../uploads');
+    const uploadsDir2 = path.join(__dirname, '../storage/uploads');
+    if (!fs.existsSync(uploadsDir1)) fs.mkdirSync(uploadsDir1, { recursive: true });
+    if (!fs.existsSync(uploadsDir2)) fs.mkdirSync(uploadsDir2, { recursive: true });
 
-    // Serve uploads with no caching so profile pics update immediately
-    app.use('/uploads', express.static(uploadsDir, { maxAge: 0, etag: false }));
+    // Serve uploads with no caching so profile pics and PDFs update immediately
+    app.use('/uploads', express.static(uploadsDir1, { maxAge: 0, etag: false }));
+    app.use('/uploads', express.static(uploadsDir2, { maxAge: 0, etag: false }));
 
     const clientPortalDir = path.join(__dirname, '../frontend/client-portal');
     const employeePortalDir = path.join(__dirname, '../frontend/public');
@@ -186,26 +238,53 @@ async function startServer() {
         }
     };
 
-    // Always serve the client-portal at /client-portal route
-    app.use('/client-portal', express.static(clientPortalDir, {
-        ...clientPortalStaticOptions
-    }));
+    const isClientPortalInstance = (Number(PORT) === 5000 || process.env.IS_CLIENT_PORTAL === 'true');
 
-    // Serve main CRM frontend
-    app.use(express.static(employeePortalDir, {
-        etag: true,
-        lastModified: true
-    }));
+    if (isClientPortalInstance) {
+        // --- CLIENT CONNECT PORTAL INSTANCE (PORT 5000) ---
+        // Serve client portal static assets from root /
+        app.use(express.static(clientPortalDir, clientPortalStaticOptions));
+        app.use('/client-portal', express.static(clientPortalDir, clientPortalStaticOptions));
 
-    // Fallback for client-portal SPA routes
-    app.get('/client-portal/*', (req, res) => {
-        res.sendFile(path.join(clientPortalDir, 'index.html'));
-    });
+        // Serve client portal index.html on root /
+        app.get('/', (req, res) => {
+            res.sendFile(path.join(clientPortalDir, 'index.html'));
+        });
 
-    // Fallback for main CRM SPA routes
-    app.get('*', (req, res) => {
-        res.sendFile(path.join(employeePortalDir, 'index.html'));
-    });
+        // Fallback for Client Connect SPA routes
+        app.get('*', (req, res) => {
+            if (path.extname(req.path)) {
+                return res.status(404).send('File not found');
+            }
+            res.sendFile(path.join(clientPortalDir, 'index.html'));
+        });
+    } else {
+        // --- EMPLOYEE CRM PORTAL INSTANCE (PORT 3000 / DEFAULT) ---
+        // Also allow access to /client-portal route for employee preview
+        app.use('/client-portal', express.static(clientPortalDir, clientPortalStaticOptions));
+        
+        app.get('/client-portal', (req, res) => {
+            res.redirect('/client-portal/');
+        });
+
+        app.get('/client-portal/*', (req, res) => {
+            res.sendFile(path.join(clientPortalDir, 'index.html'));
+        });
+
+        // Serve main CRM frontend
+        app.use(express.static(employeePortalDir, {
+            etag: true,
+            lastModified: true
+        }));
+
+        // Fallback for main CRM SPA routes
+        app.get('*', (req, res) => {
+            if (path.extname(req.path)) {
+                return res.status(404).send('File not found');
+            }
+            res.sendFile(path.join(employeePortalDir, 'index.html'));
+        });
+    }
 
 
     // --- BACKGROUND SERVICES ---
@@ -226,7 +305,8 @@ async function startServer() {
         const diagnostics = {
             dbPath: process.env.DB_PATH || path.join(__dirname, '../techturf.db'),
             uploadsDir: path.join(__dirname, '../uploads'),
-            jwtConfigured: Boolean(process.env.JWT_SECRET)
+            jwtConfigured: Boolean(process.env.JWT_SECRET),
+            portalMode: isClientPortalInstance ? 'Client Connect (Port 5000)' : 'Employee CRM (Port 3000)'
         };
 
         try {
@@ -249,9 +329,17 @@ async function startServer() {
     runStartupDiagnostics();
 
     app.listen(PORT, '0.0.0.0', () => {
-        console.log(`\n🚀 Tech Turf OS is operational at PORT ${PORT}`);
-        console.log(`   - Frontend: http://localhost:${PORT}`);
-        console.log(`   - API Root: http://localhost:${PORT}/api\n`);
+        if (isClientPortalInstance) {
+            console.log(`\n🚀 Tech Turf Client Connect Portal is operational at PORT ${PORT}`);
+            console.log(`   - Client Connect: http://localhost:${PORT}`);
+            console.log(`   - Client Login:   http://localhost:${PORT}/login.html`);
+            console.log(`   - API Root:       http://localhost:${PORT}/api\n`);
+        } else {
+            console.log(`\n🚀 Tech Turf Employee Portal is operational at PORT ${PORT}`);
+            console.log(`   - Employee Portal: http://localhost:${PORT}`);
+            console.log(`   - Client Portal:   http://localhost:${PORT}/client-portal`);
+            console.log(`   - API Root:        http://localhost:${PORT}/api\n`);
+        }
     });
 }
 

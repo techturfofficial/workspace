@@ -15,7 +15,8 @@
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/responsive.css">
   
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
   <style>
@@ -281,42 +282,63 @@
     .pay-badge.pending { background: rgba(245, 158, 11, 0.12); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.25); }
     .pay-badge.overdue { background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.25); }
 
-    /* Ultra-Modern Record Payment Modal */
+    /* Ultra-Modern Record Payment Side Drawer */
     .pay-modal-overlay {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(15, 23, 42, 0.65) !important;
-      backdrop-filter: blur(12px) !important;
-      -webkit-backdrop-filter: blur(12px) !important;
+      background: rgba(15, 23, 42, 0.45) !important;
+      backdrop-filter: blur(4px) !important;
+      -webkit-backdrop-filter: blur(4px) !important;
       z-index: 9999 !important;
       display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
+      align-items: stretch !important;
+      justify-content: flex-end !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+      opacity: 0;
+      transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .pay-modal-overlay.active {
+    .pay-modal-overlay.active,
+    .pay-modal-overlay.show {
       display: flex !important;
+      opacity: 1 !important;
     }
 
     .pay-modal-card {
+      position: relative !important;
       width: 100% !important;
-      max-width: 550px !important;
-      border-radius: 24px !important;
+      max-width: 520px !important;
+      height: 100vh !important;
+      max-height: 100vh !important;
+      margin: 0 !important;
+      border-radius: 0 !important;
       background: #ffffff !important;
-      border: 1.5px solid rgba(16, 42, 150, 0.12) !important;
-      box-shadow: 0 30px 80px -15px rgba(16, 42, 150, 0.25), 0 10px 30px rgba(0, 0, 0, 0.08) !important;
-      overflow: hidden !important;
-      animation: modalSpringIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+      border: none !important;
+      border-left: 1.5px solid var(--border) !important;
+      box-shadow: -12px 0 40px rgba(16, 42, 150, 0.12) !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      transform: translateX(100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+      display: flex !important;
+      flex-direction: column !important;
+      box-sizing: border-box !important;
+      animation: none !important;
+    }
+
+    .pay-modal-overlay.active .pay-modal-card,
+    .pay-modal-overlay.show .pay-modal-card {
+      transform: translateX(0) !important;
     }
 
     body.dark-mode .pay-modal-card {
       background: #0f172a !important;
-      border-color: rgba(255, 255, 255, 0.12) !important;
-      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7) !important;
+      border-left-color: rgba(255, 255, 255, 0.12) !important;
+      box-shadow: -12px 0 40px rgba(0, 0, 0, 0.7) !important;
     }
 
     .pay-modal-header {
@@ -611,9 +633,6 @@
             <div class="menu-item admin-only" data-nav="users.html" onclick="window.location.href='users.html'">
               <i class="fas fa-users-cog"></i><span class="menu-text">User Management</span>
             </div>
-            <div class="menu-item admin-only" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
-              <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
-            </div>
           </div>
         </div>
         <div class="menu-item rnd-only" data-nav="nexus_lab.html" onclick="window.location.href='nexus_lab.html'">
@@ -630,6 +649,9 @@
         
         <div class="menu-item" data-nav="workspace.html" onclick="window.location.href='workspace.html'">
           <i class="fas fa-paint-brush"></i><span class="menu-text">Creative Workspace</span>
+        </div>
+        <div class="menu-item" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
+          <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
         </div>
         
         <div class="menu-item admin-only" data-nav="database_viewer.html" id="dbadmin-link" onclick="window.location.href='database_viewer.html'">
@@ -896,9 +918,9 @@
     </main>
   </div>
 
-  <!-- Ultra-Modern Record Payment Modal -->
-  <div class="pay-modal-overlay" id="record-payment-modal">
-    <div class="pay-modal-card">
+  <!-- Ultra-Modern Record Payment Side Drawer -->
+  <div class="pay-modal-overlay" id="record-payment-modal" onclick="if(event.target===this) this.classList.remove('active')">
+    <div class="pay-modal-card" onclick="event.stopPropagation()">
       <div class="pay-modal-header">
         <div class="pay-modal-title-wrap">
           <div class="pay-modal-icon-badge">
@@ -911,8 +933,8 @@
         </button>
       </div>
 
-      <form id="record-payment-form">
-        <div class="pay-modal-body">
+      <form id="record-payment-form" style="display:flex; flex-direction:column; flex:1; justify-content:space-between; min-height:0;">
+        <div class="pay-modal-body" style="flex:1; overflow-y:auto;">
           <div class="pay-input-group">
             <label class="pay-input-label"><i class="fas fa-user-tie"></i> SELECT CLIENT *</label>
             <div class="pay-input-wrap">

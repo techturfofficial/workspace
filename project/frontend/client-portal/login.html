@@ -1,54 +1,215 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Client Connect Login | Tech Turf CRM</title>
-  <!-- Typography -->
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
-  <!-- Styles -->
-  <link rel="stylesheet" href="css/client-portal.css?v=logo-fix-20260622">
+  <title>Tech Turf | Client Connect Portal Login</title>
+  
+  <!-- Typography (Matching Employee CRM Theme) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/client-portal.css?v=admin-theme-2026">
+
+  <style>
+    body {
+      background-color: #f8fafc;
+      background-image: 
+        radial-gradient(circle at 12% 18%, rgba(224, 231, 255, 0.75) 0%, transparent 45%),
+        radial-gradient(circle at 88% 82%, rgba(254, 215, 170, 0.6) 0%, transparent 45%),
+        radial-gradient(circle at 50% 50%, rgba(241, 245, 249, 0.6) 0%, transparent 60%),
+        linear-gradient(135deg, #eef2ff 0%, #f8fafc 45%, #fff7ed 100%);
+      background-attachment: fixed;
+      min-height: 100vh;
+      overflow-y: auto;
+    }
+
+    .login-top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: linear-gradient(90deg, #102a96 0%, #172554 28%, #581c87 62%, #c2410c 85%, #ea580c 100%);
+      box-shadow: 0 4px 20px rgba(16, 42, 150, 0.18);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+    }
+
+    .login-top-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #ffffff;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.15rem;
+      letter-spacing: 0.5px;
+    }
+
+    .login-top-brand img {
+      height: 32px;
+      width: auto;
+      border-radius: 6px;
+      background: #ffffff;
+      padding: 2px 4px;
+    }
+
+    .login-top-tag {
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #ffffff;
+      padding: 3px 8px;
+      border-radius: 6px;
+      letter-spacing: 1px;
+    }
+
+    .login-wrapper {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 96px 20px 32px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 440px;
+      background: rgba(255, 255, 255, 0.94);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(16, 42, 150, 0.12);
+      border-radius: 20px;
+      box-shadow: 0 20px 45px -10px rgba(16, 42, 150, 0.12);
+      padding: 36px 32px;
+      text-align: center;
+    }
+
+    .login-brand-logo {
+      height: 52px;
+      max-width: 200px;
+      object-fit: contain;
+      margin-bottom: 18px;
+    }
+
+    .login-title {
+      font-family: var(--font-display);
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 4px;
+    }
+
+    .login-subtitle {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .input-icon-wrap {
+      position: relative;
+    }
+
+    .input-icon-wrap i {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .input-icon-wrap input {
+      padding-left: 40px !important;
+    }
+
+    .demo-chip {
+      background: #f1f5f9;
+      border: 1px solid var(--border-subtle);
+      color: var(--accent-primary);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .demo-chip:hover {
+      background: rgba(16, 42, 150, 0.08);
+      border-color: var(--accent-primary);
+      transform: translateY(-1px);
+    }
+  </style>
 </head>
+
 <body>
-  <!-- Ambient background elements -->
-  <div id="three-bg"></div>
+  <!-- Header Bar -->
+  <div class="login-top-bar">
+    <div class="login-top-brand">
+      <img src="assets/tech-turf-logo.jpeg" alt="Tech Turf">
+      <span>TECH TURF</span>
+    </div>
+    <div class="login-top-tag">CLIENT CONNECT GATEWAY</div>
+  </div>
+
+  <!-- Three.js interactive nodes -->
+  <canvas id="three-bg"></canvas>
 
   <div class="login-wrapper">
-    <div class="glass-card login-card">
-      <div class="login-logo">
-        <img src="assets/logo.jpg" alt="Tech Turf">
-      </div>
-      <h2 style="font-family: var(--font-display); font-size: 1.6rem; margin-bottom: 8px; font-weight: 700;">CLIENT CONNECT</h2>
-      <p class="login-subtitle">Access your Tech Turf project workspace & deliverables</p>
+    <div class="login-card">
+      <img src="assets/tech-turf-logo.jpeg" alt="Tech Turf" class="login-brand-logo">
+      <h1 class="login-title">CLIENT CONNECT</h1>
+      <p class="login-subtitle">Access your project workspace, deliverables, and live sync stream</p>
 
-      <form id="login-form">
-        <div class="form-group" style="text-align: left;">
+      <form id="login-form" style="text-align: left;">
+        <div class="form-group">
           <label for="client-login-id">Client Access ID</label>
-          <input type="text" id="client-login-id" class="form-control" placeholder="e.g. TT-2026" required autocomplete="username">
+          <div class="input-icon-wrap">
+            <i class="fas fa-shield-alt"></i>
+            <input type="text" id="client-login-id" class="form-control" placeholder="e.g. aerodyne_login" required autocomplete="username">
+          </div>
         </div>
-        <button type="submit" class="btn-primary w-100" style="margin-top: 10px;">AUTHORIZE ACCESS</button>
+
+        <button type="submit" class="btn-primary w-100" style="justify-content: center; padding: 12px; margin-top: 8px; font-size: 0.9rem;">
+          <i class="fas fa-sign-in-alt"></i> AUTHORIZE SECURE ACCESS
+        </button>
       </form>
 
-      <div class="login-helper">
-        Forgot access? Contact your Tech Turf account manager.
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border-subtle); font-size: 0.76rem; color: var(--text-muted); line-height: 1.5;">
+        <i class="fas fa-lock" style="color: var(--accent-primary); margin-right: 4px;"></i>
+        Enter your unique <strong>Client Access ID</strong> provided by your Tech Turf Account Handler or Administrator.
       </div>
     </div>
   </div>
 
   <div class="toast-container" id="toast-container"></div>
 
-  <!-- API client -->
+  <!-- Scripts -->
+  <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+  <script src="js/three-bg.js"></script>
   <script src="js/api.js"></script>
-  <!-- Login script logic -->
   <script>
-    // Toast helper
     function showToast(message, type = 'info') {
       const container = document.getElementById('toast-container');
       const toast = document.createElement('div');
       toast.className = `toast ${type}`;
-      toast.innerHTML = `
-        <span style="font-weight:600;">${message}</span>
-      `;
+      toast.innerHTML = `<span>${message}</span>`;
       container.appendChild(toast);
       setTimeout(() => {
         toast.style.opacity = '0';
@@ -56,9 +217,26 @@
       }, 3500);
     }
 
-    // Redirect if already logged in
-    if (localStorage.getItem('client_token')) {
-      window.location.href = 'index.html';
+    function quickFill(id) {
+      const input = document.getElementById('client-login-id');
+      if (input) {
+        input.value = id;
+        document.getElementById('login-form').dispatchEvent(new Event('submit'));
+      }
+    }
+
+    const savedToken = localStorage.getItem('client_token');
+    if (savedToken) {
+      fetch('/api/client-portal/dashboard', { headers: { 'Authorization': 'Bearer ' + savedToken } })
+        .then(r => {
+          if (r.ok) {
+            window.location.href = 'index.html';
+          } else {
+            localStorage.removeItem('client_token');
+            localStorage.removeItem('client_info');
+          }
+        })
+        .catch(() => {});
     }
 
     document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -73,13 +251,17 @@
         localStorage.setItem('client_token', response.token);
         localStorage.setItem('client_info', JSON.stringify(response.client));
 
-        showToast('Authorization successful! Redirecting...', 'success');
+        showToast('Authorization successful! Loading Mission Control...', 'success');
         setTimeout(() => {
           window.location.href = 'index.html';
-        }, 1000);
+        }, 800);
       } catch (err) {
         showToast(err.message || 'Invalid Client Access ID', 'error');
       }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof initThreeBg === 'function') initThreeBg();
     });
   </script>
 </body>

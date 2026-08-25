@@ -29,6 +29,7 @@ const api = {
   post(endpoint, body)       { return this.request('POST',   endpoint, body); },
   put(endpoint, body)        { return this.request('PUT',    endpoint, body); },
   delete(endpoint)           { return this.request('DELETE', endpoint); },
+  del(endpoint)              { return this.request('DELETE', endpoint); },
   upload(endpoint, formData) { return this.request('POST',   endpoint, formData, true); },
 };
 window.api = api;

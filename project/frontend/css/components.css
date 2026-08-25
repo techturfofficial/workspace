@@ -422,6 +422,30 @@ select.form-control option {
   gap: 6px;
 }
 
+.modal.modal-drawer .member-picker {
+  border: 1.5px solid rgba(16, 42, 150, 0.14) !important;
+  border-radius: 10px !important;
+  background: #f8fafc !important;
+  padding: 8px 12px !important;
+  min-height: 44px;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.modal.modal-drawer .member-picker:focus-within {
+  background: #ffffff !important;
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 0 3px rgba(16, 42, 150, 0.12) !important;
+}
+
+.modal.modal-drawer .member-picker-dropdown {
+  z-index: 10005 !important;
+  background: #ffffff !important;
+  border: 1.5px solid rgba(16, 42, 150, 0.14) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18) !important;
+}
+
 .team-member-item {
   display: flex;
   align-items: center;
@@ -545,4 +569,154 @@ select.form-control option {
   background: #ffedd5;
   color: #9a3412;
   border-color: #f97316;
+}
+
+/* ============================================================
+   PASSWORD VISIBILITY TOGGLE SYSTEM
+   ============================================================ */
+.password-input-wrap,
+.input-wrapper-icon,
+.input-wrap,
+.pass-input-group {
+  position: relative;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent !important;
+  border: none !important;
+  color: var(--text-muted, #64748b) !important;
+  font-size: 0.95rem !important;
+  cursor: pointer !important;
+  padding: 6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 10 !important;
+  border-radius: 6px !important;
+  line-height: 1 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  transition: color 0.2s ease, transform 0.15s ease !important;
+}
+
+.password-toggle-btn:hover {
+  color: var(--accent-primary, #102a96) !important;
+  transform: translateY(-50%) scale(1.1) !important;
+}
+
+.password-toggle-btn:active {
+  transform: translateY(-50%) scale(0.95) !important;
+}
+
+.password-toggle-btn i {
+  position: static !important;
+  transform: none !important;
+  left: auto !important;
+  color: inherit !important;
+  font-size: inherit !important;
+  pointer-events: auto !important;
+}
+
+/* ============================================================
+   WEEKLY PROGRESS REPORT MODAL & FORM STYLING (TT 2.0)
+   ============================================================ */
+.report-modal-dialog {
+  max-width: 860px !important;
+  width: 95% !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  padding: 24px !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.22) !important;
+}
+
+.report-section-box {
+  background: #f8fafc;
+  border: 1px solid rgba(16, 42, 150, 0.12);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.report-section-title {
+  font-family: var(--font-display, 'Outfit', sans-serif);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--accent-primary, #102a96);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.report-kpi-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin-top: 8px;
+}
+
+.report-kpi-table th {
+  background: #102a96;
+  color: #ffffff;
+  padding: 8px 10px;
+  font-weight: 700;
+  text-align: left;
+  border: 1px solid #102a96;
+}
+
+.report-kpi-table td {
+  padding: 6px 8px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
+.report-kpi-table input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  box-sizing: border-box;
+}
+
+.status-pill-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1.5px solid #cbd5e1;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.status-pill-radio input {
+  display: none;
+}
+
+.status-pill-radio.status-track:has(input:checked) {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.14);
+  color: #15803d;
+}
+
+.status-pill-radio.status-risk:has(input:checked) {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
+.status-pill-radio.status-blocked:has(input:checked) {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.14);
+  color: #b91c1c;
 }

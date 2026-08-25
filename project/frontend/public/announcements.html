@@ -13,7 +13,8 @@
   <link rel="stylesheet" href="css/animations.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/responsive.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     .announcements-feed {
@@ -125,9 +126,6 @@
             <div class="menu-item admin-only" data-nav="users.html" onclick="window.location.href='users.html'">
               <i class="fas fa-users-cog"></i><span class="menu-text">User Management</span>
             </div>
-            <div class="menu-item admin-only" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
-              <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
-            </div>
           </div>
         </div>
         <div class="menu-item rnd-only" data-nav="nexus_lab.html" onclick="window.location.href='nexus_lab.html'">
@@ -144,6 +142,9 @@
         
         <div class="menu-item" data-nav="workspace.html" onclick="window.location.href='workspace.html'">
           <i class="fas fa-paint-brush"></i><span class="menu-text">Creative Workspace</span>
+        </div>
+        <div class="menu-item" data-nav="help_center.html" onclick="window.location.href='help_center.html'">
+          <i class="fas fa-circle-question"></i><span class="menu-text">Help Center Ops</span>
         </div>
         
         <div class="menu-item admin-only" data-nav="database_viewer.html" id="dbadmin-link" onclick="window.location.href='database_viewer.html'">
@@ -216,37 +217,37 @@
 
       <div class="announcements-feed" id="announcements-list"></div>
 
-      <!-- Admin Broadcast Modal -->
-      <div class="modal" id="broadcast-modal">
-        <div class="glass-card modal-content">
+      <!-- Admin Broadcast Modal (Side Drawer) -->
+      <div class="modal modal-drawer" id="broadcast-modal" onclick="if(event.target===this) closeModal('broadcast-modal')">
+        <div class="modal-content side-drawer-panel" onclick="event.stopPropagation()">
           <div class="modal-header">
             <div class="modal-title">SEND BROADCAST</div>
             <i class="fas fa-times close-modal" onclick="closeModal('broadcast-modal')"></i>
           </div>
           <form id="broadcast-form">
-            <div class="form-group"><label>Message</label><textarea class="form-control" id="broadcast-body" rows="5" required></textarea></div>
-            <button type="submit" class="btn-primary" style="width:100%; margin-top:12px;">Send to All Users</button>
+            <div class="form-group"><label for="broadcast-body">Message</label><textarea class="form-control" id="broadcast-body" rows="6" placeholder="Enter broadcast message to all users..." required></textarea></div>
+            <button type="submit" class="btn-primary btn-drawer-submit">Send to All Users</button>
           </form>
         </div>
       </div>
     </main>
   </div>
 
-  <!-- New Announcement Modal -->
-  <div class="modal" id="new-announcement-modal">
-    <div class="glass-card modal-content">
+  <!-- New Announcement Modal (Side Drawer) -->
+  <div class="modal modal-drawer" id="new-announcement-modal" onclick="if(event.target===this) closeModal('new-announcement-modal')">
+    <div class="modal-content side-drawer-panel" onclick="event.stopPropagation()">
       <div class="modal-header">
         <div class="modal-title">POST ANNOUNCEMENT</div>
         <i class="fas fa-times close-modal" onclick="closeModal('new-announcement-modal')"></i>
       </div>
       <form id="new-announcement-form">
-        <div class="form-group"><label>Title</label><input type="text" class="form-control" id="ann-title" required></div>
-        <div class="form-group"><label>Message</label><textarea class="form-control" id="ann-body" rows="6" required></textarea></div>
-        <div class="form-group" style="display:flex; align-items:center; gap:10px;">
-          <input type="checkbox" id="ann-pinned" style="width:20px; height:20px; cursor:pointer;">
-          <label for="ann-pinned" style="margin-bottom:0; cursor:pointer;">Pin to top</label>
+        <div class="form-group"><label for="ann-title">Title</label><input type="text" class="form-control" id="ann-title" placeholder="Enter announcement title..." required></div>
+        <div class="form-group"><label for="ann-body">Message</label><textarea class="form-control" id="ann-body" rows="6" placeholder="Enter announcement message..." required></textarea></div>
+        <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-top:16px; margin-bottom:12px;">
+          <input type="checkbox" id="ann-pinned" style="width:20px; height:20px; cursor:pointer; accent-color:var(--accent-primary);">
+          <label for="ann-pinned" style="margin-bottom:0; cursor:pointer; font-size:0.85rem; font-weight:700; color:var(--text-primary);">PIN TO TOP</label>
         </div>
-        <button type="submit" class="btn-primary" style="width:100%; margin-top:12px;">Post to Feed</button>
+        <button type="submit" class="btn-primary btn-drawer-submit">Post to Feed</button>
       </form>
     </div>
   </div>

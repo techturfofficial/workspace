@@ -151,7 +151,7 @@ async function loadTasks() {
     }
 
     const currentUserId = auth.getUser().id;
-    const canEditTasks = ['admin', 'team_leader', 'backend', 'frontend_backend', 'production'].includes(auth.getUser().role);
+    const isAdmin = auth.hasRole('admin');
 
     tbody.innerHTML = tasks.map(t => {
       // Render member avatars (stacked)
@@ -183,7 +183,7 @@ async function loadTasks() {
         <td>${memberAvatarsHtml}</td>
         <td><div class="badge badge-${t.priority}">${t.priority}</div></td>
         <td>
-          ${canEditTasks ?
+          ${isAdmin ?
           `<select class="status-select-pill" data-status="${t.status}" onchange="this.dataset.status = this.value; updateTaskStatus(${t.id}, this.value)">
                 <option value="pending" ${t.status === 'pending' ? 'selected' : ''}>Pending</option>
                 <option value="in_progress" ${t.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
@@ -206,8 +206,8 @@ async function loadTasks() {
           `<button class="btn-primary" style="padding:6px 12px; font-size:0.7rem;" onclick="openSubmitModal(${t.id}, '${t.title.replace(/'/g, "\\'")}')">SUBMIT</button>` : ''}
             ${(isMember && t.status === 'pending') ?
           `<button class="btn-secondary" style="padding:6px 12px; font-size:0.7rem;" onclick="startTask(${t.id})">START</button>` : ''}
-            ${canEditTasks ? `<button class="btn-secondary" style="padding:6px 12px; font-size:0.7rem;" onclick="editTask(${t.id})"><i class="fas fa-edit"></i></button>` : ''}
-            ${auth.getUser().role === 'admin' ? `<button class="btn-danger" style="padding:6px 12px; font-size:0.7rem;" onclick="deleteTask(${t.id})"><i class="fas fa-trash"></i></button>` : ''}
+            ${isAdmin ? `<button class="btn-secondary" style="padding:6px 12px; font-size:0.7rem;" onclick="editTask(${t.id})" title="Edit Task"><i class="fas fa-edit"></i></button>` : ''}
+            ${isAdmin ? `<button class="btn-danger" style="padding:6px 12px; font-size:0.7rem;" onclick="deleteTask(${t.id})" title="Delete Task"><i class="fas fa-trash"></i></button>` : ''}
           </div>
         </td>
       </tr>`;
@@ -274,7 +274,7 @@ function populatePickerDropdown(dropdownId, pickerKey) {
     ? `<div style="padding:10px 14px;color:var(--text-muted);font-size:0.8rem;">No users found</div>`
     : filtered.map(u => `
         <div class="picker-option ${selected.includes(u.id) ? 'selected' : ''}" onclick="toggleMember('${pickerKey}', ${u.id}, '${u.name.replace(/'/g, "\\'")}', '${u.role}')">
-          <img src="${getInitialsAvatar(u.name, 24)}" alt="${u.name}">
+          <img src="${getInitialsAvatar(u.name, 24, u.role)}" alt="${u.name}">
           <div>
             <div style="font-weight:700;">${u.name}</div>
             <div style="font-size:0.7rem;color:var(--text-muted);">${formatRole(u.role)}</div>
@@ -310,7 +310,7 @@ function renderChips(pickerKey) {
     const chip = document.createElement('div');
     chip.className = 'member-chip';
     chip.innerHTML = `
-      <img src="${getInitialsAvatar(u.name, 18)}" alt="${u.name}">
+      <img src="${getInitialsAvatar(u.name, 18, u.role)}" alt="${u.name}">
       <span>${u.name}</span>
       <i class="fas fa-times chip-remove" onclick="removeMember('${pickerKey}', ${u.id})"></i>
     `;
@@ -443,7 +443,7 @@ async function deleteTask(id) {
     showToast('Task deleted successfully', 'success');
     loadTasks();
   } catch (e) {
-    showToast('Failed to delete task', 'error');
+    showToast(e.message || 'Failed to delete task', 'error');
   }
 }
 
@@ -458,6 +458,10 @@ async function startTask(id) {
 }
 
 async function editTask(id) {
+  if (!auth.hasRole('admin')) {
+    showToast('Permission denied: Task editing is only available for administrators', 'error');
+    return;
+  }
   try {
     const task = await api.get(`/tasks/${id}`);
     document.getElementById('edit-task-id').value = task.id;

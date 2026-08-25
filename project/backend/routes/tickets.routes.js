@@ -25,10 +25,17 @@ const ticketUpload = multer({
 // List all tickets (admin: all, user: own)
 router.get('/', verifyToken, (req, res) => {
   const { status, mine } = req.query;
+  const isAdmin = req.user && (req.user.role === 'admin' || (req.user.secondary_roles || '').split(',').includes('admin'));
+  
   let sql = 'SELECT t.*, u.name as creator_name, a.name as assigned_name FROM tickets t LEFT JOIN users u ON t.created_by = u.id LEFT JOIN users a ON t.assigned_to = a.id WHERE 1=1';
   const params = [];
+
+  if (!isAdmin || mine) {
+    sql += ' AND t.created_by = ?';
+    params.push(req.user?.id || 0);
+  }
+
   if (status) { sql += ' AND t.status = ?'; params.push(status); }
-  if (mine && req.user) { sql += ' AND t.created_by = ?'; params.push(req.user.id); }
   sql += ' ORDER BY t.created_at DESC';
   const rows = db.prepare(sql).all(...params);
   res.json(rows);

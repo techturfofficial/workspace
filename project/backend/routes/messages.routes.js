@@ -43,7 +43,67 @@ function loadConversation(conversationId) {
 }
 
 function assertParticipant(conversationId, userId) {
-  return db.prepare('SELECT 1 FROM conversation_participants WHERE conversation_id=? AND user_id=?').get(conversationId, userId);
+  const convId = Number(conversationId);
+  const uId = Number(userId);
+  if (!convId || !uId) return false;
+
+  const conv = db.prepare('SELECT id, project_id, team_id, client_id, is_group FROM conversations WHERE id=?').get(convId);
+  if (!conv) return false;
+
+  // 1. Direct participant check
+  const isParticipant = db.prepare('SELECT 1 FROM conversation_participants WHERE conversation_id=? AND user_id=?').get(convId, uId);
+  if (isParticipant) return true;
+
+  const user = db.prepare('SELECT id, role, is_active FROM users WHERE id=?').get(uId);
+  if (!user || Number(user.is_active) !== 1) return false;
+
+  // 2. Admins have universal access - auto enroll as participant
+  if (user.role === 'admin') {
+    db.prepare('INSERT OR IGNORE INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)').run(convId, uId);
+    return true;
+  }
+
+  // 3. Project Team Leader / Assigned Member
+  if (conv.project_id) {
+    const isProjMember = db.prepare(`
+      SELECT 1 FROM projects p 
+      LEFT JOIN project_members pm ON pm.project_id = p.id 
+      WHERE p.id = ? AND (p.team_leader_id = ? OR pm.user_id = ?)
+    `).get(conv.project_id, uId, uId);
+    if (isProjMember) {
+      db.prepare('INSERT OR IGNORE INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)').run(convId, uId);
+      return true;
+    }
+  }
+
+  // 4. Team Group Leader / Member
+  if (conv.team_id) {
+    const isTeamMember = db.prepare(`
+      SELECT 1 FROM teams t 
+      LEFT JOIN team_members tm ON tm.team_id = t.id 
+      WHERE t.id = ? AND (t.leader_id = ? OR tm.user_id = ?)
+    `).get(conv.team_id, uId, uId);
+    if (isTeamMember) {
+      db.prepare('INSERT OR IGNORE INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)').run(convId, uId);
+      return true;
+    }
+  }
+
+  // 5. Client Direct or Client Squad Group
+  if (conv.client_id) {
+    const isClientLead = db.prepare(`
+      SELECT 1 FROM clients cl
+      LEFT JOIN projects p ON p.client_id = cl.id
+      LEFT JOIN project_members pm ON pm.project_id = p.id
+      WHERE cl.id = ? AND (cl.team_leader_id = ? OR p.team_leader_id = ? OR pm.user_id = ?)
+    `).get(conv.client_id, uId, uId, uId);
+    if (isClientLead) {
+      db.prepare('INSERT OR IGNORE INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)').run(convId, uId);
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function notifyParticipants(conversationId, senderId, message) {
@@ -87,41 +147,38 @@ router.get('/stream', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
-  res.flushHeaders();
+  res.flushHeaders?.();
 
-  const onMessage = (payload) => {
-    if (!payload || !Array.isArray(payload.participantIds)) return;
-    if (!payload.participantIds.includes(userId)) return;
-    res.write(`event: message\n`);
-    res.write(`data: ${JSON.stringify(payload)}\n\n`);
-  };
+  const pingInterval = setInterval(() => {
+    res.write(': ping\n\n');
+  }, 20000);
 
-  const onTyping = (payload) => {
-    if (!payload || !Array.isArray(payload.participantIds)) return;
-    if (!payload.participantIds.includes(userId)) return;
-    res.write(`event: typing\n`);
-    res.write(`data: ${JSON.stringify(payload)}\n\n`);
-  };
+  const unsubscribeMessage = subscribe('chat.message', (payload) => {
+    if (!payload) return;
+    const isParticipant = (Array.isArray(payload.participantIds) && payload.participantIds.includes(userId));
+    if (isParticipant) {
+      res.write(`event: message\ndata: ${JSON.stringify(payload)}\n\n`);
+    }
+  });
 
-  const unsubMessage = subscribe('chat.message', onMessage);
-  const unsubTyping = subscribe('chat.typing', onTyping);
-
-  const heartbeat = setInterval(() => {
-    res.write(`event: ping\n`);
-    res.write(`data: {"ok":true}\n\n`);
-  }, 30000);
+  const unsubscribeTyping = subscribe('chat.typing', (payload) => {
+    if (!payload) return;
+    const isParticipant = (Array.isArray(payload.participantIds) && payload.participantIds.includes(userId));
+    if (isParticipant) {
+      res.write(`event: typing\ndata: ${JSON.stringify(payload)}\n\n`);
+    }
+  });
 
   req.on('close', () => {
-    clearInterval(heartbeat);
-    unsubMessage();
-    unsubTyping();
-    res.end();
+    clearInterval(pingInterval);
+    unsubscribeMessage();
+    unsubscribeTyping();
   });
 });
 
 router.get('/users', verifyToken, (req, res) => {
   const users = db.prepare(`
-    SELECT id, name, email, role, secondary_roles, avatar
+    SELECT id, name, email, role, avatar, is_active
     FROM users
     WHERE is_active=1 AND id != ?
     ORDER BY name ASC
@@ -131,7 +188,7 @@ router.get('/users', verifyToken, (req, res) => {
 
 router.get('/teams', verifyToken, (req, res) => {
   const teams = db.prepare(`
-    SELECT t.*, u.name as leader_name,
+    SELECT t.id, t.name, t.leader_id, u.name as leader_name,
       (SELECT COUNT(*) FROM team_members tm WHERE tm.team_id=t.id) as member_count
     FROM teams t
     LEFT JOIN users u ON u.id = t.leader_id
@@ -150,6 +207,7 @@ router.get('/clients', verifyToken, (req, res) => {
 });
 
 router.get('/conversations', verifyToken, (req, res) => {
+  const isAdmin = req.user.role === 'admin';
   const conversations = db.prepare(`
     SELECT c.*,
       cl.name as client_name,
@@ -204,7 +262,7 @@ router.get('/conversations', verifyToken, (req, res) => {
         SELECT COUNT(*)
         FROM chat_messages m
         WHERE m.conversation_id = c.id
-          AND m.sender_id != ?
+          AND (m.sender_id IS NULL OR m.sender_id != ?)
           AND NOT EXISTS (
             SELECT 1 FROM chat_message_reads r
             WHERE r.message_id = m.id AND r.user_id = ?
@@ -212,14 +270,36 @@ router.get('/conversations', verifyToken, (req, res) => {
       ) as unread_count
     FROM conversations c
     LEFT JOIN clients cl ON cl.id = c.client_id
-    JOIN conversation_participants me ON me.conversation_id = c.id AND me.user_id = ?
+    WHERE (? = 1 
+      OR EXISTS (SELECT 1 FROM conversation_participants cp WHERE cp.conversation_id = c.id AND cp.user_id = ?)
+      OR (c.project_id IS NOT NULL AND (
+            EXISTS (SELECT 1 FROM projects pr WHERE pr.id = c.project_id AND pr.team_leader_id = ?)
+            OR EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = c.project_id AND pm.user_id = ?)
+         ))
+      OR (c.team_id IS NOT NULL AND (
+            EXISTS (SELECT 1 FROM teams tm WHERE tm.id = c.team_id AND tm.leader_id = ?)
+            OR EXISTS (SELECT 1 FROM team_members tmb WHERE tmb.team_id = c.team_id AND tmb.user_id = ?)
+         ))
+    )
     ORDER BY COALESCE(last_message_at, c.updated_at) DESC, c.id DESC
-  `).all(req.user.id, req.user.id, req.user.id, req.user.id, req.user.id, req.user.id);
+  `).all(
+    req.user.id, req.user.id, req.user.id,
+    req.user.id, req.user.id,
+    isAdmin ? 1 : 0, req.user.id,
+    req.user.id, req.user.id,
+    req.user.id, req.user.id
+  );
 
   conversations.forEach(c => {
     if (c.client_id || c.client_name) {
       c.category = 'clients';
-      c.display_title = c.client_name || (c.title && c.title !== 'Client Chat Thread' ? c.title : 'Client');
+      if (c.is_group) {
+        c.display_title = (c.title && c.title !== 'Client Chat Thread' && c.title !== 'Mission Control & Admin' && c.title !== 'Group Chat')
+          ? c.title
+          : (c.client_name ? `${c.client_name} Squad` : 'Client Group');
+      } else {
+        c.display_title = c.client_name || (c.title && c.title !== 'Client Chat Thread' ? c.title : 'Client');
+      }
     } else if (c.is_group || c.team_id || c.participant_count > 2) {
       c.category = 'teams';
       c.display_title = (c.title && c.title !== 'Group Chat' && c.title !== 'Client Chat Thread') ? c.title : 'Team Group';
@@ -237,7 +317,7 @@ router.post('/conversations/client/:clientId', verifyToken, (req, res) => {
   const client = db.prepare('SELECT * FROM clients WHERE id=?').get(clientId);
   if (!client) return res.status(404).json({ message: 'Client not found' });
 
-  let conv = db.prepare('SELECT * FROM conversations WHERE client_id=? LIMIT 1').get(clientId);
+  let conv = db.prepare('SELECT * FROM conversations WHERE client_id=? AND (is_group=0 OR is_group IS NULL) LIMIT 1').get(clientId);
   if (!conv) {
     const title = client.name || 'Client';
     const info = db.prepare('INSERT INTO conversations (title, is_group, client_id, created_by) VALUES (?, 0, ?, ?)').run(title, clientId, req.user.id);
@@ -250,6 +330,60 @@ router.post('/conversations/client/:clientId', verifyToken, (req, res) => {
 
   const fullConv = loadConversation(conv.id);
   res.json({ message: 'Client conversation ready', conversation: fullConv });
+});
+
+router.post('/conversations/client-group', verifyToken, (req, res) => {
+  const { client_id, project_id, title, participant_ids } = req.body;
+  const clientId = Number(client_id);
+  if (!clientId) {
+    return res.status(400).json({ message: 'Valid client selection is required' });
+  }
+
+  const client = db.prepare('SELECT id, name, company FROM clients WHERE id=? AND is_active=1').get(clientId);
+  if (!client) {
+    return res.status(404).json({ message: 'Active client not found' });
+  }
+
+  const groupTitle = String(title || `${client.name} Project Squad`).trim();
+  const projectId = project_id ? Number(project_id) : null;
+
+  // Insert group conversation with client_id
+  const info = db.prepare(`
+    INSERT INTO conversations (title, is_group, client_id, project_id, created_by)
+    VALUES (?, 1, ?, ?, ?)
+  `).run(groupTitle, clientId, projectId, req.user.id);
+
+  const convId = info.lastInsertRowid;
+
+  // Collect participant user IDs
+  const rawParticipantIds = normalizeIds(participant_ids);
+  const participantIds = new Set([req.user.id, ...rawParticipantIds]);
+
+  // Always include all active admins
+  const admins = db.prepare("SELECT id FROM users WHERE role='admin' AND is_active=1").all();
+  admins.forEach(a => participantIds.add(a.id));
+
+  // If project_id provided, include project leader
+  if (projectId) {
+    const proj = db.prepare("SELECT team_leader_id FROM projects WHERE id=?").get(projectId);
+    if (proj?.team_leader_id) participantIds.add(proj.team_leader_id);
+  }
+
+  const insertP = db.prepare('INSERT OR IGNORE INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)');
+  for (const uid of participantIds) {
+    insertP.run(convId, uid);
+  }
+
+  const fullConv = loadConversation(convId);
+  if (fullConv) {
+    fullConv.client_id = clientId;
+    fullConv.client_name = client.name;
+    fullConv.client_company = client.company;
+    fullConv.category = 'clients';
+    fullConv.display_title = groupTitle;
+  }
+
+  res.json({ message: 'Client group created successfully', conversation: fullConv });
 });
 
 router.post('/conversations/team/:teamId', verifyToken, (req, res) => {
