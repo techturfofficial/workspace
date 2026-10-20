@@ -206,20 +206,73 @@ const drive = {
         }
     },
 
+    openFolderModal() {
+        const folderForm = document.getElementById('create-folder-form');
+        if (folderForm) folderForm.reset();
+        const alertBox = document.getElementById('create-folder-alert');
+        if (alertBox) alertBox.style.display = 'none';
+        const submitBtn = document.getElementById('create-folder-submit-btn');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'CREATE FOLDER';
+        }
+        openModal('folder-modal');
+        setTimeout(() => {
+            const input = document.getElementById('folder-name');
+            if (input) input.focus();
+        }, 150);
+    },
+
     setupEventListeners() {
         const folderForm = document.getElementById('create-folder-form');
         if (folderForm) {
             folderForm.onsubmit = async (e) => {
                 e.preventDefault();
-                const name = document.getElementById('folder-name').value;
+                const nameInput = document.getElementById('folder-name');
+                const submitBtn = document.getElementById('create-folder-submit-btn');
+                const alertBox = document.getElementById('create-folder-alert');
+                const alertMsg = document.getElementById('create-folder-alert-msg');
+
+                const name = (nameInput ? nameInput.value : '').trim();
+                if (!name) {
+                    if (alertBox && alertMsg) {
+                        alertMsg.textContent = 'Please enter a valid folder name';
+                        alertBox.style.display = 'flex';
+                    }
+                    if (nameInput) nameInput.focus();
+                    showToast('Please enter a valid folder name', 'warning');
+                    return;
+                }
+
+                if (alertBox) alertBox.style.display = 'none';
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> CREATING...';
+                }
+
                 try {
-                    await api.post('/drive/folder', { name, parentId: this.currentParentId });
-                    showToast('Folder created', 'success');
+                    const parentId = (this.currentParentId && this.currentParentId !== 'null' && this.currentParentId !== 'undefined') ? Number(this.currentParentId) : null;
+                    await api.post('/drive/folder', { name, parentId });
+                    showToast(`Folder "${name}" created successfully`, 'success');
                     closeModal('folder-modal');
-                    this.loadItems(this.currentParentId);
                     folderForm.reset();
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = 'CREATE FOLDER';
+                    }
+                    await this.loadItems(this.currentParentId);
                 } catch (err) {
-                    showToast(err.message, 'error');
+                    console.error('Create folder error:', err);
+                    const errorText = err.message || 'Failed to create folder. Please try again.';
+                    if (alertBox && alertMsg) {
+                        alertMsg.textContent = errorText;
+                        alertBox.style.display = 'flex';
+                    }
+                    showToast(errorText, 'error');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = 'CREATE FOLDER';
+                    }
                 }
             };
         }
@@ -529,3 +582,4 @@ window.drive = drive;
 window.initDrive = () => drive.init();
 window.handleFileUpload = (e) => drive.handleFileUpload(e);
 window.navigateTo = (id) => drive.navigateTo(id);
+window.openFolderModal = () => drive.openFolderModal();

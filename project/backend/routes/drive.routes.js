@@ -30,6 +30,14 @@ const isAdmin = (user) => {
   return secondary.includes('admin');
 };
 
+const isLeaderOrAdmin = (user) => {
+  if (!user) return false;
+  if (isAdmin(user)) return true;
+  if (user.role === 'team_leader') return true;
+  const secondary = (user.secondary_roles || '').split(',').map(r => r.trim());
+  return secondary.includes('team_leader');
+};
+
 const userCanAccessItem = (userId, itemId) => {
   return !!db.prepare(`
     SELECT 1
@@ -37,7 +45,8 @@ const userCanAccessItem = (userId, itemId) => {
     LEFT JOIN drive_access da ON da.item_id = di.id
     WHERE di.id = ?
       AND (
-        di.created_by = ?
+        di.parent_id IS NULL
+        OR di.created_by = ?
         OR da.user_id = ?
         OR EXISTS (
           WITH RECURSIVE parents(id, parent_id) AS (
@@ -71,18 +80,28 @@ router.get('/items', verifyToken, (req, res) => {
   }
 });
 
-// Create Folder - Only admin and team_leader can create folders
+// Create Folder - Verified staff members can create folders
 router.post('/folder', verifyToken, (req, res) => {
   const { name, parentId: pId } = req.body;
-  const parentId = (pId && pId !== 'null' && pId !== 'undefined') ? pId : null;
 
   const nameVal = validateString(name, 'Folder name', { minLength: 1, maxLength: 120 });
   if (!nameVal.valid) return res.status(400).json({ error: nameVal.error });
-  
-  // Check if user is admin or team_leader
-  const isTeamLeader = req.user.role === 'team_leader';
-  const isAuthorized = isAdmin(req.user) || isTeamLeader;
-  if (!isAuthorized) return res.status(403).json({ error: 'Only admins and team leaders can create folders' });
+
+  let parentId = null;
+  if (pId !== null && pId !== undefined && pId !== '' && pId !== 'null' && pId !== 'undefined') {
+    const pIdVal = validateId(pId, 'Parent ID');
+    if (!pIdVal.valid) return res.status(400).json({ error: 'Invalid parent folder ID' });
+    parentId = pIdVal.value;
+
+    const parentFolder = db.prepare("SELECT id, type FROM drive_items WHERE id = ?").get(parentId);
+    if (!parentFolder || parentFolder.type !== 'folder') {
+      return res.status(404).json({ error: 'Parent folder does not exist' });
+    }
+
+    if (!isAdmin(req.user) && !userCanAccessItem(req.user.id, parentId)) {
+      return res.status(403).json({ error: 'Access denied to target parent folder' });
+    }
+  }
 
   try {
     const result = db.prepare('INSERT INTO drive_items (name, type, parent_id, created_by) VALUES (?, ?, ?, ?)').run(
@@ -95,17 +114,26 @@ router.post('/folder', verifyToken, (req, res) => {
   }
 });
 
-// Upload File - Only admin and team_leader can upload files
+// Upload File - Verified staff members can upload files
 router.post('/upload', verifyToken, upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
   
   const { parentId: pId } = req.body;
-  const parentId = (pId && pId !== 'null' && pId !== 'undefined') ? pId : null;
+  let parentId = null;
+  if (pId !== null && pId !== undefined && pId !== '' && pId !== 'null' && pId !== 'undefined') {
+    const pIdVal = validateId(pId, 'Parent ID');
+    if (!pIdVal.valid) return res.status(400).json({ error: 'Invalid parent folder ID' });
+    parentId = pIdVal.value;
 
-  // Check if user is admin or team_leader
-  const isTeamLeader = req.user.role === 'team_leader';
-  const isAuthorized = isAdmin(req.user) || isTeamLeader;
-  if (!isAuthorized) return res.status(403).json({ error: 'Only admins and team leaders can upload files' });
+    const parentFolder = db.prepare("SELECT id, type FROM drive_items WHERE id = ?").get(parentId);
+    if (!parentFolder || parentFolder.type !== 'folder') {
+      return res.status(404).json({ error: 'Parent folder does not exist' });
+    }
+
+    if (!isAdmin(req.user) && !userCanAccessItem(req.user.id, parentId)) {
+      return res.status(403).json({ error: 'Access denied to target parent folder' });
+    }
+  }
 
   try {
     const result = db.prepare('INSERT INTO drive_items (name, type, parent_id, mime_type, file_size, file_path, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)').run(

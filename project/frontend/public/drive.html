@@ -584,7 +584,7 @@
                         <i class="fas fa-cloud-upload-alt"></i><span>Upload File</span>
                     </button>
                     <button class="btn-secondary"
-                        onclick="openModal('folder-modal')">
+                        onclick="if(window.drive && drive.openFolderModal){drive.openFolderModal();}else{openModal('folder-modal');}">
                         <i class="fas fa-folder-plus"></i><span>New Folder</span>
                     </button>
                     <input type="file" id="file-upload-input" class="hidden" onchange="handleFileUpload(event)">
@@ -624,12 +624,16 @@
                     onclick="closeModal('folder-modal')"></i>
             </div>
             <form id="create-folder-form">
+                <div id="create-folder-alert" style="display:none; margin-bottom:16px; padding:12px 14px; border-radius:6px; background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239, 68, 68, 0.35); color:#ef4444; font-size:0.85rem; align-items:center; gap:8px;">
+                    <i class="fas fa-exclamation-circle" style="flex-shrink:0;"></i>
+                    <span id="create-folder-alert-msg" style="flex:1;"></span>
+                </div>
                 <div class="form-group">
                     <label>FOLDER NAME</label>
                     <input type="text" class="form-control" id="folder-name" required placeholder="Enter folder name..."
-                        title="Folder Name" aria-label="Folder Name">
+                        title="Folder Name" aria-label="Folder Name" autocomplete="off" maxlength="120">
                 </div>
-                <button type="submit" class="btn-primary btn-drawer-submit">CREATE FOLDER</button>
+                <button type="submit" id="create-folder-submit-btn" class="btn-primary btn-drawer-submit">CREATE FOLDER</button>
             </form>
         </div>
     </div>

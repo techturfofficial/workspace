@@ -17,7 +17,10 @@ const api = {
       const res = await fetch(this.BASE + endpoint, options);
       if (res.status === 401) { auth.logout(); return; }
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+      if (!res.ok) {
+        const errorMsg = data.error || data.message || (typeof data === 'string' ? data : `HTTP ${res.status}`);
+        throw new Error(errorMsg);
+      }
       return data;
     } catch (error) {
       console.error(`API Error [${method} ${endpoint}]:`, error.message);

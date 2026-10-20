@@ -24,7 +24,8 @@ router.post('/upload-chunk', verifyToken, async (req, res) => {
   const totalChunks = Number(req.headers['x-total-chunks']);
   const fileName = sanitizeFilename(path.basename(String(req.headers['x-file-name'] || '')));
   const uploadId = String(req.headers['x-upload-id'] || '').replace(/[^a-zA-Z0-9_-]/g, '');
-  const parentId = req.headers['x-parent-id'] || null;
+  const rawParentId = req.headers['x-parent-id'];
+  const parentId = (rawParentId && rawParentId !== 'null' && rawParentId !== 'undefined' && rawParentId !== '') ? (Number(rawParentId) || null) : null;
   if (!fileName || !uploadId) return res.status(400).json({ message: 'Missing fileName or uploadId' });
   if (!Number.isInteger(chunkNumber) || !Number.isInteger(totalChunks) || chunkNumber < 0 || totalChunks < 1 || chunkNumber >= totalChunks) {
     return res.status(400).json({ message: 'Invalid chunk metadata' });
