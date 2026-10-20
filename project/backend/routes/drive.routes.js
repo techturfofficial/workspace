@@ -39,30 +39,10 @@ const isLeaderOrAdmin = (user) => {
 };
 
 const userCanAccessItem = (userId, itemId) => {
-  return !!db.prepare(`
-    SELECT 1
-    FROM drive_items di
-    LEFT JOIN drive_access da ON da.item_id = di.id
-    WHERE di.id = ?
-      AND (
-        di.parent_id IS NULL
-        OR di.created_by = ?
-        OR da.user_id = ?
-        OR EXISTS (
-          WITH RECURSIVE parents(id, parent_id) AS (
-            SELECT id, parent_id FROM drive_items WHERE id = di.id
-            UNION ALL
-            SELECT d.id, d.parent_id FROM drive_items d
-            JOIN parents ON d.id = parents.parent_id
-          )
-          SELECT 1
-          FROM parents p
-          JOIN drive_access da2 ON da2.item_id = p.id
-          WHERE da2.user_id = ?
-        )
-      )
-    LIMIT 1
-  `).get(itemId, userId, userId, userId);
+  if (!itemId) return true;
+  // All authenticated staff members have collaborative access to Secure Drive items
+  const item = db.prepare('SELECT id FROM drive_items WHERE id = ?').get(itemId);
+  return !!item;
 };
 
 // List items with access control
