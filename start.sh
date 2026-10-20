@@ -1,15 +1,23 @@
 #!/bin/bash
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+PROJECT_DIR="$DIR/project"
+if [ ! -d "$PROJECT_DIR" ]; then
+  PROJECT_DIR="$DIR"
+fi
 
-# Install frontend dependencies and build
-cd frontend
-npm ci
-npm run build
-cd ..
+cd "$PROJECT_DIR"
 
 # Install backend dependencies
-cd backend
-npm ci
+echo "Installing dependencies..."
+npm install --production
 
-# Start backend with PM2
-echo "Starting backend with PM2 on port 5000..."
-pm2 start index.js --name techturf-backend
+# Restart or start PM2 process
+if command -v pm2 &> /dev/null; then
+  echo "Restarting backend with PM2..."
+  pm2 restart techturf-backend 2>/dev/null || pm2 start backend/index.js --name techturf-backend
+  pm2 save
+  echo "Backend restarted successfully under PM2."
+else
+  echo "PM2 not found. Starting with Node..."
+  node backend/index.js
+fi

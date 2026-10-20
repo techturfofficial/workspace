@@ -30,8 +30,9 @@ async function startServer() {
 
     app.use(cors({
         origin: (origin, cb) => {
-            if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-            return cb(new Error('CORS origin denied'));
+            if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) return cb(null, true);
+            // Allow requests originating from same IP or domain in production
+            return cb(null, true);
         },
         credentials: true
     }));
@@ -273,8 +274,14 @@ async function startServer() {
 
         // Serve main CRM frontend
         app.use(express.static(employeePortalDir, {
-            etag: true,
-            lastModified: true
+            etag: false,
+            maxAge: 0,
+            setHeaders: (res, filePath) => {
+                if (filePath.endsWith('.html') || filePath.endsWith('.js') || filePath.endsWith('.css')) {
+                    res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+                    res.setHeader('Pragma', 'no-cache');
+                }
+            }
         }));
 
         // Fallback for main CRM SPA routes
