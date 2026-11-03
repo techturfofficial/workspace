@@ -26,17 +26,24 @@ const db = new Database(dbPath);
 // Concurrency/performance tuning. WAL lets readers run while a write is in flight
 // (the default rollback journal blocks every reader during each write), and
 // busy_timeout makes overlapping writers wait instead of failing with SQLITE_BUSY.
-try {
-  db.pragma('journal_mode = WAL');
-  db.pragma('synchronous = NORMAL');
-  db.pragma('busy_timeout = 5000');
-  db.pragma('cache_size = -65536');     // 64 MB page cache
-  db.pragma('temp_store = MEMORY');
-  db.pragma('mmap_size = 268435456');   // 256 MB memory-mapped reads
-  db.pragma('wal_autocheckpoint = 1000');
-} catch (e) {
-  console.warn('[db] Could not apply performance pragmas:', e.message);
-}
+// busy_timeout goes first: the employee (3000) and client (5000) portals are two processes
+// on the same file, and starting together one of them must wait for the other's lock.
+// Each pragma is applied separately so one failure can't skip the rest.
+[
+  'busy_timeout = 5000',
+  'journal_mode = WAL',
+  'synchronous = NORMAL',
+  'cache_size = -65536',     // 64 MB page cache
+  'temp_store = MEMORY',
+  'mmap_size = 268435456',   // 256 MB memory-mapped reads
+  'wal_autocheckpoint = 1000'
+].forEach(pragma => {
+  try {
+    db.pragma(pragma);
+  } catch (e) {
+    console.warn(`[db] Could not apply PRAGMA ${pragma}:`, e.message);
+  }
+});
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS users (

@@ -541,7 +541,13 @@ const driveItems = [
   req('Share file with leader (admin) -> 200', 'POST', '/api/drive/share', { token: 'admin_token', pre: needs('file_id', 'leader_id'), body: json({ itemId: '{{file_id}}', userIds: ['{{leader_id}}'], accessLevel: 'viewer' }), tests: expect(200) }),
   req('File permissions (admin) -> 200', 'GET', '/api/drive/permissions/{{file_id}}', { token: 'admin_token', pre: needs('file_id'), tests: expect(200, `pm.test('Leader listed', () => pm.expect(pm.response.json().map(p => String(p.user_id))).to.include(String(pm.environment.get('leader_id'))));`) }),
   req('Revoke share (admin) -> 200', 'DELETE', '/api/drive/share/{{file_id}}/{{leader_id}}', { token: 'admin_token', pre: needs('file_id', 'leader_id'), tests: expect(200) }),
-  req('Employee cannot delete drive items -> 403', 'DELETE', '/api/drive/{{folder_id}}', { token: 'staff_token', pre: needs('folder_id'), tests: expect(403) })
+  req('Leader adds a folder inside the designer\'s folder -> 200', 'POST', '/api/drive/folder', { token: 'leader_token', pre: needs('folder_id'), body: json({ name: 'Leader notes', parentId: '{{folder_id}}' }), tests: expect(200, saveId('leader_folder_id')) }),
+  req('Delete someone else\'s folder -> 403', 'DELETE', '/api/drive/{{folder_id}}', { token: 'leader_token', pre: needs('folder_id'), tests: expect(403) }),
+  req('Delete own folder that contains others\' items -> 403', 'DELETE', '/api/drive/{{folder_id}}', { token: 'staff_token', pre: needs('folder_id'), tests: expect(403, `pm.test('Explains why', () => pm.expect(pm.response.json().error).to.match(/added by other people/));`) }),
+  req('Leader deletes own folder -> 200', 'DELETE', '/api/drive/{{leader_folder_id}}', { token: 'leader_token', pre: needs('leader_folder_id'), tests: expect(200, `pm.environment.unset('leader_folder_id');`) }),
+  req('Designer deletes own sub-folder -> 200', 'DELETE', '/api/drive/{{subfolder_id}}', { token: 'staff_token', pre: needs('subfolder_id'), tests: expect(200) }),
+  req('Deleted sub-folder is gone', 'GET', '/api/drive/items?parentId={{folder_id}}', { token: 'staff_token', pre: needs('folder_id'), tests: expect(200, `pm.test('No "Designs" folder any more', () => pm.expect(pm.response.json().map(i => i.name)).to.not.include('Designs'));`) }),
+  req('Delete unknown item -> 404', 'DELETE', '/api/drive/999999999', { token: 'staff_token', tests: expect(404) })
 ];
 const drive = folder('4.15 Secure Drive', driveItems);
 
@@ -666,6 +672,7 @@ const del = (name, p, v, token = 'admin_token', status = [200, 404]) =>
   req(name, 'DELETE', p, { token, pre: needs(v), tests: expect(status, `pm.environment.unset('${v}');`) });
 const cleanup = folder('8. Cleanup (removes everything this run created)', [
   del('Delete whiteboard', '/api/workspace/{{whiteboard_id}}', 'whiteboard_id', 'staff_token'),
+  del('Delete leader drive folder (if left over)', '/api/drive/{{leader_folder_id}}', 'leader_folder_id'),
   del('Delete drive folder (and files)', '/api/drive/{{folder_id}}', 'folder_id'),
   del('Delete course', '/api/courses/{{course_id}}', 'course_id'),
   del('Delete ticket', '/api/tickets/{{ticket_id}}', 'ticket_id'),

@@ -93,9 +93,17 @@
             z-index: 10;
         }
 
-        .drive-item:hover .drive-item-actions {
+        .drive-item:hover .drive-item-actions,
+        .drive-item:focus-within .drive-item-actions {
             opacity: 1;
             transform: scale(1.05);
+        }
+
+        /* Touch screens have no hover: keep the action buttons visible. */
+        @media (hover: none) {
+            .drive-item-actions {
+                opacity: 1;
+            }
         }
 
         .action-btn {
@@ -715,7 +723,7 @@
     <script src="js/auth.js?v=2.5" defer></script>
     <script src="js/three-bg.js?v=2.5" defer></script>
     <script src="js/sidebar.js?v=2.5" defer></script>
-    <script src="js/drive.js?v=2.6" defer></script>
+    <script src="js/drive.js?v=2.7" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             auth.requireAuth();

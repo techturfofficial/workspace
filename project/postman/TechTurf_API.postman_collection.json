@@ -11811,45 +11811,6 @@
           }
         },
         {
-          "name": "DELETE /api/drive/:id as designer -> 403",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 403', () => pm.response.to.have.status(403));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{staff_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{base_url}}/api/drive/999999",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "drive",
-                "999999"
-              ]
-            }
-          }
-        },
-        {
           "name": "GET /api/enterprise/monitoring/summary as designer -> 403",
           "event": [
             {
@@ -24001,7 +23962,71 @@
               }
             },
             {
-              "name": "Employee cannot delete drive items -> 403",
+              "name": "Leader adds a folder inside the designer's folder -> 200",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const missing = [\"folder_id\"].filter(v => !pm.environment.get(v));",
+                      "if (missing.length) { console.log('Skipping (missing ' + missing.join(', ') + ')'); pm.execution.skipRequest(); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('Returns id', () => pm.expect(pm.response.json().id).to.exist); pm.environment.set('leader_folder_id', pm.response.json().id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{leader_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/drive/folder",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "drive",
+                    "folder"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Leader notes\",\n  \"parentId\": \"{{folder_id}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Delete someone else's folder -> 403",
               "event": [
                 {
                   "listen": "prerequest",
@@ -24031,6 +24056,56 @@
                   "bearer": [
                     {
                       "key": "token",
+                      "value": "{{leader_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/drive/{{folder_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "drive",
+                    "{{folder_id}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Delete own folder that contains others' items -> 403",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const missing = [\"folder_id\"].filter(v => !pm.environment.get(v));",
+                      "if (missing.length) { console.log('Skipping (missing ' + missing.join(', ') + ')'); pm.execution.skipRequest(); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 403', () => pm.response.to.have.status(403));",
+                      "pm.test('Explains why', () => pm.expect(pm.response.json().error).to.match(/added by other people/));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
                       "value": "{{staff_token}}",
                       "type": "string"
                     }
@@ -24045,6 +24120,200 @@
                     "api",
                     "drive",
                     "{{folder_id}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Leader deletes own folder -> 200",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const missing = [\"leader_folder_id\"].filter(v => !pm.environment.get(v));",
+                      "if (missing.length) { console.log('Skipping (missing ' + missing.join(', ') + ')'); pm.execution.skipRequest(); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.environment.unset('leader_folder_id');"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{leader_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/drive/{{leader_folder_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "drive",
+                    "{{leader_folder_id}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Designer deletes own sub-folder -> 200",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const missing = [\"subfolder_id\"].filter(v => !pm.environment.get(v));",
+                      "if (missing.length) { console.log('Skipping (missing ' + missing.join(', ') + ')'); pm.execution.skipRequest(); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{staff_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/drive/{{subfolder_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "drive",
+                    "{{subfolder_id}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Deleted sub-folder is gone",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const missing = [\"folder_id\"].filter(v => !pm.environment.get(v));",
+                      "if (missing.length) { console.log('Skipping (missing ' + missing.join(', ') + ')'); pm.execution.skipRequest(); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('No \"Designs\" folder any more', () => pm.expect(pm.response.json().map(i => i.name)).to.not.include('Designs'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{staff_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/drive/items?parentId={{folder_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "drive",
+                    "items"
+                  ],
+                  "query": [
+                    {
+                      "key": "parentId",
+                      "value": "{{folder_id}}"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Delete unknown item -> 404",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 404', () => pm.response.to.have.status(404));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{staff_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/drive/999999999",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "drive",
+                    "999999999"
                   ]
                 }
               }
@@ -28408,6 +28677,56 @@
                 "api",
                 "workspace",
                 "{{whiteboard_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete leader drive folder (if left over)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const missing = [\"leader_folder_id\"].filter(v => !pm.environment.get(v));",
+                  "if (missing.length) { console.log('Skipping (missing ' + missing.join(', ') + ')'); pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of 200/404', () => pm.expect([200,404]).to.include(pm.response.code));",
+                  "pm.environment.unset('leader_folder_id');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/drive/{{leader_folder_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "drive",
+                "{{leader_folder_id}}"
               ]
             }
           }

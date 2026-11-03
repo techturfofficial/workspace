@@ -10,3 +10,7 @@ storage/
 tmp/
 *.log
 .env
+# SQLite WAL-mode side files and deploy.sh backups of the live database
+*.db-wal
+*.db-shm
+*.db.backup_*

@@ -61,7 +61,7 @@ const drive = {
             <div class="drive-item-actions">
                 ${auth.hasRole('admin') ? `<div class="action-btn" data-action="share"><i class="fas fa-share-alt"></i></div>` : ''}
                 ${!isFolder ? `<div class="action-btn" data-action="download"><i class="fas fa-download"></i></div>` : ''}
-                ${auth.hasRole('admin') ? `<div class="action-btn delete" data-action="delete"><i class="fas fa-trash-alt"></i></div>` : ''}
+                ${this.canDelete(item) ? `<div class="action-btn delete" data-action="delete" title="Delete ${isFolder ? 'folder' : 'file'}"><i class="fas fa-trash-alt"></i></div>` : ''}
             </div>
             <i class="fas ${icon} drive-item-icon"></i>
             <div class="drive-item-name" title="${safeName}">${safeName}</div>
@@ -74,7 +74,7 @@ const drive = {
                 const action = btn.dataset.action;
                 if (action === 'share') this.openShareModal(item.id, item.name);
                 else if (action === 'download') this.downloadFile(item.id);
-                else if (action === 'delete') this.deleteItem(item.id);
+                else if (action === 'delete') this.deleteItem(item.id, item);
             };
         });
 
@@ -403,8 +403,19 @@ const drive = {
         }
     },
 
-    async deleteItem(id) {
-        if (!confirm('Permanently delete this item? This cannot be undone.')) return;
+    // Admins can delete anything; everyone else can delete what they created (the server
+    // also refuses folders that contain other people's items).
+    canDelete(item) {
+        if (auth.hasRole('admin')) return true;
+        const me = auth.getUser();
+        return !!me && Number(item.created_by) === Number(me.id);
+    },
+
+    async deleteItem(id, item) {
+        const message = item && item.type === 'folder'
+            ? `Delete the folder "${item.name}" and everything inside it? This cannot be undone.`
+            : `Permanently delete ${item ? `"${item.name}"` : 'this item'}? This cannot be undone.`;
+        if (!confirm(message)) return;
         try {
             await api.delete(`/drive/${id}`);
             showToast('Item deleted', 'success');

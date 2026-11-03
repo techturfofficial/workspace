@@ -386,22 +386,36 @@ router.get('/preview-data/:id', verifyToken, async (req, res) => {
   }
 });
 
-// Delete Item
-router.delete('/:id', verifyToken, checkRole('admin'), (req, res) => {
+// Delete Item - admins can delete anything; employees can delete folders/files they
+// created, as long as nothing inside a folder belongs to someone else (deleting a folder
+// removes everything beneath it).
+router.delete('/:id', verifyToken, (req, res) => {
   try {
     const item = stmts.itemById.get(req.params.id);
     if (!item) return res.status(404).json({ error: 'Item not found' });
 
-    // Collect stored files of the item and (for folders) everything beneath it, so a
-    // folder delete doesn't leave orphaned files on disk.
-    const files = db.prepare(`
+    // The item and (for folders) everything beneath it.
+    const tree = db.prepare(`
       WITH RECURSIVE tree(id) AS (
         SELECT id FROM drive_items WHERE id = ?
         UNION ALL
         SELECT d.id FROM drive_items d JOIN tree t ON d.parent_id = t.id
       )
-      SELECT file_path FROM drive_items WHERE id IN (SELECT id FROM tree) AND type = 'file' AND file_path IS NOT NULL
+      SELECT id, type, file_path, created_by FROM drive_items WHERE id IN (SELECT id FROM tree)
     `).all(item.id);
+
+    if (!isAdmin(req.user)) {
+      if (Number(item.created_by) !== Number(req.user.id)) {
+        return res.status(403).json({ error: 'You can only delete folders and files you created' });
+      }
+      const othersCount = tree.filter(t => Number(t.created_by) !== Number(req.user.id)).length;
+      if (othersCount > 0) {
+        return res.status(403).json({ error: `This folder contains ${othersCount} item(s) added by other people. Ask an admin to delete it, or remove your own items individually.` });
+      }
+    }
+
+    // Stored files to remove from disk after the rows are gone.
+    const files = tree.filter(t => t.type === 'file' && t.file_path);
 
     // SQLite with foreign_keys=ON will handle children of a folder
     db.prepare('DELETE FROM drive_items WHERE id = ?').run(item.id);
