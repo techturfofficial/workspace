@@ -40,6 +40,20 @@ techturf/
    pm2 start backend/index.js --name techturf-backend
    ```
 
+## Database
+
+The SQLite database (`techturf.db`) is **not stored in git**: it holds employee and
+client data and password hashes. A fresh install starts with an empty database. Create
+the first admin from the `project` folder:
+
+```bash
+node create_admin.js you@techturf.com 'Your#Strong1Password' "Your Name"
+```
+
+Back up the live database with
+`node project/backend/scripts/backup-db.js techturf.db techturf.db.backup_<date>`.
+`deploy.sh` does this automatically before every update.
+
 ## NGINX Example Config
 
 ```

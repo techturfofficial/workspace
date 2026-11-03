@@ -33,7 +33,9 @@ if [ -f "$DB" ]; then
   fi
 fi
 
-# 3. Reset local changes to git-tracked files (avoiding merge blocks)
+# 3. Reset local changes to git-tracked files (avoiding merge blocks).
+# techturf.db is no longer tracked by git; on the first deploy after that change,
+# "git reset --hard" removes the old tracked copy and step 5 restores the live data.
 echo "[3/6] Cleaning local git state..."
 git checkout -- "$DB" 2>/dev/null || true
 git stash || true

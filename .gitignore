@@ -10,6 +10,11 @@ storage/
 tmp/
 *.log
 .env
+# Databases hold employee/client data and password hashes: never commit them.
+# (Back them up with project/backend/scripts/backup-db.js, not git.)
+*.db
+*.sqlite
+*.sqlite3
 # SQLite WAL-mode side files and deploy.sh backups of the live database
 *.db-wal
 *.db-shm
