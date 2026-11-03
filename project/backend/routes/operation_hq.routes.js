@@ -33,7 +33,7 @@ router.post('/blitz-assign', verifyToken, checkRole('admin','team_leader'), (req
   if (!project_id) return res.status(400).json({ message: 'Project ID required' });
 
   const tasks = db.prepare('SELECT id FROM tasks WHERE project_id=? AND assigned_to IS NULL').all(project_id);
-  const users = db.prepare('SELECT id FROM users WHERE role NOT IN ("admin", "client_handler") LIMIT ?').all(users_count || 3);
+  const users = db.prepare("SELECT id FROM users WHERE role NOT IN ('admin', 'client_handler') AND is_active = 1 LIMIT ?").all(users_count || 3);
 
   if (users.length === 0) {
     return res.status(400).json({ message: 'No eligible users available for assignment.' });
@@ -42,7 +42,7 @@ router.post('/blitz-assign', verifyToken, checkRole('admin','team_leader'), (req
   let assignedCount = 0;
   tasks.forEach((t, i) => {
     if (users[i % users.length]) {
-       db.prepare('UPDATE tasks SET assigned_to=?, status="in_progress" WHERE id=?').run(users[i % users.length].id, t.id);
+       db.prepare("UPDATE tasks SET assigned_to=?, status='in_progress' WHERE id=?").run(users[i % users.length].id, t.id);
        assignedCount++;
     }
   });

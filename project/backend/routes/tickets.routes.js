@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const db = require('../db');
-const { verifyToken } = require('../auth');
+const { verifyToken, userHasRole } = require('../auth');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -56,6 +56,16 @@ router.post('/', verifyToken, ticketUpload.single('image'), (req, res) => {
 router.put('/:id', verifyToken, (req, res) => {
   const { id } = req.params;
   const { status, assigned_to } = req.body;
+  const ticket = db.prepare('SELECT id, created_by, assigned_to FROM tickets WHERE id=?').get(id);
+  if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+  // Only admins (or the person the ticket is assigned to) may change status/assignment.
+  const isAdmin = userHasRole(req.user, 'admin');
+  if (!isAdmin && Number(ticket.assigned_to) !== Number(req.user.id)) {
+    return res.status(403).json({ error: 'Only an admin or the assigned person can update this ticket' });
+  }
+  if (assigned_to && !isAdmin) {
+    return res.status(403).json({ error: 'Only an admin can reassign tickets' });
+  }
   let sql = "UPDATE tickets SET updated_at=datetime('now')";
   const params = [];
   if (status) { sql += ', status=?'; params.push(status); }
@@ -69,6 +79,11 @@ router.put('/:id', verifyToken, (req, res) => {
 // Delete a ticket
 router.delete('/:id', verifyToken, (req, res) => {
   const { id } = req.params;
+  const ticket = db.prepare('SELECT id, created_by FROM tickets WHERE id=?').get(id);
+  if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+  if (!userHasRole(req.user, 'admin') && Number(ticket.created_by) !== Number(req.user.id)) {
+    return res.status(403).json({ error: 'You can only delete your own tickets' });
+  }
   db.prepare('DELETE FROM tickets WHERE id=?').run(id);
   res.json({ success: true });
 });

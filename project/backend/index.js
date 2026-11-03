@@ -14,6 +14,7 @@ require('dotenv').config();
 
 // Initialize the database connection (this also creates tables if missing)
 const db = require('./db');
+const { verifyToken, checkRole } = require('./auth');
 
 async function startServer() {
     const app = express();
@@ -160,6 +161,13 @@ async function startServer() {
     app.use('/api/client-portal', require('./routes/client_portal.routes'));
     app.use('/api/client-reports', require('./routes/client_reports.routes'));
     app.use('/api/enterprise', require('./routes/enterprise.routes'));
+    // Role workspaces whose pages already call these APIs (they were never mounted).
+    app.use('/api/design-vault', require('./routes/design_vault.routes'));
+    app.use('/api/nexus-lab', require('./routes/nexus_lab.routes'));
+    app.use('/api/broadcast-hub', require('./routes/broadcast_hub.routes'));
+    app.use('/api/creator-slate', require('./routes/creator_slate.routes'));
+    app.use('/api/content-forge', require('./routes/content_forge.routes'));
+    app.use('/api/operation-hq', require('./routes/operation_hq.routes'));
 
     // --- FRONTEND STUDIO ROUTES ---
     const frontendStudioRoutes = require('./routes/frontend_studio.routes');
@@ -168,7 +176,7 @@ async function startServer() {
     app.use('/api/frontend', frontendStudioRoutes);
 
     // --- ANALYTICS (Injected Routes) ---
-    app.get('/api/analytics/top-performers', (req, res) => {
+    app.get('/api/analytics/top-performers', verifyToken, (req, res) => {
         try {
             const period = (req.query.period || 'month').toLowerCase();
             const now = new Date();
@@ -216,7 +224,7 @@ async function startServer() {
         }
     });
 
-    app.get('/api/analytics/summary', (req, res) => {
+    app.get('/api/analytics/summary', verifyToken, (req, res) => {
         try {
             const users = db.prepare('SELECT COUNT(*) as count FROM users WHERE is_active=1').get().count;
             const projects = db.prepare("SELECT COUNT(*) as count FROM projects WHERE status != 'archived'").get().count;
@@ -260,7 +268,7 @@ async function startServer() {
     });
 
     // --- SETTINGS ---
-    app.get('/api/settings', (req, res) => {
+    app.get('/api/settings', verifyToken, checkRole('admin'), (req, res) => {
         try {
             const rows = db.prepare('SELECT * FROM settings').all();
             res.json(rows);
@@ -271,7 +279,7 @@ async function startServer() {
     });
 
     // --- AUDIT LOG ---
-    app.get('/api/audit', (req, res) => {
+    app.get('/api/audit', verifyToken, checkRole('admin'), (req, res) => {
         try {
             const rows = db.prepare('SELECT a.*, u.name as user_name FROM audit_log a LEFT JOIN users u ON a.user_id = u.id ORDER BY created_at DESC LIMIT 200').all();
             res.json(rows);
@@ -279,6 +287,12 @@ async function startServer() {
             console.error('Audit route error:', e);
             res.status(500).json({ error: 'Failed to load audit entries' });
         }
+    });
+
+    // Unknown API routes: answer with a JSON 404 instead of falling through to the HTML
+    // app shell (which returned 200 and made broken API calls look successful).
+    app.use('/api', (req, res) => {
+        res.status(404).json({ message: `API route not found: ${req.method} ${req.originalUrl.split('?')[0]}` });
     });
 
     // --- STATIC FILES ---

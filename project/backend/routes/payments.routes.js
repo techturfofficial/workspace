@@ -1,10 +1,14 @@
 const router = require('express').Router();
 const db = require('../db');
-const { verifyToken } = require('../auth');
+const { verifyToken, checkRole, userHasRole } = require('../auth');
+
+// Payments are salary/finance records: only admins manage them or see everyone's.
+// Other employees can only list their own payments.
 
 // List all payments (optionally filter by user or client)
 router.get('/', verifyToken, (req, res) => {
   const { user_id, client_id } = req.query;
+  const isAdmin = userHasRole(req.user, 'admin');
   let sql = `
     SELECT p.*, u.name as user_name, c.name as client_name, c.company as client_company,
       CASE
@@ -18,7 +22,8 @@ router.get('/', verifyToken, (req, res) => {
     WHERE 1=1
   `;
   const params = [];
-  if (user_id) { sql += ' AND p.user_id = ?'; params.push(user_id); }
+  if (!isAdmin) { sql += ' AND p.user_id = ?'; params.push(req.user.id); }
+  else if (user_id) { sql += ' AND p.user_id = ?'; params.push(user_id); }
   if (client_id) { sql += ' AND p.client_id = ?'; params.push(client_id); }
   sql += ' ORDER BY p.payment_date DESC, p.created_at DESC';
   const rows = db.prepare(sql).all(...params);
@@ -26,7 +31,7 @@ router.get('/', verifyToken, (req, res) => {
 });
 
 // Add a new payment
-router.post('/', verifyToken, (req, res) => {
+router.post('/', verifyToken, checkRole('admin'), (req, res) => {
   const { user_id, client_id, amount, currency, payment_date, method, notes, status, description } = req.body;
   if (!amount) return res.status(400).json({ error: 'Amount required' });
   const created_by = req.user?.id || 1;
@@ -51,7 +56,7 @@ router.post('/', verifyToken, (req, res) => {
 });
 
 // Get payments for a specific client (staff-facing)
-router.get('/client/:clientId', verifyToken, (req, res) => {
+router.get('/client/:clientId', verifyToken, checkRole('admin', 'team_leader', 'client_handler'), (req, res) => {
   const rows = db.prepare(`
     SELECT p.*, u.name as user_name
     FROM payments p
@@ -63,7 +68,7 @@ router.get('/client/:clientId', verifyToken, (req, res) => {
 });
 
 // Update a payment (status, amount, method, notes)
-router.put('/:id', verifyToken, (req, res) => {
+router.put('/:id', verifyToken, checkRole('admin'), (req, res) => {
   const { id } = req.params;
   const { status, amount, method, notes, payment_date } = req.body;
   
@@ -90,7 +95,7 @@ router.put('/:id', verifyToken, (req, res) => {
 });
 
 // Delete a payment
-router.delete('/:id', verifyToken, (req, res) => {
+router.delete('/:id', verifyToken, checkRole('admin'), (req, res) => {
   const { id } = req.params;
   db.prepare('DELETE FROM payments WHERE id=?').run(id);
   res.json({ success: true });

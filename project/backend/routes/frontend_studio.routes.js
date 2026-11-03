@@ -1,5 +1,9 @@
 // server/routes/frontend_studio.routes.js
 const router = require('express').Router();
+const { verifyToken } = require('../auth');
+
+// Every Frontend Studio endpoint requires a signed-in employee.
+router.use(verifyToken);
 
 // --- Sprint Board ---
 router.get('/sprint-board', (req, res) => {

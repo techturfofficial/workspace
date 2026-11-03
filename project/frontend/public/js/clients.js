@@ -340,6 +340,11 @@ async function openClientDetail(id) {
       <div style="margin-bottom:24px;">
         <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">Client Access ID</div>
         <div style="font-weight:700; color:var(--accent-secondary); font-family:var(--font-mono);">${c.client_login_id || '—'}</div>
+        ${(typeof auth !== 'undefined' && auth.hasRole('admin', 'client_handler')) ? `
+        <button type="button" class="btn-secondary" style="margin-top:8px; font-size:0.75rem; padding:6px 12px;" onclick="provisionClientPortalLogin(${Number(c.id)})">
+          <i class="fas fa-key"></i> ${c.has_portal_password ? 'Reset portal password' : 'Create portal password'}
+        </button>
+        <div id="portal-credentials-${Number(c.id)}" style="display:none; margin-top:8px; padding:10px; border:1px dashed var(--accent-primary); border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:0.8rem;"></div>` : ''}
       </div>
       
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px;">
@@ -1055,6 +1060,24 @@ async function deleteClient(id) {
   } catch (e) { showToast('Failed to delete client', 'error'); }
 }
 window.deleteClient = deleteClient;
+
+// Client portal sign-in needs a password. Generates a one-time password for the client
+// (shown once here - share it with the client; they can change it after signing in).
+async function provisionClientPortalLogin(id) {
+  if (!confirm('Generate a new client portal password? Any previous portal password stops working.')) return;
+  try {
+    const res = await api.post(`/clients/${id}/provision-login`, {});
+    const box = document.getElementById(`portal-credentials-${id}`);
+    if (box) {
+      box.style.display = 'block';
+      box.innerHTML = `Access ID: <strong>${escapeHtml(res.client_login_id)}</strong><br>Password: <strong>${escapeHtml(res.temp_password)}</strong><br><span style="font-family:inherit; color:var(--text-muted);">Shown only once - copy it now and share it with the client securely.</span>`;
+    }
+    showToast('Client portal password created', 'success');
+  } catch (err) {
+    showToast(err.message || 'Failed to create portal password', 'error');
+  }
+}
+window.provisionClientPortalLogin = provisionClientPortalLogin;
 
 function closeDetailPanel() {
   document.getElementById('detail-panel').classList.remove('open');

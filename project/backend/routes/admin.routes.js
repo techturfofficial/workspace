@@ -51,8 +51,8 @@ router.get('/audit', verifyToken, checkRole('admin'), (req, res) => {
 router.get('/heatmap', verifyToken, checkRole('admin'), (req, res) => {
   const roles = BUILTIN_ROLE_NAMES;
   const data = roles.map(role => {
-    const count = db.prepare('SELECT COUNT(*) as c FROM tasks WHERE role_required=? AND status != "approved"').get(role).c;
-    const pending = db.prepare('SELECT COUNT(*) as c FROM tasks WHERE role_required=? AND status="pending"').get(role).c;
+    const count = db.prepare("SELECT COUNT(*) as c FROM tasks WHERE role_required=? AND status != 'approved'").get(role).c;
+    const pending = db.prepare("SELECT COUNT(*) as c FROM tasks WHERE role_required=? AND status='pending'").get(role).c;
     return { role, total: count, pending: pending };
   });
   res.json(data);
@@ -61,7 +61,7 @@ router.get('/heatmap', verifyToken, checkRole('admin'), (req, res) => {
 // GET /api/admin/roles-summary
 router.get('/roles-summary', verifyToken, checkRole('admin'), (req, res) => {
   const summary = BUILTIN_ROLE_NAMES.map(r => {
-    const count = db.prepare('SELECT COUNT(*) as c FROM users WHERE role=? AND is_active >= 0 AND name != "[Deleted User]" AND email NOT LIKE "deleted_%"').get(r).c;
+    const count = db.prepare("SELECT COUNT(*) as c FROM users WHERE role=? AND is_active >= 0 AND name != '[Deleted User]' AND email NOT LIKE 'deleted_%'").get(r).c;
     return { role: r, count };
   });
   res.json(summary);

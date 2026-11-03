@@ -182,7 +182,15 @@
           <label for="client-login-id">Client Access ID</label>
           <div class="input-icon-wrap">
             <i class="fas fa-shield-alt"></i>
-            <input type="text" id="client-login-id" class="form-control" placeholder="e.g. aerodyne_login" required autocomplete="username">
+            <input type="text" id="client-login-id" class="form-control" placeholder="e.g. TT-CLI-00012" required autocomplete="username">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="client-password">Password</label>
+          <div class="input-icon-wrap">
+            <i class="fas fa-lock"></i>
+            <input type="password" id="client-password" class="form-control" placeholder="Password from your Tech Turf team" required autocomplete="current-password">
           </div>
         </div>
 
@@ -242,10 +250,12 @@
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const loginId = document.getElementById('client-login-id').value.trim();
+      const password = document.getElementById('client-password').value;
 
       try {
         const response = await clientApi.post('/login', {
-          client_login_id: loginId
+          client_login_id: loginId,
+          password
         });
 
         localStorage.setItem('client_token', response.token);

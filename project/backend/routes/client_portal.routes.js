@@ -226,29 +226,34 @@ function getClientChannels(clientId) {
 
 // POST /api/client-portal/login
 router.post('/login', clientLoginLimiter, async (req, res) => {
-  const { client_login_id } = req.body;
-  if (!client_login_id) {
+  const { client_login_id, password } = req.body || {};
+  if (!client_login_id || typeof client_login_id !== 'string') {
     return res.status(400).json({ message: 'Client Access ID required' });
+  }
+  if (!password || typeof password !== 'string') {
+    return res.status(400).json({ message: 'Password required' });
   }
 
   try {
-    const queryStr = String(client_login_id).trim();
-    const queryNum = isNaN(Number(queryStr)) ? -1 : Number(queryStr);
+    const queryStr = client_login_id.trim();
 
-    let client = db.prepare(`
-      SELECT * FROM clients 
-      WHERE (
-        LOWER(client_login_id) = LOWER(?)
-        OR LOWER(email) = LOWER(?)
-        OR LOWER(name) = LOWER(?)
-        OR LOWER(company) = LOWER(?)
-        OR id = ?
-      ) AND (is_active = 1 OR is_active IS NULL)
+    // Only the Access ID or the client's email identify an account (not name, company or
+    // the numeric id, which are guessable), and the password must match.
+    const client = db.prepare(`
+      SELECT * FROM clients
+      WHERE (LOWER(client_login_id) = LOWER(?) OR LOWER(email) = LOWER(?))
+        AND (is_active = 1 OR is_active IS NULL)
       LIMIT 1
-    `).get(queryStr, queryStr, queryStr, queryStr, queryNum);
+    `).get(queryStr, queryStr);
 
-    if (!client) {
-      return res.status(401).json({ message: 'No client found matching this Client Access ID or Email' });
+    const valid = client && client.password_hash ? await comparePassword(password, client.password_hash) : false;
+    if (!valid) {
+      const noPassword = client && !client.password_hash;
+      return res.status(401).json({
+        message: noPassword
+          ? 'Portal password not set up yet. Please ask your Tech Turf contact for your portal password.'
+          : 'Invalid Client Access ID or password'
+      });
     }
 
     db.prepare('UPDATE clients SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?').run(client.id);

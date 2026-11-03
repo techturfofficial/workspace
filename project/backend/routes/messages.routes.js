@@ -602,6 +602,9 @@ router.delete('/conversations/:id/clear', verifyToken, (req, res) => {
   const convId = Number(req.params.id);
   const conv = db.prepare('SELECT * FROM conversations WHERE id=?').get(convId);
   if (!conv) return res.status(404).json({ message: 'Conversation not found' });
+  if (!assertParticipant(convId, req.user.id)) {
+    return res.status(403).json({ message: 'You are not part of this conversation' });
+  }
 
   const messages = db.prepare('SELECT id FROM chat_messages WHERE conversation_id=?').all(convId);
   messages.forEach(m => {
@@ -619,6 +622,9 @@ router.delete('/conversations/:id', verifyToken, (req, res) => {
   const convId = Number(req.params.id);
   const conv = db.prepare('SELECT * FROM conversations WHERE id=?').get(convId);
   if (!conv) return res.status(404).json({ message: 'Conversation not found' });
+  if (!assertParticipant(convId, req.user.id)) {
+    return res.status(403).json({ message: 'You are not part of this conversation' });
+  }
 
   const messages = db.prepare('SELECT id FROM chat_messages WHERE conversation_id=?').all(convId);
   messages.forEach(m => {

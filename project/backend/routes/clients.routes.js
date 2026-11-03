@@ -2,12 +2,18 @@ const router = require('express').Router();
 const db = require('../db');
 const { verifyToken, checkRole } = require('../auth');
 
+// Never send portal credentials to the browser; only whether a password is set.
+function withoutSecrets(client) {
+  const { password_hash, portal_password, ...rest } = client;
+  return { ...rest, has_portal_password: Boolean(password_hash) };
+}
+
 router.get('/', verifyToken, (req, res) => {
   const clients = db.prepare(`
     SELECT c.*, (SELECT COUNT(*) FROM projects WHERE client_id=c.id AND status='active') as active_projects
     FROM clients c ORDER BY c.name ASC
   `).all();
-  res.json(clients);
+  res.json(clients.map(withoutSecrets));
 });
 
 router.get('/:id', verifyToken, (req, res) => {
@@ -38,7 +44,7 @@ router.get('/:id', verifyToken, (req, res) => {
     ORDER BY s.created_at DESC
   `).all(req.params.id);
 
-  res.json({ ...c, projects, tasks, submissions });
+  res.json({ ...withoutSecrets(c), projects, tasks, submissions });
 });
 
 router.post('/', verifyToken, checkRole('admin', 'client_handler', 'team_leader'), (req, res) => {
@@ -158,10 +164,11 @@ const { hashPassword } = require('../auth');
 router.post('/:id/provision-login', verifyToken, checkRole('admin', 'client_handler'), async (req, res) => {
   const { id } = req.params;
   try {
-    const client = db.prepare('SELECT id, name FROM clients WHERE id=?').get(id);
+    const client = db.prepare('SELECT id, name, client_login_id FROM clients WHERE id=?').get(id);
     if (!client) return res.status(404).json({ message: 'Client not found' });
 
-    const clientLoginId = 'TT-CLI-' + String(client.id).padStart(5, '0');
+    // Keep an Access ID the team already gave the client; only generate one if missing.
+    const clientLoginId = client.client_login_id || ('TT-CLI-' + String(client.id).padStart(5, '0'));
     const tempPassword = 'TT-' + crypto.randomBytes(4).toString('hex').toUpperCase() + '$9z';
     const hash = await hashPassword(tempPassword);
 

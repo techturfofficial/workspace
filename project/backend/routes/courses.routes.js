@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const db = require('../db');
-const { verifyToken } = require('../auth');
+const { verifyToken, userHasRole } = require('../auth');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -58,6 +58,11 @@ router.post('/', verifyToken, (req, res) => {
 // Delete a course
 router.delete('/:id', verifyToken, (req, res) => {
   const { id } = req.params;
+  const course = db.prepare('SELECT id, created_by FROM courses WHERE id=?').get(id);
+  if (!course) return res.status(404).json({ message: 'Course not found' });
+  if (!userHasRole(req.user, 'admin') && Number(course.created_by) !== Number(req.user.id)) {
+    return res.status(403).json({ message: 'Only an admin or the course author can delete this course' });
+  }
   db.prepare('DELETE FROM courses WHERE id=?').run(id);
   res.json({ success: true });
 });
