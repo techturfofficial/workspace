@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const multer = require('multer');
 const mammoth = require('mammoth');
 const db = require('../db');
@@ -16,12 +17,57 @@ const storage = multer.diskStorage({
     cb(null, DRIVE_ROOT);
   },
   filename: (req, file, cb) => {
-    const safeName = sanitizeFilename(path.basename(file.originalname || 'upload.bin'));
-    if (!safeName || safeName.includes('..')) return cb(new Error('Invalid filename'));
-    cb(null, Date.now() + '_' + safeName);
+    cb(null, storedFileName(file.originalname));
   }
 });
-const upload = multer({ storage, limits: { fileSize: 100 * 1024 * 1024 } });
+// defParamCharset utf8: keep non-English file names intact (multer defaults to latin1).
+const upload = multer({ storage, defParamCharset: 'utf8', limits: { fileSize: 100 * 1024 * 1024 } });
+
+// Unique on-disk name. Timestamp alone collided when a folder upload sent several
+// same-named files (e.g. "index.html" in different sub-folders) in the same millisecond.
+function storedFileName(originalName) {
+  const safeName = sanitizeFilename(path.basename(String(originalName || 'upload.bin'))).replace(/\.\.+/g, '.') || 'upload.bin';
+  return `${Date.now()}_${crypto.randomBytes(4).toString('hex')}_${safeName}`;
+}
+
+// Display name shown in the drive (original, unsanitized but path-free and bounded).
+function displayName(originalName) {
+  const base = path.basename(String(originalName || '').replace(/\\/g, '/')).trim();
+  return (base || 'upload.bin').slice(0, 255);
+}
+
+const stmts = {
+  itemById: db.prepare('SELECT * FROM drive_items WHERE id = ?'),
+  folderById: db.prepare("SELECT id, type FROM drive_items WHERE id = ?"),
+  listRoot: db.prepare('SELECT * FROM drive_items WHERE parent_id IS NULL ORDER BY type DESC, name ASC'),
+  listChildren: db.prepare('SELECT * FROM drive_items WHERE parent_id = ? ORDER BY type DESC, name ASC'),
+  findRootFolder: db.prepare("SELECT id FROM drive_items WHERE parent_id IS NULL AND type = 'folder' AND name = ? LIMIT 1"),
+  findChildFolder: db.prepare("SELECT id FROM drive_items WHERE parent_id = ? AND type = 'folder' AND name = ? LIMIT 1"),
+  insertFolder: db.prepare("INSERT INTO drive_items (name, type, parent_id, created_by) VALUES (?, 'folder', ?, ?)"),
+  insertFile: db.prepare("INSERT INTO drive_items (name, type, parent_id, mime_type, file_size, file_path, created_by) VALUES (?, 'file', ?, ?, ?, ?, ?)")
+};
+
+const isEmptyParam = (v) => v === null || v === undefined || v === '' || v === 'null' || v === 'undefined';
+
+/**
+ * Validates an optional parent folder id. Returns { parentId } or { status, error }.
+ * Every signed-in staff member may create folders / upload into any folder.
+ */
+function resolveParent(pId) {
+  if (isEmptyParam(pId)) return { parentId: null };
+  const pIdVal = validateId(pId, 'Parent ID');
+  if (!pIdVal.valid) return { status: 400, error: 'Invalid parent folder ID' };
+  const parentFolder = stmts.folderById.get(pIdVal.value);
+  if (!parentFolder || parentFolder.type !== 'folder') {
+    return { status: 404, error: 'Parent folder does not exist. It may have been deleted - please refresh.' };
+  }
+  return { parentId: pIdVal.value };
+}
+
+function removeStoredFile(fileName) {
+  if (!fileName) return;
+  fs.unlink(path.join(DRIVE_ROOT, fileName), () => {});
+}
 
 const isAdmin = (user) => {
   if (!user) return false;
@@ -48,45 +94,30 @@ const userCanAccessItem = (userId, itemId) => {
 // List items with access control
 router.get('/items', verifyToken, (req, res) => {
   const pId = req.query.parentId;
-  const parentId = (pId && pId !== 'null' && pId !== 'undefined') ? pId : null;
-  const query = 'SELECT * FROM drive_items WHERE (parent_id = ? OR (? IS NULL AND parent_id IS NULL)) ORDER BY type DESC, name ASC';
-  const params = [parentId, parentId];
-  
   try {
-    const items = db.prepare(query).all(...params);
+    // Two separate statements so SQLite can use the parent_id index (an OR'd
+    // "parent_id = ? OR parent_id IS NULL" condition forced a full table scan).
+    const items = isEmptyParam(pId) ? stmts.listRoot.all() : stmts.listChildren.all(pId);
     res.json(items);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    console.error('List drive items error:', e);
+    res.status(500).json({ error: 'Failed to load drive items' });
   }
 });
 
-// Create Folder - Verified staff members can create folders
+// Create Folder - every signed-in staff member can create folders
 router.post('/folder', verifyToken, (req, res) => {
-  const { name, parentId: pId } = req.body;
+  const { name, parentId: pId } = req.body || {};
 
   const nameVal = validateString(name, 'Folder name', { minLength: 1, maxLength: 120 });
   if (!nameVal.valid) return res.status(400).json({ error: nameVal.error });
+  if (/[\\/]/.test(nameVal.value)) return res.status(400).json({ error: 'Folder name cannot contain / or \\' });
 
-  let parentId = null;
-  if (pId !== null && pId !== undefined && pId !== '' && pId !== 'null' && pId !== 'undefined') {
-    const pIdVal = validateId(pId, 'Parent ID');
-    if (!pIdVal.valid) return res.status(400).json({ error: 'Invalid parent folder ID' });
-    parentId = pIdVal.value;
-
-    const parentFolder = db.prepare("SELECT id, type FROM drive_items WHERE id = ?").get(parentId);
-    if (!parentFolder || parentFolder.type !== 'folder') {
-      return res.status(404).json({ error: 'Parent folder does not exist' });
-    }
-
-    if (!isAdmin(req.user) && !userCanAccessItem(req.user.id, parentId)) {
-      return res.status(403).json({ error: 'Access denied to target parent folder' });
-    }
-  }
+  const parent = resolveParent(pId);
+  if (parent.error) return res.status(parent.status).json({ error: parent.error });
 
   try {
-    const result = db.prepare('INSERT INTO drive_items (name, type, parent_id, created_by) VALUES (?, ?, ?, ?)').run(
-      nameVal.value, 'folder', parentId, req.user.id
-    );
+    const result = stmts.insertFolder.run(nameVal.value, parent.parentId, req.user.id);
     res.json({ success: true, id: result.lastInsertRowid });
   } catch (e) {
     console.error('Create folder error:', e);
@@ -94,32 +125,75 @@ router.post('/folder', verifyToken, (req, res) => {
   }
 });
 
-// Upload File - Verified staff members can upload files
-router.post('/upload', verifyToken, upload.single('file'), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-  
-  const { parentId: pId } = req.body;
-  let parentId = null;
-  if (pId !== null && pId !== undefined && pId !== '' && pId !== 'null' && pId !== 'undefined') {
-    const pIdVal = validateId(pId, 'Parent ID');
-    if (!pIdVal.valid) return res.status(400).json({ error: 'Invalid parent folder ID' });
-    parentId = pIdVal.value;
+// Ensure a folder tree exists (used by "Upload Folder"). Body:
+//   { parentId, paths: ["Photos", "Photos/2026", "Photos/2026/Jan"] }
+// Existing folders with the same name are reused, so re-uploading a folder merges into it.
+// Returns { folders: { "<path>": id } }. Runs in one transaction -> one round trip.
+router.post('/folders/ensure', verifyToken, (req, res) => {
+  const { parentId: pId, paths } = req.body || {};
+  if (!Array.isArray(paths) || paths.length === 0) return res.status(400).json({ error: 'paths must be a non-empty array' });
+  if (paths.length > 5000) return res.status(400).json({ error: 'Too many folders in one upload (max 5000)' });
 
-    const parentFolder = db.prepare("SELECT id, type FROM drive_items WHERE id = ?").get(parentId);
-    if (!parentFolder || parentFolder.type !== 'folder') {
-      return res.status(404).json({ error: 'Parent folder does not exist' });
-    }
+  const parent = resolveParent(pId);
+  if (parent.error) return res.status(parent.status).json({ error: parent.error });
 
-    if (!isAdmin(req.user) && !userCanAccessItem(req.user.id, parentId)) {
-      return res.status(403).json({ error: 'Access denied to target parent folder' });
+  // Normalise and validate every segment up front.
+  const normalised = new Set();
+  for (const raw of paths) {
+    const segments = String(raw || '').replace(/\\/g, '/').split('/').map(s => s.trim()).filter(Boolean);
+    if (!segments.length) continue;
+    if (segments.length > 32) return res.status(400).json({ error: 'Folder nesting is too deep (max 32 levels)' });
+    for (const seg of segments) {
+      if (seg === '.' || seg === '..' || seg.length > 120) return res.status(400).json({ error: `Invalid folder name: ${seg.slice(0, 40)}` });
     }
+    // Include every ancestor so "A/B/C" also creates "A" and "A/B".
+    for (let i = 1; i <= segments.length; i++) normalised.add(segments.slice(0, i).join('/'));
   }
 
   try {
-    const result = db.prepare('INSERT INTO drive_items (name, type, parent_id, mime_type, file_size, file_path, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
-      req.file.originalname,
-      'file',
-      parentId,
+    const ensure = db.transaction(() => {
+      const ids = {};
+      const sorted = Array.from(normalised).sort((a, b) => a.split('/').length - b.split('/').length);
+      for (const p of sorted) {
+        const segments = p.split('/');
+        const name = segments[segments.length - 1];
+        const parentPath = segments.slice(0, -1).join('/');
+        const parentFolderId = parentPath ? ids[parentPath] : parent.parentId;
+        const existing = parentFolderId === null
+          ? stmts.findRootFolder.get(name)
+          : stmts.findChildFolder.get(parentFolderId, name);
+        ids[p] = existing ? existing.id : Number(stmts.insertFolder.run(name, parentFolderId, req.user.id).lastInsertRowid);
+      }
+      return ids;
+    });
+    res.json({ success: true, folders: ensure() });
+  } catch (e) {
+    console.error('Ensure folders error:', e);
+    res.status(500).json({ error: 'Failed to create folders' });
+  }
+});
+
+// Upload File - every signed-in staff member can upload files
+router.post('/upload', verifyToken, (req, res, next) => {
+  upload.single('file')(req, res, (err) => {
+    if (!err) return next();
+    if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ error: 'File is larger than 100 MB' });
+    console.error('Upload parse error:', err);
+    return res.status(400).json({ error: err.message || 'Upload failed' });
+  });
+}, (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+  const parent = resolveParent((req.body || {}).parentId);
+  if (parent.error) {
+    removeStoredFile(req.file.filename);
+    return res.status(parent.status).json({ error: parent.error });
+  }
+
+  try {
+    const result = stmts.insertFile.run(
+      displayName(req.file.originalname),
+      parent.parentId,
       req.file.mimetype,
       req.file.size,
       req.file.filename,
@@ -128,6 +202,7 @@ router.post('/upload', verifyToken, upload.single('file'), (req, res) => {
     res.json({ success: true, id: result.lastInsertRowid });
   } catch (e) {
     console.error('Upload error:', e);
+    removeStoredFile(req.file.filename);
     res.status(500).json({ error: 'Failed to upload file' });
   }
 });
@@ -314,16 +389,23 @@ router.get('/preview-data/:id', verifyToken, async (req, res) => {
 // Delete Item
 router.delete('/:id', verifyToken, checkRole('admin'), (req, res) => {
   try {
-    const item = db.prepare('SELECT * FROM drive_items WHERE id = ?').get(req.params.id);
+    const item = stmts.itemById.get(req.params.id);
     if (!item) return res.status(404).json({ error: 'Item not found' });
-    
-    if (item.type === 'file') {
-      const filePath = path.join(DRIVE_ROOT, item.file_path);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    }
-    
+
+    // Collect stored files of the item and (for folders) everything beneath it, so a
+    // folder delete doesn't leave orphaned files on disk.
+    const files = db.prepare(`
+      WITH RECURSIVE tree(id) AS (
+        SELECT id FROM drive_items WHERE id = ?
+        UNION ALL
+        SELECT d.id FROM drive_items d JOIN tree t ON d.parent_id = t.id
+      )
+      SELECT file_path FROM drive_items WHERE id IN (SELECT id FROM tree) AND type = 'file' AND file_path IS NOT NULL
+    `).all(item.id);
+
     // SQLite with foreign_keys=ON will handle children of a folder
-    db.prepare('DELETE FROM drive_items WHERE id = ?').run(req.params.id);
+    db.prepare('DELETE FROM drive_items WHERE id = ?').run(item.id);
+    files.forEach(f => removeStoredFile(path.basename(f.file_path)));
     res.json({ success: true });
   } catch (e) {
     console.error('Delete drive item error:', e);

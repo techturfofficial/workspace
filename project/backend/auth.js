@@ -1,6 +1,6 @@
-const bcrypt = require('bcryptjs');
 const jwt    = require('jsonwebtoken');
 const db     = require('./db');
+const passwordService = require('./services/password');
 require('dotenv').config();
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -10,11 +10,12 @@ if (!JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is required');
 }
 
+// bcrypt runs in worker threads (see services/password.js) so logins don't block the event loop.
 async function hashPassword(password) {
-  return bcrypt.hash(password, 12);
+  return passwordService.hash(password, 12);
 }
 async function comparePassword(password, hash) {
-  return bcrypt.compare(password, hash);
+  return passwordService.compare(password, hash);
 }
 function generateToken(user) {
   return jwt.sign(
@@ -23,6 +24,22 @@ function generateToken(user) {
     { expiresIn: JWT_EXPIRES }
   );
 }
+// Prepared once; verifyToken runs on every authenticated request.
+const selectAuthUser = db.prepare('SELECT id,name,email,role,secondary_roles,is_active FROM users WHERE id=?');
+
+/**
+ * True when `role` is one of the account's assigned roles (primary or secondary).
+ * Used at login so the role picked on the sign-in form must really belong to the user.
+ */
+function userHasRole(user, role) {
+  const wanted = String(role || '').trim().toLowerCase();
+  if (!user || !wanted) return false;
+  const assigned = [user.role, ...String(user.secondary_roles || '').split(',')]
+    .map(r => String(r || '').trim().toLowerCase())
+    .filter(Boolean);
+  return assigned.includes(wanted);
+}
+
 function verifyToken(req, res, next) {
   const header = req.headers.authorization;
   const queryToken = req.query?.token;
@@ -43,7 +60,7 @@ function verifyToken(req, res, next) {
 
     // Always resolve the latest account state from DB so admin role/status updates
     // apply immediately to already logged-in sessions.
-    const dbUser = db.prepare('SELECT id,name,email,role,secondary_roles,is_active FROM users WHERE id=?').get(decoded.id);
+    const dbUser = selectAuthUser.get(decoded.id);
     if (!dbUser || Number(dbUser.is_active) !== 1) {
       return res.status(401).json({ message: 'Account inactive or not found' });
     }
@@ -180,4 +197,4 @@ function requireClientScope(req, res, next) {
   next();
 }
 
-module.exports = { hashPassword, comparePassword, generateToken, verifyToken, verifyClientToken, requireClientScope, checkRole, checkPermission, isStrongPassword };
+module.exports = { hashPassword, comparePassword, userHasRole, generateToken, verifyToken, verifyClientToken, requireClientScope, checkRole, checkPermission, isStrongPassword };

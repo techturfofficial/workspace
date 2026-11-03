@@ -147,6 +147,7 @@ router.get('/stream', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // stop nginx buffering live chat events
   res.flushHeaders?.();
 
   const pingInterval = setInterval(() => {

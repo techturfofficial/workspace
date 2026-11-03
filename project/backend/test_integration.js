@@ -66,7 +66,8 @@ async function run() {
   
   const staffLogin = await request('POST', `${API}/auth/login`, {
     email: 'admin@techturf.com',
-    password: 'Admin@12345'
+    password: 'Admin@12345',
+    role: 'admin'
   });
   assert(staffLogin.status === 200, 'Staff login');
   const staffToken = staffLogin.body.token;

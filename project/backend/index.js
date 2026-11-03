@@ -19,8 +19,22 @@ async function startServer() {
     const app = express();
     const PORT = initialPort || process.env.PORT || 5000;
 
+    // Behind nginx/PM2 every request otherwise appears to come from the proxy's IP, which put
+    // all employees into ONE rate-limit bucket. Trust the proxy so req.ip is the real client.
+    // Set TRUST_PROXY to a hop count / subnet / "true" if the proxy is not on this machine.
+    const trustProxy = process.env.TRUST_PROXY;
+    app.set('trust proxy', trustProxy === undefined || trustProxy === '' ? 'loopback' : (/^\d+$/.test(trustProxy) ? Number(trustProxy) : (trustProxy === 'true' ? true : (trustProxy === 'false' ? false : trustProxy))));
+    app.disable('x-powered-by');
+
     const compression = require('compression');
-    app.use(compression());
+    app.use(compression({
+        // SSE must not be buffered by gzip, or chat events arrive late/in bursts.
+        filter: (req, res) => {
+            const type = String(res.getHeader('Content-Type') || '');
+            if (type.includes('text/event-stream')) return false;
+            return compression.filter(req, res);
+        }
+    }));
 
     // --- MIDDLEWARES ---
     const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:5000')
@@ -37,34 +51,85 @@ async function startServer() {
         credentials: true
     }));
 
+    // Rate limiting. Offices usually share one public IP, so limiting purely by IP lets a
+    // handful of busy employees lock everyone else out (requests then fail with 429 and the
+    // UI shows "failed to create folder" etc). Authenticated traffic is limited per verified
+    // user; only anonymous traffic falls back to the client IP.
+    const jwt = require('jsonwebtoken');
+    const limiterKey = (req) => {
+        const header = req.headers.authorization;
+        const token = header && header.startsWith('Bearer ')
+            ? header.slice(7)
+            : (typeof req.query?.token === 'string' ? req.query.token : null);
+        if (token) {
+            try {
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                return decoded.type === 'client' ? `c:${decoded.clientId}` : `u:${decoded.id}`;
+            } catch (_) { /* invalid token -> treated as anonymous */ }
+        }
+        return `ip:${req.ip}`;
+    };
+    const tooMany = (message) => ({ message });
     const generalLimiter = rateLimit({
-        windowMs: 15 * 60 * 1000,
-        max: 5000, // Increase to 5000
+        windowMs: 60 * 1000,
+        max: Number(process.env.API_RATE_LIMIT) || 900, // per user per minute
+        keyGenerator: limiterKey,
+        // A single large file is sent as many chunks; don't let it trip the limiter mid-upload.
+        skip: (req) => req.path === '/drive/upload-chunk',
         standardHeaders: true,
-        legacyHeaders: false
+        legacyHeaders: false,
+        message: tooMany('Too many requests. Please wait a moment and try again.')
     });
-    const authLimiter = rateLimit({
+    // Brute-force protection: failed sign-ins are counted per IP + account, with a looser
+    // per-IP ceiling so one shared office IP is not locked out by a single typo-prone user.
+    const loginEmail = (req) => String(req.body?.email || '').toLowerCase().trim();
+    const authAccountLimiter = rateLimit({
         windowMs: 15 * 60 * 1000,
-        max: 100, // Increase to 100 for dev testing
-        skipSuccessfulRequests: true
+        max: 20,
+        skipSuccessfulRequests: true,
+        keyGenerator: (req) => `${req.ip}|${loginEmail(req)}`,
+        message: tooMany('Too many failed sign-in attempts for this account. Please try again in 15 minutes.')
+    });
+    const authIpLimiter = rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: 300,
+        skipSuccessfulRequests: true,
+        keyGenerator: (req) => `ip:${req.ip}`,
+        message: tooMany('Too many failed sign-in attempts from this network. Please try again later.')
     });
     app.use('/api', generalLimiter);
-    app.use('/api/auth/login', authLimiter);
 
     // Body parsing middlewares MUST be placed BEFORE any route definitions
-    app.use(express.json({ limit: '10mb' }));
-    app.use(express.urlencoded({ limit: '10mb', extended: true }));
+    // Raw upload chunks are streamed by their route; never let a body parser consume them.
+    const unlessChunk = (mw) => (req, res, next) => (req.path === '/api/drive/upload-chunk' ? next() : mw(req, res, next));
+    app.use(unlessChunk(express.json({ limit: '10mb' })));
+    app.use(unlessChunk(express.urlencoded({ limit: '10mb', extended: true })));
+    app.use('/api/auth/login', authIpLimiter, authAccountLimiter);
 
-    // Request logging in development (stored outside backend/ to avoid watcher trigger)
+    // API request log (stored outside backend/ to avoid watcher trigger). Uses one buffered
+    // append stream instead of a synchronous disk write per request, which blocked the event
+    // loop under load. Set REQUEST_LOG=off to disable.
     const logPath = path.join(__dirname, '../server.log');
+    try {
+        if (fs.existsSync(logPath) && fs.statSync(logPath).size > 20 * 1024 * 1024) {
+            fs.renameSync(logPath, `${logPath}.old`);
+        }
+    } catch (_) { /* rotation is best effort */ }
+    const logStream = process.env.REQUEST_LOG === 'off' ? null : fs.createWriteStream(logPath, { flags: 'a' });
+    if (logStream) logStream.on('error', () => {});
     const logToFile = (msg) => {
-        const time = new Date().toLocaleTimeString();
-        try { fs.appendFileSync(logPath, `[${time}] ${msg}\n`); } catch(_) {}
+        if (logStream) logStream.write(`[${new Date().toLocaleTimeString()}] ${msg}\n`);
     };
     app.use((req, res, next) => {
         req.requestId = crypto.randomUUID();
         res.setHeader('x-request-id', req.requestId);
-        logToFile(`${req.method} ${req.url}`);
+        if (req.url.startsWith('/api')) {
+            const started = process.hrtime.bigint();
+            res.on('finish', () => {
+                const ms = Number(process.hrtime.bigint() - started) / 1e6;
+                logToFile(`${req.method} ${req.originalUrl.split('?')[0]} ${res.statusCode} ${ms.toFixed(0)}ms`);
+            });
+        }
         next();
     });
 
@@ -222,9 +287,12 @@ async function startServer() {
     if (!fs.existsSync(uploadsDir1)) fs.mkdirSync(uploadsDir1, { recursive: true });
     if (!fs.existsSync(uploadsDir2)) fs.mkdirSync(uploadsDir2, { recursive: true });
 
-    // Serve uploads with no caching so profile pics and PDFs update immediately
-    app.use('/uploads', express.static(uploadsDir1, { maxAge: 0, etag: false }));
-    app.use('/uploads', express.static(uploadsDir2, { maxAge: 0, etag: false }));
+    // Uploads: browsers must revalidate (so profile pics and PDFs update immediately), but
+    // with ETag/Last-Modified an unchanged file is answered with a tiny 304 instead of the
+    // full download on every page view.
+    const revalidateHeaders = (res) => res.setHeader('Cache-Control', 'no-cache');
+    app.use('/uploads', express.static(uploadsDir1, { etag: true, lastModified: true, setHeaders: revalidateHeaders }));
+    app.use('/uploads', express.static(uploadsDir2, { etag: true, lastModified: true, setHeaders: revalidateHeaders }));
 
     const clientPortalDir = path.join(__dirname, '../frontend/client-portal');
     const employeePortalDir = path.join(__dirname, '../frontend/public');
@@ -272,14 +340,16 @@ async function startServer() {
             res.sendFile(path.join(clientPortalDir, 'index.html'));
         });
 
-        // Serve main CRM frontend
+        // Serve main CRM frontend. HTML/JS/CSS are always revalidated so deploys show up
+        // immediately, but ETags turn repeat loads into 304s; images/fonts are cached briefly.
         app.use(express.static(employeePortalDir, {
-            etag: false,
-            maxAge: 0,
+            etag: true,
+            lastModified: true,
             setHeaders: (res, filePath) => {
-                if (filePath.endsWith('.html') || filePath.endsWith('.js') || filePath.endsWith('.css')) {
+                if (/\.(html|js|css|json)$/i.test(filePath)) {
                     res.setHeader('Cache-Control', 'no-cache, must-revalidate');
-                    res.setHeader('Pragma', 'no-cache');
+                } else {
+                    res.setHeader('Cache-Control', 'public, max-age=3600');
                 }
             }
         }));
@@ -293,6 +363,14 @@ async function startServer() {
         });
     }
 
+
+    // JSON errors for the API instead of Express's HTML page (which also leaked stack traces).
+    app.use((err, req, res, next) => {
+        if (res.headersSent) return next(err);
+        const status = err.status || err.statusCode || 500;
+        if (status >= 500) console.error(`[${req.requestId}] Unhandled error:`, err);
+        res.status(status).json({ message: status >= 500 ? 'Internal server error' : (err.expose ? err.message : 'Bad request') });
+    });
 
     // --- BACKGROUND SERVICES ---
     // Deadline Pulse: Runs periodic checks for task deadlines
@@ -335,7 +413,7 @@ async function startServer() {
     };
     runStartupDiagnostics();
 
-    app.listen(PORT, '0.0.0.0', () => {
+    const server = app.listen(PORT, '0.0.0.0', () => {
         if (isClientPortalInstance) {
             console.log(`\n🚀 Tech Turf Client Connect Portal is operational at PORT ${PORT}`);
             console.log(`   - Client Connect: http://localhost:${PORT}`);
@@ -348,6 +426,10 @@ async function startServer() {
             console.log(`   - API Root:        http://localhost:${PORT}/api\n`);
         }
     });
+    // Keep idle connections open longer than nginx's upstream keepalive so reused sockets
+    // are not closed under it (which surfaces as random 502s under load).
+    server.keepAliveTimeout = 65 * 1000;
+    server.headersTimeout = 66 * 1000;
 }
 
 // Global error handling for the process

@@ -1,25 +1,38 @@
 const router  = require('express').Router();
 const db      = require('../db');
 const crypto = require('crypto');
-const { hashPassword, comparePassword, generateToken, verifyToken, isStrongPassword, checkPermission } = require('../auth');
+const { hashPassword, comparePassword, userHasRole, generateToken, verifyToken, isStrongPassword, checkPermission } = require('../auth');
 const { sendMail } = require('../services/mailer');
 
 // POST /api/auth/login
+const selectLoginUser = db.prepare('SELECT * FROM users WHERE email = ? AND is_active = 1');
+const insertLoginLog = db.prepare('INSERT INTO login_log(user_id, ip, user_agent) VALUES (?, ?, ?)');
+
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
-  const user = db.prepare('SELECT * FROM users WHERE email = ? AND is_active = 1').get(email.toLowerCase().trim());
-  if (!user) return res.status(401).json({ message: 'No users found in database' });
-  if (['suspended', 'exited'].includes((user.employment_status || '').toLowerCase())) {
-    return res.status(403).json({ message: `Account is ${user.employment_status}` });
+  const { email, password, role } = req.body || {};
+  if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
+    return res.status(400).json({ message: 'Email and password required' });
   }
+  if (!role || typeof role !== 'string') {
+    return res.status(400).json({ message: 'Please select your role' });
+  }
+  const user = selectLoginUser.get(email.toLowerCase().trim());
+  if (!user) return res.status(401).json({ message: 'Invalid credentials' });
   const valid = await comparePassword(password, user.password);
   if (!valid) return res.status(401).json({ message: 'Invalid credentials' });
 
+  // Email + password are correct; the role chosen on the form must also be one the
+  // account actually holds (a designer cannot sign in as a frontend developer).
+  if (!userHasRole(user, role)) {
+    return res.status(403).json({ message: 'The selected role does not match this account. Please choose your assigned role.' });
+  }
+  if (['suspended', 'exited'].includes((user.employment_status || '').toLowerCase())) {
+    return res.status(403).json({ message: `Account is ${user.employment_status}` });
+  }
+
   // Log login event
   try {
-    db.prepare('INSERT INTO login_log(user_id, ip, user_agent) VALUES (?, ?, ?)')
-      .run(user.id, req.headers['x-forwarded-for'] || req.connection.remoteAddress || '', req.headers['user-agent'] || '');
+    insertLoginLog.run(user.id, req.ip || req.socket?.remoteAddress || '', req.headers['user-agent'] || '');
   } catch (e) { /* ignore logging errors */ }
   const token = generateToken(user);
   const { password: _, ...safeUser } = user;

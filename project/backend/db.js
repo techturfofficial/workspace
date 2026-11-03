@@ -22,6 +22,22 @@ if (dbPath) {
   dbPath = fs.existsSync(rootDb) ? rootDb : path.join(__dirname, '../storage/techturf.db');
 }
 const db = new Database(dbPath);
+
+// Concurrency/performance tuning. WAL lets readers run while a write is in flight
+// (the default rollback journal blocks every reader during each write), and
+// busy_timeout makes overlapping writers wait instead of failing with SQLITE_BUSY.
+try {
+  db.pragma('journal_mode = WAL');
+  db.pragma('synchronous = NORMAL');
+  db.pragma('busy_timeout = 5000');
+  db.pragma('cache_size = -65536');     // 64 MB page cache
+  db.pragma('temp_store = MEMORY');
+  db.pragma('mmap_size = 268435456');   // 256 MB memory-mapped reads
+  db.pragma('wal_autocheckpoint = 1000');
+} catch (e) {
+  console.warn('[db] Could not apply performance pragmas:', e.message);
+}
+
 db.exec(`
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1042,5 +1058,43 @@ CREATE TABLE IF NOT EXISTS client_portal_banners (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 `);
+
+// --- Additional indexes for hot query paths (idempotent; each guarded so a missing
+// legacy column can never stop the server from booting) ---
+[
+  'CREATE INDEX IF NOT EXISTS idx_notifications_user_created ON notifications(user_id, created_at)',
+  'CREATE INDEX IF NOT EXISTS idx_chat_messages_conv_created ON chat_messages(conversation_id, created_at)',
+  'CREATE INDEX IF NOT EXISTS idx_performance_log_user_created ON performance_log(user_id, created_at)',
+  'CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)',
+  'CREATE INDEX IF NOT EXISTS idx_tasks_role_status ON tasks(role_required, status)',
+  'CREATE INDEX IF NOT EXISTS idx_submissions_leader_status ON submissions(leader_status)',
+  'CREATE INDEX IF NOT EXISTS idx_submissions_client_id ON submissions(client_id)',
+  'CREATE INDEX IF NOT EXISTS idx_project_members_user ON project_members(user_id)',
+  'CREATE INDEX IF NOT EXISTS idx_conversations_project_id ON conversations(project_id)',
+  'CREATE INDEX IF NOT EXISTS idx_conversations_team_id ON conversations(team_id)',
+  'CREATE INDEX IF NOT EXISTS idx_drive_items_created_by ON drive_items(created_by)',
+  'CREATE INDEX IF NOT EXISTS idx_drive_items_parent_type_name ON drive_items(parent_id, type, name)',
+  'CREATE INDEX IF NOT EXISTS idx_login_log_login_at ON login_log(login_at)',
+  'CREATE INDEX IF NOT EXISTS idx_audit_log_created_at ON audit_log(created_at)',
+  'CREATE INDEX IF NOT EXISTS idx_users_active_role ON users(is_active, role)'
+].forEach(sql => {
+  try { db.exec(sql); } catch (e) { /* column/table not present in this install */ }
+});
+
+// Refresh query-planner statistics (cheap) and keep them fresh on long-lived processes.
+try { db.pragma('optimize'); } catch (e) {}
+const optimizeTimer = setInterval(() => { try { db.pragma('optimize'); } catch (e) {} }, 6 * 60 * 60 * 1000);
+optimizeTimer.unref();
+
+// Flush the WAL and close cleanly on shutdown (PM2 restart / Ctrl+C).
+let closing = false;
+function closeDb() {
+  if (closing) return;
+  closing = true;
+  try { db.pragma('wal_checkpoint(TRUNCATE)'); } catch (e) {}
+  try { db.close(); } catch (e) {}
+}
+process.on('SIGINT', () => { closeDb(); process.exit(0); });
+process.on('SIGTERM', () => { closeDb(); process.exit(0); });
 
 module.exports = db;

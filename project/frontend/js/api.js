@@ -18,7 +18,15 @@ const api = {
       if (res.status === 401) { auth.logout(); return; }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const errorMsg = data.error || data.message || (typeof data === 'string' ? data : `HTTP ${res.status}`);
+        // Proxies (nginx) answer 413/429/502/504 with HTML, so give those a readable message.
+        const statusText = {
+          413: 'The request is too large for the server',
+          429: 'Too many requests. Please wait a moment and try again.',
+          502: 'Server is restarting. Please try again in a few seconds.',
+          503: 'Server is busy. Please try again in a few seconds.',
+          504: 'Server took too long to respond. Please try again.'
+        }[res.status];
+        const errorMsg = data.error || data.message || (typeof data === 'string' ? data : (statusText || `HTTP ${res.status}`));
         throw new Error(errorMsg);
       }
       return data;

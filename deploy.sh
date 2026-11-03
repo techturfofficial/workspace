@@ -1,41 +1,60 @@
 #!/bin/bash
-# TechTurf Zero-Downtime Safe Deployment Script
+# TechTurf Safe Deployment Script
+# The database runs in SQLite WAL mode, so recent writes may live in techturf.db-wal.
+# The app is stopped first (it checkpoints and closes the DB on shutdown), then a
+# consistent backup is taken, so no data is lost and no stale WAL file is left behind.
 set -e
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd "$DIR"
+DB="techturf.db"
+BACKUP=""
 
 echo "================================================="
 echo " TechTurf Production Safe Deployment"
 echo "================================================="
 
-# 1. Database Safety: Backup local database
-if [ -f "techturf.db" ]; then
-  echo "[1/5] Backing up live database..."
-  cp techturf.db "techturf.db.backup_$(date +%Y%m%d_%H%M%S)"
+# 1. Stop the backend so the database is checkpointed and closed cleanly.
+echo "[1/6] Stopping backend..."
+if command -v pm2 &> /dev/null; then
+  pm2 stop techturf-backend 2>/dev/null || pm2 stop all 2>/dev/null || true
+else
+  pkill -f "backend/index.js" 2>/dev/null || true
+fi
+sleep 2
+
+# 2. Database Safety: consistent backup of the live database
+if [ -f "$DB" ]; then
+  BACKUP="$DB.backup_$(date +%Y%m%d_%H%M%S)"
+  echo "[2/6] Backing up live database to $BACKUP..."
+  if ! node "$DIR/project/backend/scripts/backup-db.js" "$DB" "$BACKUP" 2>/dev/null; then
+    # Fallback (app is stopped, so a plain copy of the checkpointed file is consistent)
+    cp "$DB" "$BACKUP"
+  fi
 fi
 
-# 2. Reset local changes to git-tracked files (avoiding merge blocks)
-echo "[2/5] Cleaning local git state..."
-git checkout -- techturf.db 2>/dev/null || true
+# 3. Reset local changes to git-tracked files (avoiding merge blocks)
+echo "[3/6] Cleaning local git state..."
+git checkout -- "$DB" 2>/dev/null || true
 git stash || true
 
-# 3. Pull latest changes from remote
-echo "[3/5] Pulling latest code from origin main..."
+# 4. Pull latest changes from remote
+echo "[4/6] Pulling latest code from origin main..."
 git fetch origin main
 git reset --hard origin/main
 
-# 4. If a live database backup exists, preserve user data
-LATEST_BACKUP=$(ls -t techturf.db.backup_* 2>/dev/null | head -n 1 || true)
-if [ -n "$LATEST_BACKUP" ] && [ -f "$LATEST_BACKUP" ]; then
-  echo "[4/5] Restoring live database from $LATEST_BACKUP..."
-  cp "$LATEST_BACKUP" techturf.db
+# 5. Restore this deployment's backup so live user data is preserved
+if [ -n "$BACKUP" ] && [ -f "$BACKUP" ]; then
+  echo "[5/6] Restoring live database from $BACKUP..."
+  cp "$BACKUP" "$DB"
+  # WAL/SHM files belong to the pre-restore file; the backup is self-contained.
+  rm -f "$DB-wal" "$DB-shm"
 else
-  echo "[4/5] Using current database."
+  echo "[5/6] Using current database."
 fi
 
-# 5. Install dependencies and sync files
-echo "[5/5] Updating dependencies and restarting services..."
+# 6. Install dependencies, sync files and start
+echo "[6/6] Updating dependencies and restarting services..."
 cd "$DIR/project"
 npm install --production
 
@@ -45,14 +64,12 @@ if [ -d "/var/www/employee" ]; then
   cp -r "$DIR/project/frontend/public/"* /var/www/employee/
 fi
 
-# Restart PM2
 if command -v pm2 &> /dev/null; then
-  echo "Restarting PM2 backend..."
+  echo "Starting PM2 backend..."
   pm2 restart techturf-backend 2>/dev/null || pm2 restart all 2>/dev/null || pm2 start backend/index.js --name techturf-backend
   pm2 save
 else
-  echo "Restarting Node process directly..."
-  pkill -f "backend/index.js" 2>/dev/null || true
+  echo "Starting Node process directly..."
   nohup node backend/index.js > ../server.log 2>&1 &
 fi
 

@@ -213,7 +213,10 @@ function initNotificationSystem() {
   }
 
   loadNotifications();
-  setInterval(() => loadNotifications(false), 20000);
+  // Poll every 45s, and only while the tab is visible: background tabs from every employee
+  // were hitting the server every 20s all day. Refresh immediately when the tab is reopened.
+  setInterval(() => { if (!document.hidden) loadNotifications(false); }, 45000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) loadNotifications(false); });
 }
 
 async function loadNotifications(renderDropdown = false) {

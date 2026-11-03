@@ -1,7 +1,8 @@
 const { EventEmitter } = require('events');
 
 const realtimeBus = new EventEmitter();
-realtimeBus.setMaxListeners(200);
+// Each open chat/SSE tab adds listeners; don't cap (and warn) as the team grows.
+realtimeBus.setMaxListeners(0);
 
 function publish(event, payload) {
   realtimeBus.emit(event, payload);

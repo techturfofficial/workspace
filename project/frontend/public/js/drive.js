@@ -25,11 +25,15 @@ const drive = {
             const items = await api.get(`/drive/items?parentId=${parentId || ''}`);
             grid.innerHTML = '';
             
+            // The empty state uses the `.hidden` class (display:none !important), so it must be
+            // toggled via the class - an inline style.display can't override it.
             if (!items || items.length === 0) {
+                emptyState.classList.remove('hidden');
                 emptyState.style.display = 'block';
                 this.updateBreadcrumbs();
                 return;
             }
+            emptyState.classList.add('hidden');
             emptyState.style.display = 'none';
 
             items.forEach(item => {
@@ -51,17 +55,28 @@ const drive = {
         const isFolder = item.type === 'folder';
         const icon = isFolder ? 'fa-folder' : this.getFileIcon(item.name);
         const meta = isFolder ? '' : this.formatSize(item.file_size);
+        const safeName = this.esc(item.name);
 
         div.innerHTML = `
             <div class="drive-item-actions">
-                ${auth.hasRole('admin') ? `<div class="action-btn" onclick="event.stopPropagation(); drive.openShareModal(${item.id}, '${item.name.replace(/'/g, "\\'")}')"><i class="fas fa-share-alt"></i></div>` : ''}
-                ${!isFolder ? `<div class="action-btn" onclick="event.stopPropagation(); drive.downloadFile(${item.id})"><i class="fas fa-download"></i></div>` : ''}
-                ${auth.hasRole('admin') ? `<div class="action-btn delete" onclick="event.stopPropagation(); drive.deleteItem(${item.id})"><i class="fas fa-trash-alt"></i></div>` : ''}
+                ${auth.hasRole('admin') ? `<div class="action-btn" data-action="share"><i class="fas fa-share-alt"></i></div>` : ''}
+                ${!isFolder ? `<div class="action-btn" data-action="download"><i class="fas fa-download"></i></div>` : ''}
+                ${auth.hasRole('admin') ? `<div class="action-btn delete" data-action="delete"><i class="fas fa-trash-alt"></i></div>` : ''}
             </div>
             <i class="fas ${icon} drive-item-icon"></i>
-            <div class="drive-item-name" title="${item.name}">${item.name}</div>
+            <div class="drive-item-name" title="${safeName}">${safeName}</div>
             <div class="drive-item-meta">${meta}</div>
         `;
+        // Bound in JS rather than inline onclick strings so item names can't break out of the markup.
+        div.querySelectorAll('[data-action]').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const action = btn.dataset.action;
+                if (action === 'share') this.openShareModal(item.id, item.name);
+                else if (action === 'download') this.downloadFile(item.id);
+                else if (action === 'delete') this.deleteItem(item.id);
+            };
+        });
 
         div.onclick = () => {
             if (isFolder) {
@@ -78,13 +93,13 @@ const drive = {
     updateBreadcrumbs() {
         const bread = document.getElementById('drive-breadcrumbs');
         let html = '<span class="breadcrumb-part" onclick="drive.navigateTo(null)">Root</span>';
-        
+
         this.history.forEach((h, idx) => {
             html += ` <i class="fas fa-chevron-right" style="font-size:0.7rem; opacity:0.3;"></i> `;
             if (idx === this.history.length - 1) {
-                html += `<span class="breadcrumb-part active">${h.name}</span>`;
+                html += `<span class="breadcrumb-part active">${this.esc(h.name)}</span>`;
             } else {
-                html += `<span class="breadcrumb-part" onclick="drive.navigateTo(${h.id}, ${idx})">${h.name}</span>`;
+                html += `<span class="breadcrumb-part" onclick="drive.navigateTo(${Number(h.id)}, ${idx})">${this.esc(h.name)}</span>`;
             }
         });
         
@@ -399,143 +414,218 @@ const drive = {
         }
     },
 
-    async handleFileUpload(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+    esc(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    },
 
+    // "Upload File" - one or many files into the current folder.
+    async handleFileUpload(event) {
+        const input = event.target;
+        const files = Array.from(input.files || []);
+        input.value = ''; // allow choosing the same file again later
+        if (!files.length) return;
+        await this.runUploads(files.map(file => ({ file, parentId: this.currentParentId })));
+    },
+
+    // "Upload Folder" - recreates the selected folder (and its sub-folders) in the current folder.
+    async handleFolderUpload(event) {
+        const input = event.target;
+        const files = Array.from(input.files || []);
+        input.value = '';
+        if (!files.length) {
+            showToast('The selected folder is empty', 'warning');
+            return;
+        }
+
+        const dirOf = (file) => {
+            const rel = (file.webkitRelativePath || file.name).replace(/\\/g, '/');
+            const parts = rel.split('/');
+            parts.pop();
+            return parts.join('/');
+        };
+        const dirs = Array.from(new Set(files.map(dirOf).filter(Boolean)));
+
+        let folders = {};
+        if (dirs.length) {
+            try {
+                const res = await api.post('/drive/folders/ensure', { parentId: this.currentParentId, paths: dirs });
+                folders = (res && res.folders) || {};
+            } catch (err) {
+                showToast(err.message || 'Failed to create folders', 'error');
+                return;
+            }
+        }
+
+        const jobs = files.map(file => {
+            const dir = dirOf(file);
+            return { file, parentId: dir ? folders[dir] : this.currentParentId };
+        });
+        await this.runUploads(jobs, { label: 'folder' });
+    },
+
+    // Uploads jobs ({ file, parentId }) a few at a time with one combined progress bar.
+    async runUploads(jobs, { label = 'file' } = {}) {
         const progressContainer = document.getElementById('upload-progress-container');
         const progressBar = document.getElementById('upload-progress-bar');
         const progressText = document.getElementById('upload-progress-text');
         const cancelBtn = document.getElementById('upload-cancel-btn');
-        progressBar.style.width = '0%';
-        progressText.textContent = '0%';
-        progressContainer.style.display = 'block';
 
-        let cancelRequested = false;
-        let currentXhr = null;
+        const totalBytes = jobs.reduce((sum, j) => sum + (j.file.size || 0), 0) || 1;
+        const loadedByJob = new Map();
+        let done = 0, failed = 0, lastError = '';
+        const state = { cancelled: false, xhrs: new Set() };
+
+        const render = () => {
+            let loaded = 0;
+            loadedByJob.forEach(v => { loaded += v; });
+            const percent = Math.min(100, Math.round((loaded / totalBytes) * 100));
+            progressBar.style.width = percent + '%';
+            progressText.textContent = jobs.length > 1
+                ? `${done + failed}/${jobs.length} · ${percent}%`
+                : `${percent}%`;
+        };
+
+        // `.hidden` is display:none !important, so toggle the class (inline styles can't win).
+        progressContainer.classList.remove('hidden');
+        progressContainer.style.display = 'block';
+        progressBar.style.width = '0%';
+        render();
         cancelBtn.disabled = false;
         cancelBtn.style.opacity = 1;
         cancelBtn.onclick = () => {
-            cancelRequested = true;
-            if (currentXhr) currentXhr.abort();
-            progressContainer.style.display = 'none';
-            showToast('Upload canceled', 'error');
+            state.cancelled = true;
+            state.xhrs.forEach(x => x.abort());
         };
 
-        // Use chunked upload for files > 10MB
-        const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
-        if (file.size > CHUNK_SIZE) {
-            const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-            const uploadId = Math.random().toString(36).substring(2) + Date.now();
-            let uploaded = 0;
-            for (let chunk = 0; chunk < totalChunks; chunk++) {
-                if (cancelRequested) break;
-                const start = chunk * CHUNK_SIZE;
-                const end = Math.min(file.size, start + CHUNK_SIZE);
-                const blob = file.slice(start, end);
-                await new Promise((resolveChunk, rejectChunk) => {
-                    const xhr = new XMLHttpRequest();
-                    currentXhr = xhr;
-                    xhr.open('POST', api.BASE + '/drive/upload-chunk', true);
-                    const token = auth.getToken();
-                    if (token) xhr.setRequestHeader('Authorization', 'Bearer ' + token);
-                    xhr.setRequestHeader('x-chunk-number', chunk);
-                    xhr.setRequestHeader('x-total-chunks', totalChunks);
-                    xhr.setRequestHeader('x-file-name', encodeURIComponent(file.name));
-                    xhr.setRequestHeader('x-upload-id', uploadId);
-                    xhr.upload.onprogress = function (e) {
-                        if (e.lengthComputable) {
-                            const percent = Math.round(((uploaded + e.loaded) / file.size) * 100);
-                            progressBar.style.width = percent + '%';
-                            progressText.textContent = percent + '%';
-                        }
-                    };
-                    xhr.onload = () => {
-                        uploaded += blob.size;
-                        const percent = Math.round((uploaded / file.size) * 100);
-                        progressBar.style.width = percent + '%';
-                        progressText.textContent = percent + '%';
-                        resolveChunk();
-                    };
-                    xhr.onerror = () => {
-                        if (!cancelRequested) {
-                            showToast('Chunk upload failed', 'error');
-                        }
-                        progressContainer.style.display = 'none';
-                        rejectChunk();
-                    };
-                    xhr.onabort = () => {
-                        // No toast here, handled by cancelBtn
-                        resolveChunk();
-                    };
-                    xhr.send(blob);
-                });
+        let index = 0;
+        const worker = async () => {
+            while (!state.cancelled && index < jobs.length) {
+                const jobIndex = index++;
+                const job = jobs[jobIndex];
+                try {
+                    await this.uploadOne(job.file, job.parentId, state, (loaded) => {
+                        loadedByJob.set(jobIndex, loaded);
+                        render();
+                    });
+                    loadedByJob.set(jobIndex, job.file.size);
+                    done++;
+                } catch (err) {
+                    if (state.cancelled) return;
+                    failed++;
+                    lastError = `${job.file.name}: ${err.message || 'upload failed'}`;
+                    console.error('Drive upload failed:', lastError);
+                }
+                render();
             }
-            if (!cancelRequested) {
-                progressBar.style.width = '100%';
-                progressText.textContent = '100%';
-                setTimeout(() => { progressContainer.style.display = 'none'; }, 800);
-                showToast('Upload successful', 'success');
-                this.loadItems(this.currentParentId);
-            }
-            cancelBtn.disabled = true;
-            cancelBtn.style.opacity = 0.5;
-            return;
-        }
+        };
+        const CONCURRENCY = 3;
+        await Promise.all(Array.from({ length: Math.min(CONCURRENCY, jobs.length) }, worker));
 
-        // Fallback to normal upload for small files
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('parentId', this.currentParentId || '');
-        return new Promise((resolve) => {
+        cancelBtn.disabled = true;
+        cancelBtn.style.opacity = 0.5;
+        setTimeout(() => {
+            progressContainer.classList.add('hidden');
+            progressContainer.style.display = 'none';
+        }, 800);
+
+        if (state.cancelled) {
+            showToast(done ? `Upload canceled (${done} uploaded before cancel)` : 'Upload canceled', 'error');
+        } else if (failed === 0) {
+            const what = label === 'folder' ? 'Folder uploaded' : (jobs.length > 1 ? `${done} files uploaded` : 'Upload successful');
+            showToast(label === 'folder' ? `${what} (${done} file${done === 1 ? '' : 's'})` : what, 'success');
+        } else {
+            showToast(`${done} uploaded, ${failed} failed. ${lastError}`, 'error');
+        }
+        this.loadItems(this.currentParentId);
+    },
+
+    // Uploads one file. Files > CHUNK_SIZE (or any file the proxy rejects with 413, e.g. the
+    // nginx default 1 MB body limit) are sent in chunks, shrinking the chunk size on 413.
+    async uploadOne(file, parentId, state, onProgress) {
+        const CHUNK_SIZE = 8 * 1024 * 1024;
+        const MIN_CHUNK = 256 * 1024;
+        if (file.size <= CHUNK_SIZE) {
+            try {
+                return await this.uploadSimple(file, parentId, state, onProgress);
+            } catch (err) {
+                if (err.status !== 413 || file.size <= MIN_CHUNK) throw err;
+            }
+        }
+        // Big files start at 8 MB chunks; a small file that hit 413 retries in 512 KB chunks.
+        let chunkSize = file.size > CHUNK_SIZE ? CHUNK_SIZE : 512 * 1024;
+        while (true) {
+            try {
+                return await this.uploadChunked(file, parentId, chunkSize, state, onProgress);
+            } catch (err) {
+                if (err.status !== 413 || chunkSize <= MIN_CHUNK) throw err;
+                chunkSize = Math.max(MIN_CHUNK, Math.floor(chunkSize / 4));
+            }
+        }
+    },
+
+    sendXhr(url, body, headers, state, onProgress) {
+        return new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
-            currentXhr = xhr;
-            xhr.open('POST', api.BASE + '/drive/upload', true);
+            state.xhrs.add(xhr);
+            xhr.open('POST', url, true);
             const token = auth.getToken();
             if (token) xhr.setRequestHeader('Authorization', 'Bearer ' + token);
-            xhr.upload.onprogress = function (e) {
-                if (e.lengthComputable) {
-                    const percent = Math.round((e.loaded / e.total) * 100);
-                    progressBar.style.width = percent + '%';
-                    progressText.textContent = percent + '%';
-                }
-            };
-            xhr.onload = () => {
-                progressBar.style.width = '100%';
-                progressText.textContent = '100%';
-                setTimeout(() => {
-                    progressContainer.style.display = 'none';
-                }, 800);
+            Object.entries(headers || {}).forEach(([k, v]) => xhr.setRequestHeader(k, v));
+            xhr.upload.onprogress = (e) => { if (e.lengthComputable && onProgress) onProgress(e.loaded); };
+            const finish = (fn) => { state.xhrs.delete(xhr); fn(); };
+            xhr.onload = () => finish(() => {
                 if (xhr.status >= 200 && xhr.status < 300) {
-                    showToast('Upload successful', 'success');
-                    this.loadItems(this.currentParentId);
-                    resolve();
-                } else {
-                    let msg = 'Upload failed';
-                    try { msg = JSON.parse(xhr.responseText).message || msg; } catch {}
-                    showToast(msg, 'error');
-                    resolve();
+                    let data = {};
+                    try { data = JSON.parse(xhr.responseText); } catch {}
+                    return resolve(data);
                 }
-                cancelBtn.disabled = true;
-                cancelBtn.style.opacity = 0.5;
-            };
-            xhr.onerror = () => {
-                if (!cancelRequested) {
-                    showToast('Upload failed', 'error');
+                if (xhr.status === 401) { auth.logout(); }
+                let msg = '';
+                try { const d = JSON.parse(xhr.responseText); msg = d.error || d.message || ''; } catch {}
+                if (!msg) {
+                    msg = xhr.status === 413 ? 'File too large for the server'
+                        : xhr.status === 429 ? 'Too many requests, please wait a moment'
+                        : `Upload failed (HTTP ${xhr.status})`;
                 }
-                progressContainer.style.display = 'none';
-                resolve();
-                cancelBtn.disabled = true;
-                cancelBtn.style.opacity = 0.5;
-            };
-            xhr.onabort = () => {
-                // No toast here, handled by cancelBtn
-                resolve();
-                cancelBtn.disabled = true;
-                cancelBtn.style.opacity = 0.5;
-            };
-            xhr.send(formData);
+                const err = new Error(msg);
+                err.status = xhr.status;
+                reject(err);
+            });
+            xhr.onerror = () => finish(() => reject(new Error('Network error during upload')));
+            xhr.onabort = () => finish(() => reject(new Error('Upload canceled')));
+            xhr.send(body);
         });
+    },
+
+    uploadSimple(file, parentId, state, onProgress) {
+        const formData = new FormData();
+        formData.append('parentId', parentId || '');
+        formData.append('file', file);
+        return this.sendXhr(api.BASE + '/drive/upload', formData, {}, state, onProgress);
+    },
+
+    async uploadChunked(file, parentId, chunkSize, state, onProgress) {
+        const totalChunks = Math.max(1, Math.ceil(file.size / chunkSize));
+        const uploadId = Math.random().toString(36).substring(2) + Date.now();
+        let uploaded = 0;
+        let result = null;
+        for (let chunk = 0; chunk < totalChunks; chunk++) {
+            if (state.cancelled) throw new Error('Upload canceled');
+            const start = chunk * chunkSize;
+            const blob = file.slice(start, Math.min(file.size, start + chunkSize));
+            result = await this.sendXhr(api.BASE + '/drive/upload-chunk', blob, {
+                'x-chunk-number': chunk,
+                'x-total-chunks': totalChunks,
+                'x-file-name': encodeURIComponent(file.name),
+                'x-upload-id': uploadId,
+                'x-parent-id': parentId || ''
+            }, state, (loaded) => onProgress && onProgress(uploaded + loaded));
+            uploaded += blob.size;
+            if (onProgress) onProgress(uploaded);
+        }
+        return result;
     },
 
     downloadFile(id) {
@@ -581,5 +671,6 @@ const drive = {
 window.drive = drive;
 window.initDrive = () => drive.init();
 window.handleFileUpload = (e) => drive.handleFileUpload(e);
+window.handleFolderUpload = (e) => drive.handleFolderUpload(e);
 window.navigateTo = (id) => drive.navigateTo(id);
 window.openFolderModal = () => drive.openFolderModal();
