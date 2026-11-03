@@ -6045,242 +6045,6 @@
           }
         },
         {
-          "name": "GET /api/frontend-studio/sprint-board -> 401",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "auth": {
-              "type": "noauth"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/frontend-studio/sprint-board",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "frontend-studio",
-                "sprint-board"
-              ]
-            }
-          }
-        },
-        {
-          "name": "GET /api/frontend-studio/release-checklist -> 401",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "auth": {
-              "type": "noauth"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/frontend-studio/release-checklist",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "frontend-studio",
-                "release-checklist"
-              ]
-            }
-          }
-        },
-        {
-          "name": "POST /api/frontend-studio/release-checklist/:index/toggle -> 401",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "auth": {
-              "type": "noauth"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/frontend-studio/release-checklist/0/toggle",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "frontend-studio",
-                "release-checklist",
-                "0",
-                "toggle"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "POST /api/frontend-studio/accessibility-scan -> 401",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "auth": {
-              "type": "noauth"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/frontend-studio/accessibility-scan",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "frontend-studio",
-                "accessibility-scan"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "POST /api/frontend-studio/performance-baseline -> 401",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "auth": {
-              "type": "noauth"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/frontend-studio/performance-baseline",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "frontend-studio",
-                "performance-baseline"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "GET /api/frontend-studio/metrics -> 401",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "auth": {
-              "type": "noauth"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/frontend-studio/metrics",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "frontend-studio",
-                "metrics"
-              ]
-            }
-          }
-        },
-        {
           "name": "GET /api/messages/stream -> 401",
           "event": [
             {
@@ -16397,6 +16161,112 @@
               }
             },
             {
+              "name": "Create second client (for isolation tests) -> 200",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('Returns id', () => pm.expect(pm.response.json().id).to.exist); pm.environment.set('client_b_id', pm.response.json().id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/clients",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "clients"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Postman Client B {{run_id}}\",\n  \"company\": \"Postman B Co {{run_id}}\",\n  \"email\": \"pm.clientb.{{run_id}}@example.invalid\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Provision second client login -> 200",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const missing = [\"client_b_id\"].filter(v => !pm.environment.get(v));",
+                      "if (missing.length) { console.log('Skipping (missing ' + missing.join(', ') + ')'); pm.execution.skipRequest(); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "",
+                      "pm.environment.set('client_b_login_id', pm.response.json().client_login_id);",
+                      "pm.environment.set('client_b_password', pm.response.json().temp_password);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/clients/{{client_b_id}}/provision-login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "clients",
+                    "{{client_b_id}}",
+                    "provision-login"
+                  ]
+                }
+              }
+            },
+            {
               "name": "Client Connect summary -> 200",
               "event": [
                 {
@@ -19835,6 +19705,462 @@
                   "path": [
                     "api",
                     "users"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Second client login -> 200",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const missing = [\"client_b_login_id\"].filter(v => !pm.environment.get(v));",
+                      "if (missing.length) { console.log('Skipping (missing ' + missing.join(', ') + ')'); pm.execution.skipRequest(); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.environment.set('client_b_token', pm.response.json().token);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "noauth"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/client-portal/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "client-portal",
+                    "login"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"client_login_id\": \"{{client_b_login_id}}\",\n  \"password\": \"{{client_b_password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "ISOLATION: client B cannot read client A's chat -> 403",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const missing = [\"client_b_token\",\"client_conversation_id\"].filter(v => !pm.environment.get(v));",
+                      "if (missing.length) { console.log('Skipping (missing ' + missing.join(', ') + ')'); pm.execution.skipRequest(); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{client_b_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/client-portal/messages?conversation_id={{client_conversation_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "client-portal",
+                    "messages"
+                  ],
+                  "query": [
+                    {
+                      "key": "conversation_id",
+                      "value": "{{client_conversation_id}}"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "ISOLATION: client B cannot post in client A's chat -> 403",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const missing = [\"client_b_token\",\"client_conversation_id\"].filter(v => !pm.environment.get(v));",
+                      "if (missing.length) { console.log('Skipping (missing ' + missing.join(', ') + ')'); pm.execution.skipRequest(); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{client_b_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/client-portal/messages",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "client-portal",
+                    "messages"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"conversation_id\": \"{{client_conversation_id}}\",\n  \"message\": \"intrusion attempt\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "ISOLATION: client B cannot use client A's project -> 403",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const missing = [\"client_b_token\",\"project_id\"].filter(v => !pm.environment.get(v));",
+                      "if (missing.length) { console.log('Skipping (missing ' + missing.join(', ') + ')'); pm.execution.skipRequest(); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{client_b_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/client-portal/groups",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "client-portal",
+                    "groups"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Intrusion {{run_id}}\",\n  \"project_id\": \"{{project_id}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "ISOLATION: client B cannot review client A's project -> 403",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const missing = [\"client_b_token\",\"project_id\"].filter(v => !pm.environment.get(v));",
+                      "if (missing.length) { console.log('Skipping (missing ' + missing.join(', ') + ')'); pm.execution.skipRequest(); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{client_b_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/client-portal/reviews",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "client-portal",
+                    "reviews"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"project_id\": \"{{project_id}}\",\n  \"rating\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "ISOLATION: client B sees none of client A's data",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const missing = [\"client_b_token\"].filter(v => !pm.environment.get(v));",
+                      "if (missing.length) { console.log('Skipping (missing ' + missing.join(', ') + ')'); pm.execution.skipRequest(); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "",
+                      "const text = pm.response.text();",
+                      "pm.test('No client A project, ticket or messages in B\\'s workspace', () => {",
+                      "pm.expect(text).to.not.include('Postman Project ' + pm.environment.get('run_id'));",
+                      "pm.expect(text).to.not.include('Hello from Postman client');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{client_b_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/client-portal/workspace",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "client-portal",
+                    "workspace"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "ISOLATION: client B's tickets exclude client A's",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const missing = [\"client_b_token\"].filter(v => !pm.environment.get(v));",
+                      "if (missing.length) { console.log('Skipping (missing ' + missing.join(', ') + ')'); pm.execution.skipRequest(); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('No client A ticket', () => pm.expect(pm.response.text()).to.not.include('Postman client ticket ' + pm.environment.get('run_id')));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{client_b_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/client-portal/tickets",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "client-portal",
+                    "tickets"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "ISOLATION: client B's channels exclude client A's",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const missing = [\"client_b_token\"].filter(v => !pm.environment.get(v));",
+                      "if (missing.length) { console.log('Skipping (missing ' + missing.join(', ') + ')'); pm.execution.skipRequest(); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('No client A group', () => pm.expect(pm.response.text()).to.not.include('Postman Group ' + pm.environment.get('run_id')));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{client_b_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/client-portal/channels",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "client-portal",
+                    "channels"
                   ]
                 }
               }
@@ -27563,84 +27889,6 @@
               }
             },
             {
-              "name": "Frontend Studio sprint board -> 200",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "type": "text/javascript",
-                    "exec": [
-                      "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                    ]
-                  }
-                }
-              ],
-              "request": {
-                "method": "GET",
-                "header": [],
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{staff_token}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "url": {
-                  "raw": "{{base_url}}/api/frontend-studio/sprint-board",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "api",
-                    "frontend-studio",
-                    "sprint-board"
-                  ]
-                }
-              }
-            },
-            {
-              "name": "Frontend Studio metrics -> 200",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "type": "text/javascript",
-                    "exec": [
-                      "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                    ]
-                  }
-                }
-              ],
-              "request": {
-                "method": "GET",
-                "header": [],
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{staff_token}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "url": {
-                  "raw": "{{base_url}}/api/frontend-studio/metrics",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "api",
-                    "frontend-studio",
-                    "metrics"
-                  ]
-                }
-              }
-            },
-            {
               "name": "Response is gzip-compressed",
               "event": [
                 {
@@ -29381,6 +29629,56 @@
                 "api",
                 "clients",
                 "{{client_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete second client",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const missing = [\"client_b_id\"].filter(v => !pm.environment.get(v));",
+                  "if (missing.length) { console.log('Skipping (missing ' + missing.join(', ') + ')'); pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of 200/404', () => pm.expect([200,404]).to.include(pm.response.code));",
+                  "pm.environment.unset('client_b_id');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/clients/{{client_b_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "{{client_b_id}}"
               ]
             }
           }

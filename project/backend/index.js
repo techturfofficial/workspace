@@ -169,12 +169,6 @@ async function startServer() {
     app.use('/api/content-forge', require('./routes/content_forge.routes'));
     app.use('/api/operation-hq', require('./routes/operation_hq.routes'));
 
-    // --- FRONTEND STUDIO ROUTES ---
-    const frontendStudioRoutes = require('./routes/frontend_studio.routes');
-    app.use('/api/frontend-studio', frontendStudioRoutes);
-    // Route aliases for test compatibility
-    app.use('/api/frontend', frontendStudioRoutes);
-
     // --- ANALYTICS (Injected Routes) ---
     app.get('/api/analytics/top-performers', verifyToken, (req, res) => {
         try {

@@ -1,6 +1,6 @@
 # TechTurf API tests (Postman)
 
-End-to-end API tests for the whole CRM: 642 requests and about 1,350 assertions.
+End-to-end API tests for the whole CRM: 651 requests and about 1,370 assertions.
 
 | File | What it is |
 |------|------------|
@@ -63,8 +63,11 @@ Then re-import the collection. New routes get their 401/403 security tests autom
 
 ## Expected result
 
-Every assertion should pass (verified 2026-11-03: about 1,350 assertions, 0 failures,
+Every assertion should pass (verified 2026-11-03: about 1,370 assertions, 0 failures,
 with and without the optional section). A failure means something regressed.
+
+Section 4.07 also checks client-to-client isolation: a second test client must not
+read or post in the first client's chats, use or review its project, or see its tickets.
 
 The first version of this suite found these bugs, all now fixed and covered by tests:
 - **Client portal login checked no password.** Login now needs the Access ID or email
@@ -72,8 +75,8 @@ The first version of this suite found these bugs, all now fixed and covered by t
   page ("Create/Reset portal password").
 - **Six modules were never mounted:** design-vault, nexus-lab, broadcast-hub,
   creator-slate, content-forge and operation-hq.
-- **No login was required** for `/api/audit`, `/api/settings`, `/api/analytics/*` and
-  `/api/frontend-studio/*`.
+- **No login was required** for `/api/audit`, `/api/settings` and `/api/analytics/*`.
+  (The mock Frontend Studio module was later removed.)
 - **Any employee could manage payments, others' tickets, courses and chats.**
 - **Client records included the portal password hash.**
 - **Admin heatmap and roles summary returned 500.**

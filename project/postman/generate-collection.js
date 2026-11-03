@@ -76,7 +76,6 @@ const mounts = {};
 for (const m of indexSrc.matchAll(/app\.use\('([^']+)',\s*require\('\.\/routes\/([^']+)'\)\)/g)) {
   if (!mounts[m[2]]) mounts[m[2]] = m[1];
 }
-mounts['frontend_studio.routes'] = '/api/frontend-studio';
 // Fallback mount points (used if a router is ever missing from index.js, so its endpoints
 // still get security tests - which then fail and reveal the missing mount).
 const UNMOUNTED = {
@@ -309,6 +308,11 @@ const clients = folder('4.03 Clients & Client Connect', [
   pm.environment.set('client_login_id', b.client_login_id);
   pm.environment.set('client_temp_password', b.temp_password);
   `) }),
+  req('Create second client (for isolation tests) -> 200', 'POST', '/api/clients', { token: 'admin_token', body: json({ name: 'Postman Client B {{run_id}}', company: 'Postman B Co {{run_id}}', email: 'pm.clientb.{{run_id}}@example.invalid' }), tests: expect(200, saveId('client_b_id')) }),
+  req('Provision second client login -> 200', 'POST', '/api/clients/{{client_b_id}}/provision-login', { token: 'admin_token', pre: needs('client_b_id'), tests: expect(200, `
+  pm.environment.set('client_b_login_id', pm.response.json().client_login_id);
+  pm.environment.set('client_b_password', pm.response.json().temp_password);
+  `) }),
   req('Client Connect summary -> 200', 'GET', '/api/client-connect/summary', { token: 'admin_token', tests: expect(200) }),
   req('Create portal pass -> 200', 'POST', '/api/client-connect/portal-pass', { token: 'admin_token', pre: needs('client_id'), body: json({ client_id: '{{client_id}}', hours: 1 }), tests: expect(200, `pm.environment.set('portal_pass', pm.response.json().token);`) }),
   req('Verify portal pass -> 200', 'POST', '/api/client-connect/verify-pass', { pre: needs('portal_pass'), body: json({ token: '{{portal_pass}}' }), tests: expect(200, `pm.test('Valid', () => pm.expect(pm.response.json().valid).to.be.true);`) }),
@@ -389,7 +393,22 @@ const portal = folder('4.07 Client Portal (client login)', [
   req('Client meetings -> 200', 'GET', '/api/client-portal/meetings', { token: 'client_token', pre: needs('client_token'), tests: expect(200) }),
   req('Client review - rating out of range -> 400', 'POST', '/api/client-portal/reviews', { token: 'client_token', pre: needs('client_token', 'project_id'), body: json({ project_id: '{{project_id}}', rating: 9 }), tests: expect(400) }),
   req('Client change password - weak -> 400', 'POST', '/api/client-portal/change-password', { token: 'client_token', pre: needs('client_token'), body: json({ password: 'weak' }), tests: expect(400) }),
-  req('Client token on a staff route -> 403', 'GET', '/api/users', { token: 'client_token', pre: needs('client_token'), tests: expect(403) })
+  req('Client token on a staff route -> 403', 'GET', '/api/users', { token: 'client_token', pre: needs('client_token'), tests: expect(403) }),
+  // Cross-client isolation: client B must never see or touch client A's data.
+  req('Second client login -> 200', 'POST', '/api/client-portal/login', { pre: needs('client_b_login_id'), body: json({ client_login_id: '{{client_b_login_id}}', password: '{{client_b_password}}' }), tests: expect(200, `pm.environment.set('client_b_token', pm.response.json().token);`) }),
+  req('ISOLATION: client B cannot read client A\'s chat -> 403', 'GET', '/api/client-portal/messages?conversation_id={{client_conversation_id}}', { token: 'client_b_token', pre: needs('client_b_token', 'client_conversation_id'), tests: expect(403) }),
+  req('ISOLATION: client B cannot post in client A\'s chat -> 403', 'POST', '/api/client-portal/messages', { token: 'client_b_token', pre: needs('client_b_token', 'client_conversation_id'), body: json({ conversation_id: '{{client_conversation_id}}', message: 'intrusion attempt' }), tests: expect(403) }),
+  req('ISOLATION: client B cannot use client A\'s project -> 403', 'POST', '/api/client-portal/groups', { token: 'client_b_token', pre: needs('client_b_token', 'project_id'), body: json({ title: 'Intrusion {{run_id}}', project_id: '{{project_id}}' }), tests: expect(403) }),
+  req('ISOLATION: client B cannot review client A\'s project -> 403', 'POST', '/api/client-portal/reviews', { token: 'client_b_token', pre: needs('client_b_token', 'project_id'), body: json({ project_id: '{{project_id}}', rating: 1 }), tests: expect(403) }),
+  req('ISOLATION: client B sees none of client A\'s data', 'GET', '/api/client-portal/workspace', { token: 'client_b_token', pre: needs('client_b_token'), tests: expect(200, `
+  const text = pm.response.text();
+  pm.test('No client A project, ticket or messages in B\\'s workspace', () => {
+    pm.expect(text).to.not.include('Postman Project ' + pm.environment.get('run_id'));
+    pm.expect(text).to.not.include('Hello from Postman client');
+  });
+  `) }),
+  req('ISOLATION: client B\'s tickets exclude client A\'s', 'GET', '/api/client-portal/tickets', { token: 'client_b_token', pre: needs('client_b_token'), tests: expect(200, `pm.test('No client A ticket', () => pm.expect(pm.response.text()).to.not.include('Postman client ticket ' + pm.environment.get('run_id')));`) }),
+  req('ISOLATION: client B\'s channels exclude client A\'s', 'GET', '/api/client-portal/channels', { token: 'client_b_token', pre: needs('client_b_token'), tests: expect(200, `pm.test('No client A group', () => pm.expect(pm.response.text()).to.not.include('Postman Group ' + pm.environment.get('run_id')));`) })
 ]);
 
 const clientReports = folder('4.08 Client Reports', [
@@ -628,8 +647,6 @@ const dashboard = folder('4.18 Dashboard, analytics & misc', [
   req('Integrations status -> 200', 'GET', '/api/integrations/status', { token: 'staff_token', tests: expect(200) }),
   req('Settings (admin) -> 200', 'GET', '/api/settings', { token: 'admin_token', tests: expect(200) }),
   req('Announcements -> 200', 'GET', '/api/announcements', { token: 'staff_token', tests: expect(200, isArray) }),
-  req('Frontend Studio sprint board -> 200', 'GET', '/api/frontend-studio/sprint-board', { token: 'staff_token', tests: expect(200) }),
-  req('Frontend Studio metrics -> 200', 'GET', '/api/frontend-studio/metrics', { token: 'staff_token', tests: expect(200) }),
   req('Response is gzip-compressed', 'GET', '/api/users', { token: 'admin_token', headers: [{ key: 'Accept-Encoding', value: 'gzip' }], tests: expect(200, `pm.test('Content-Encoding gzip (large JSON)', () => { if (pm.response.size().body > 1024) pm.expect(pm.response.headers.get('Content-Encoding')).to.eql('gzip'); });`) }),
   req('Per-user rate limit headers present', 'GET', '/api/auth/me', { token: 'staff_token', tests: expect(200, `pm.test('RateLimit-Limit header', () => pm.expect(pm.response.headers.get('RateLimit-Limit')).to.exist);`) })
 ]);
@@ -686,6 +703,7 @@ const cleanup = folder('8. Cleanup (removes everything this run created)', [
   del('Delete task', '/api/tasks/{{task_id}}', 'task_id'),
   del('Delete project', '/api/projects/{{project_id}}', 'project_id'),
   del('Delete client', '/api/clients/{{client_id}}', 'client_id'),
+  del('Delete second client', '/api/clients/{{client_b_id}}', 'client_b_id'),
   del('Delete team', '/api/teams/{{team_id}}', 'team_id'),
   del('Delete company role', '/api/admin/company-roles/{{company_role_id}}', 'company_role_id'),
   del('Delete role template', '/api/enterprise/role-templates/{{role_template_id}}', 'role_template_id'),
