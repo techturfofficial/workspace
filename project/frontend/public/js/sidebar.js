@@ -160,6 +160,10 @@ function initSidebar() {
     const link = e.target.closest('[data-nav]') || e.target.closest('.menu-item') || e.target.closest('a');
     if (link) {
       if (link.id === 'logout-btn' || link.closest('#logout-btn')) return;
+      // Menu items already navigate via their own onclick. Navigating again here
+      // started a second load that aborted the first, so every page loaded twice
+      // (looked like the page refreshing itself).
+      if (link.hasAttribute('onclick')) return;
 
       const href = link.getAttribute('data-nav') || link.getAttribute('href');
       if (href && !href.startsWith('#') && !href.startsWith('javascript:') && !href.includes('://') && !link.target && !e.ctrlKey && !e.metaKey) {
