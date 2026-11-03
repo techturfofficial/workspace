@@ -16880,6 +16880,61 @@
               }
             },
             {
+              "name": "Search projects -> finds it",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const missing = [\"project_id\"].filter(v => !pm.environment.get(v));",
+                      "if (missing.length) { console.log('Skipping (missing ' + missing.join(', ') + ')'); pm.execution.skipRequest(); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('Found by search', () => pm.expect(pm.response.json().map(p => String(p.id))).to.include(String(pm.environment.get('project_id'))));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/projects?search=Postman%20Project%20{{run_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "projects"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "Postman%20Project%20{{run_id}}"
+                    }
+                  ]
+                }
+              }
+            },
+            {
               "name": "Get project -> 200",
               "event": [
                 {
@@ -17455,6 +17510,61 @@
                     {
                       "key": "project_id",
                       "value": "{{project_id}}"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Search tasks -> finds it",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const missing = [\"task_id\"].filter(v => !pm.environment.get(v));",
+                      "if (missing.length) { console.log('Skipping (missing ' + missing.join(', ') + ')'); pm.execution.skipRequest(); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('Found by search', () => pm.expect(pm.response.json().map(t => String(t.id))).to.include(String(pm.environment.get('task_id'))));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/tasks?search=Postman%20Task%20{{run_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "tasks"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "Postman%20Task%20{{run_id}}"
                     }
                   ]
                 }
@@ -22465,6 +22575,59 @@
                   "path": [
                     "api",
                     "courses"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Filter courses by team/user/project -> 200",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('Returns a list', () => { const b = pm.response.json(); pm.expect(Array.isArray(b) || Array.isArray(b.data) || Array.isArray(b.rows) || Array.isArray(b.items)).to.be.true; });"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{staff_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/courses?team=1&user=1&project=1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "courses"
+                  ],
+                  "query": [
+                    {
+                      "key": "team",
+                      "value": "1"
+                    },
+                    {
+                      "key": "user",
+                      "value": "1"
+                    },
+                    {
+                      "key": "project",
+                      "value": "1"
+                    }
                   ]
                 }
               }
@@ -28420,6 +28583,60 @@
                   "language": "json"
                 }
               }
+            }
+          }
+        },
+        {
+          "name": "Admins were notified the submission is ready",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (String(pm.environment.get('run_notifying_tests')) !== 'true') {",
+                  "console.log('Skipping: set run_notifying_tests=true to run tests that notify/email all staff');",
+                  "pm.execution.skipRequest();",
+                  "}",
+                  "",
+                  "const missing = [\"submission_id\"].filter(v => !pm.environment.get(v));",
+                  "if (missing.length) { console.log('Skipping (missing ' + missing.join(', ') + ')'); pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('\"ready for admin approval\" notification received', () => pm.expect(pm.response.text()).to.include('ready for admin approval'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/notifications",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "notifications"
+              ]
             }
           }
         },

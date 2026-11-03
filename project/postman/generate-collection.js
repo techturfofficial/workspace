@@ -328,6 +328,7 @@ const projects = folder('4.04 Projects', [
   req('Create project - no title -> 400', 'POST', '/api/projects', { token: 'admin_token', body: json({ description: 'x' }), tests: expect(400) }),
   req('List projects -> 200', 'GET', '/api/projects', { token: 'staff_token', tests: expect(200, isArray) }),
   req('List active projects -> 200', 'GET', '/api/projects?status=active', { token: 'admin_token', tests: expect(200, isArray) }),
+  req('Search projects -> finds it', 'GET', '/api/projects?search=Postman%20Project%20{{run_id}}', { token: 'admin_token', pre: needs('project_id'), tests: expect(200, `pm.test('Found by search', () => pm.expect(pm.response.json().map(p => String(p.id))).to.include(String(pm.environment.get('project_id'))));`) }),
   req('Get project -> 200', 'GET', '/api/projects/{{project_id}}', { token: 'staff_token', pre: needs('project_id'), tests: expect(200) }),
   req('Get project - unknown -> 404', 'GET', '/api/projects/999999', { token: 'admin_token', tests: expect(404) }),
   req('Update project (leader) -> 200', 'PUT', '/api/projects/{{project_id}}', { token: 'leader_token', pre: needs('project_id'), body: json({ description: 'updated by leader', priority: 'urgent' }), tests: expect(200) }),
@@ -342,6 +343,7 @@ const tasks = folder('4.05 Tasks', [
   req('Create task - missing title -> 400', 'POST', '/api/tasks', { token: 'admin_token', body: json({ project_id: '{{project_id}}' }), tests: expect(400) }),
   req('List tasks -> 200', 'GET', '/api/tasks', { token: 'staff_token', tests: expect(200, isArray) }),
   req('List tasks for project -> 200', 'GET', '/api/tasks?project_id={{project_id}}', { token: 'admin_token', pre: needs('project_id'), tests: expect(200, `pm.test('Contains the new task', () => pm.expect(pm.response.json().map(t => String(t.id))).to.include(String(pm.environment.get('task_id'))));`) }),
+  req('Search tasks -> finds it', 'GET', '/api/tasks?search=Postman%20Task%20{{run_id}}', { token: 'admin_token', pre: needs('task_id'), tests: expect(200, `pm.test('Found by search', () => pm.expect(pm.response.json().map(t => String(t.id))).to.include(String(pm.environment.get('task_id'))));`) }),
   req('Project tasks -> 200', 'GET', '/api/projects/{{project_id}}/tasks', { token: 'staff_token', pre: needs('project_id'), tests: expect(200, isArray) }),
   req('Get task -> 200', 'GET', '/api/tasks/{{task_id}}', { token: 'staff_token', pre: needs('task_id'), tests: expect(200) }),
   req('Start task (assignee) -> 200', 'PUT', '/api/tasks/{{task_id}}/start', { token: 'staff_token', pre: needs('task_id'), tests: expect(200) }),
@@ -476,6 +478,7 @@ const courses = folder('4.12 Learning Hub (courses)', [
   req('Add course -> 200', 'POST', '/api/courses', { token: 'admin_token', body: json({ title: 'Postman Course {{run_id}}', description: 'test', link: 'https://example.com/course' }), tests: expect(200, saveId('course_id')) }),
   req('Add course - no title -> 400', 'POST', '/api/courses', { token: 'admin_token', body: json({ link: 'https://example.com' }), tests: expect(400) }),
   req('List courses -> 200', 'GET', '/api/courses', { token: 'staff_token', tests: expect(200, isArray) }),
+  req('Filter courses by team/user/project -> 200', 'GET', '/api/courses?team=1&user=1&project=1', { token: 'staff_token', tests: expect(200, isArray) }),
   req('SECURITY: employee cannot delete a course -> 403', 'DELETE', '/api/courses/{{course_id}}', { token: 'staff_token', pre: needs('course_id'), tests: expect(403) })
 ]);
 
@@ -662,6 +665,7 @@ const optional = folder('5. Optional - notifies/emails all staff (off by default
   req('Announcement - delete -> 200', 'DELETE', '/api/announcements/{{announcement_id}}', { token: 'admin_token', pre: optionalOnly + needs('announcement_id'), tests: expect(200) }),
   req('Team announcement -> 200', 'POST', '/api/enterprise/team-announcements', { token: 'admin_token', pre: optionalOnly + needs('team_id'), body: json({ team_id: '{{team_id}}', title: 'Postman team note {{run_id}}', body: 'test' }), tests: expect(200) }),
   req('Leader approves submission -> 200 (emails admins)', 'PUT', '/api/submissions/{{submission_id}}/leader-review', { token: 'leader_token', pre: optionalOnly + needs('submission_id'), body: json({ status: 'approved' }), tests: expect(200) }),
+  req('Admins were notified the submission is ready', 'GET', '/api/notifications', { token: 'admin_token', pre: optionalOnly + needs('submission_id'), tests: expect(200, `pm.test('"ready for admin approval" notification received', () => pm.expect(pm.response.text()).to.include('ready for admin approval'));`) }),
   req('Admin approves submission -> 200', 'PUT', '/api/submissions/{{submission_id}}/admin-review', { token: 'admin_token', pre: optionalOnly + needs('submission_id'), body: json({ status: 'approved' }), tests: expect(200) }),
   req('Client posts review -> 200 (emails admins)', 'POST', '/api/client-portal/reviews', { token: 'client_token', pre: optionalOnly + needs('client_token', 'project_id'), body: json({ project_id: '{{project_id}}', rating: 5, feedback_text: 'Postman test review' }), tests: expect(200) }),
   req('Client proposes meeting -> 200 (emails admins)', 'POST', '/api/client-portal/meetings', { token: 'client_token', pre: optionalOnly + needs('client_token'), body: json({ title: 'Postman meeting {{run_id}}', scheduled_at: '2099-01-02T10:00:00Z', team_leader_id: '{{leader_id}}' }), tests: expect(200) })

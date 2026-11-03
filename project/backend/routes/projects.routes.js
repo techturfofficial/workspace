@@ -18,7 +18,7 @@ router.get('/', verifyToken, (req, res) => {
   const params = [];
   if (status) { query += ' AND p.status=?'; params.push(status); }
   if (search) {
-    query += ' AND (p.title LIKE ? OR COALESCE(p.description, "") LIKE ? OR COALESCE(c.name, "") LIKE ?)';
+    query += " AND (p.title LIKE ? OR COALESCE(p.description, '') LIKE ? OR COALESCE(c.name, '') LIKE ?)";
     params.push(`%${search}%`, `%${search}%`, `%${search}%`);
   }
   query += ' ORDER BY p.created_at DESC';

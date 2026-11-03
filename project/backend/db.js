@@ -21,6 +21,8 @@ if (dbPath) {
   const rootDb = path.resolve(__dirname, '../../techturf.db');
   dbPath = fs.existsSync(rootDb) ? rootDb : path.join(__dirname, '../storage/techturf.db');
 }
+// The database is not in git, so on a fresh install its folder may not exist yet.
+fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 const db = new Database(dbPath);
 
 // Concurrency/performance tuning. WAL lets readers run while a write is in flight
@@ -132,6 +134,8 @@ CREATE TABLE IF NOT EXISTS projects (
   client_id INTEGER REFERENCES clients(id),
   deadline DATE,
   created_by INTEGER REFERENCES users(id),
+  progress_percent INTEGER DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -189,6 +193,7 @@ CREATE TABLE IF NOT EXISTS submissions (
 
   admin_override TEXT,
   external_link TEXT,
+  submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -274,6 +279,8 @@ CREATE TABLE IF NOT EXISTS conversations (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT,
   is_group INTEGER DEFAULT 0,
+  team_id INTEGER,
+  project_id INTEGER,
   created_by INTEGER REFERENCES users(id),
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -969,7 +976,7 @@ if (!clientColumns.includes('avatar')) {
 // --- Payments: add client_id, status, description, source ---
 const paymentColumns = db.prepare('PRAGMA table_info(payments)').all().map(c => c.name);
 if (!paymentColumns.includes('client_id')) {
-  db.exec('ALTER TABLE payments ADD COLUMN client_id INTEGER REFERENCES clients(id)');
+  db.exec('ALTER TABLE payments ADD COLUMN client_id INTEGER REFERENCES clients(id) ON DELETE SET NULL');
 }
 if (!paymentColumns.includes('status')) {
   db.exec("ALTER TABLE payments ADD COLUMN status TEXT DEFAULT 'pending'");
@@ -985,20 +992,36 @@ db.exec('CREATE INDEX IF NOT EXISTS idx_payments_client_id ON payments(client_id
 // --- Conversations: add client_id for client-staff thread tagging ---
 const conversationColumns = db.prepare('PRAGMA table_info(conversations)').all().map(c => c.name);
 if (!conversationColumns.includes('client_id')) {
-  db.exec('ALTER TABLE conversations ADD COLUMN client_id INTEGER REFERENCES clients(id)');
+  db.exec('ALTER TABLE conversations ADD COLUMN client_id INTEGER REFERENCES clients(id) ON DELETE CASCADE');
 }
 db.exec('CREATE INDEX IF NOT EXISTS idx_conversations_client_id ON conversations(client_id)');
+
+// Columns older installs gained from one-off scripts; new installs get them from the
+// CREATE TABLE statements above. SQLite can't ADD COLUMN with a CURRENT_TIMESTAMP
+// default, so timestamp columns are added plain and backfilled.
+[
+  ['conversations', 'team_id', 'INTEGER'],
+  ['conversations', 'project_id', 'INTEGER'],
+  ['projects', 'progress_percent', 'INTEGER DEFAULT 0'],
+  ['projects', 'created_at', 'DATETIME', "COALESCE(updated_at, CURRENT_TIMESTAMP)"],
+  ['submissions', 'submitted_at', 'DATETIME', "COALESCE(created_at, CURRENT_TIMESTAMP)"]
+].forEach(([table, column, type, backfill]) => {
+  const existing = db.prepare(`PRAGMA table_info(${table})`).all().map(c => c.name);
+  if (existing.includes(column)) return;
+  db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+  if (backfill) db.exec(`UPDATE ${table} SET ${column} = ${backfill} WHERE ${column} IS NULL`);
+});
 
 // --- Chat messages: add sender_client_id to identify client-originated messages ---
 const chatMessageColumns = db.prepare('PRAGMA table_info(chat_messages)').all().map(c => c.name);
 if (!chatMessageColumns.includes('sender_client_id')) {
-  db.exec('ALTER TABLE chat_messages ADD COLUMN sender_client_id INTEGER REFERENCES clients(id)');
+  db.exec('ALTER TABLE chat_messages ADD COLUMN sender_client_id INTEGER REFERENCES clients(id) ON DELETE SET NULL');
 }
 
 // --- Tickets: add client_id ---
 const ticketColumns = db.prepare('PRAGMA table_info(tickets)').all().map(c => c.name);
 if (!ticketColumns.includes('client_id')) {
-  db.exec('ALTER TABLE tickets ADD COLUMN client_id INTEGER REFERENCES clients(id)');
+  db.exec('ALTER TABLE tickets ADD COLUMN client_id INTEGER REFERENCES clients(id) ON DELETE SET NULL');
 }
 db.exec('CREATE INDEX IF NOT EXISTS idx_tickets_client_id ON tickets(client_id)');
 
@@ -1030,12 +1053,13 @@ try {
 db.exec(`
 CREATE TABLE IF NOT EXISTS meetings (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  client_id INTEGER REFERENCES clients(id),
-  team_leader_id INTEGER REFERENCES users(id),
+  client_id INTEGER REFERENCES clients(id) ON DELETE CASCADE,
+  team_leader_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   description TEXT,
   scheduled_at DATETIME NOT NULL,
-  status TEXT DEFAULT 'pending' CHECK(status IN ('pending','confirmed','completed','cancelled')),
+  -- Matches the statuses the code writes (client_reports normalises to these).
+  status TEXT DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected','cancelled')),
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_meetings_client_id ON meetings(client_id);
@@ -1046,7 +1070,7 @@ db.exec(`
 CREATE TABLE IF NOT EXISTS client_reviews (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   project_id INTEGER REFERENCES projects(id),
-  client_id INTEGER REFERENCES clients(id),
+  client_id INTEGER REFERENCES clients(id) ON DELETE CASCADE,
   rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
   feedback_text TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP

@@ -142,12 +142,24 @@ router.post('/:id/feedback', verifyToken, (req, res) => {
 router.delete('/:id', verifyToken, checkRole('admin'), (req, res) => {
   try {
     const id = req.params.id;
-    // Detach/delete dependent rows first to satisfy SQLite FK constraints.
+    // Detach/delete dependent rows first. Done explicitly (rather than relying on ON DELETE
+    // rules) because older and newer databases were created with different FK rules.
     const cleanupAndDelete = db.transaction(() => {
       db.prepare('UPDATE projects SET client_id=NULL WHERE client_id=?').run(id);
       db.prepare('DELETE FROM portal_access WHERE client_id=?').run(id);
       db.prepare('DELETE FROM client_interactions WHERE client_id=?').run(id);
       db.prepare('DELETE FROM submissions WHERE client_id=?').run(id);
+      db.prepare('DELETE FROM meetings WHERE client_id=?').run(id);
+      db.prepare('DELETE FROM client_reviews WHERE client_id=?').run(id);
+      db.prepare('UPDATE payments SET client_id=NULL WHERE client_id=?').run(id);
+      db.prepare('UPDATE tickets SET client_id=NULL WHERE client_id=?').run(id);
+      db.prepare('UPDATE team_inbox_threads SET client_id=NULL WHERE client_id=?').run(id);
+      db.prepare('UPDATE meeting_notes SET client_id=NULL WHERE client_id=?').run(id);
+      db.prepare('UPDATE chat_messages SET sender_client_id=NULL WHERE sender_client_id=?').run(id);
+      // The client's chats go with the client (messages, reads and participants cascade).
+      db.prepare('DELETE FROM chat_messages WHERE conversation_id IN (SELECT id FROM conversations WHERE client_id=?)').run(id);
+      db.prepare('DELETE FROM conversation_participants WHERE conversation_id IN (SELECT id FROM conversations WHERE client_id=?)').run(id);
+      db.prepare('DELETE FROM conversations WHERE client_id=?').run(id);
       db.prepare('DELETE FROM clients WHERE id=?').run(id);
     });
     cleanupAndDelete();

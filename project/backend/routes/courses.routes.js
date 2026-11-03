@@ -29,9 +29,9 @@ router.get('/', verifyToken, (req, res) => {
   const { team, user, project } = req.query;
   let sql = 'SELECT * FROM courses WHERE 1=1';
   const params = [];
-  if (team) { sql += ' AND (access_team IS NULL OR access_team = ? OR access_team = "")'; params.push(team); }
-  if (user) { sql += ' AND (access_user IS NULL OR access_user = ? OR access_user = "")'; params.push(user); }
-  if (project) { sql += ' AND (access_project IS NULL OR access_project = ? OR access_project = "")'; params.push(project); }
+  if (team) { sql += " AND (access_team IS NULL OR access_team = ? OR access_team = '')"; params.push(team); }
+  if (user) { sql += " AND (access_user IS NULL OR access_user = ? OR access_user = '')"; params.push(user); }
+  if (project) { sql += " AND (access_project IS NULL OR access_project = ? OR access_project = '')"; params.push(project); }
   sql += ' ORDER BY created_at DESC';
   const rows = db.prepare(sql).all(...params);
   res.json(rows);

@@ -38,7 +38,7 @@ router.get('/', verifyToken, (req, res) => {
   if (assigned_to) { query += ' AND t.assigned_to=?'; params.push(assigned_to); }
   if (priority) { query += ' AND t.priority=?'; params.push(priority); }
   if (search) {
-    query += ' AND (t.title LIKE ? OR COALESCE(t.description, "") LIKE ? OR COALESCE(p.title, "") LIKE ?)';
+    query += " AND (t.title LIKE ? OR COALESCE(t.description, '') LIKE ? OR COALESCE(p.title, '') LIKE ?)";
     params.push(`%${search}%`, `%${search}%`, `%${search}%`);
   }
   query += " ORDER BY CASE t.priority WHEN 'urgent' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END, t.deadline ASC";

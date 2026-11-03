@@ -30,7 +30,7 @@ async function notifyUsers(userIds, message, type = 'info', emailSubject = 'Tech
 }
 
 async function notifyByRole(roleName, message, type = 'info', emailSubject = 'Tech Turf Notification') {
-  const users = db.prepare('SELECT id FROM users WHERE is_active=1 AND (role=? OR ("," || COALESCE(secondary_roles, "") || ",") LIKE ?)').all(roleName, `%,${roleName},%`);
+  const users = db.prepare("SELECT id FROM users WHERE is_active=1 AND (role=? OR (',' || COALESCE(secondary_roles, '') || ',') LIKE ?)").all(roleName, `%,${roleName},%`);
   return notifyUsers(users.map(u => u.id), message, type, emailSubject);
 }
 
