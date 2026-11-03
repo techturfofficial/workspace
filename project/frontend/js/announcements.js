@@ -103,7 +103,7 @@ function initSearch() {
 }
 
 async function deleteAnnouncement(id) {
-  if (!confirm('Are you sure you want to delete this announcement?')) return;
+  if (!(await confirmDialog('Are you sure you want to delete this announcement?'))) return;
   try {
     await api.delete(`/announcements/${id}`);
     showToast('Announcement deleted', 'success');

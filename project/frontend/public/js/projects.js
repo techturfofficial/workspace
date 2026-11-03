@@ -367,7 +367,7 @@ async function openProjectDetail(id) {
 
 // Admin: Archive project
 async function archiveProject(id) {
-  if (!confirm('Archive this project?')) return;
+  if (!(await confirmDialog('Archive this project?', { confirmText: 'Archive', danger: false }))) return;
   try {
     await api.post(`/projects/${id}/archive`);
     showToast('Project archived', 'success');
@@ -378,7 +378,7 @@ async function archiveProject(id) {
 
 // Admin: Restore project
 async function restoreProject(id) {
-  if (!confirm('Restore this project?')) return;
+  if (!(await confirmDialog('Restore this project?', { confirmText: 'Restore', danger: false }))) return;
   try {
     await api.post(`/projects/${id}/restore`);
     showToast('Project restored', 'success');
@@ -389,7 +389,7 @@ async function restoreProject(id) {
 
 // Admin: Delete project
 async function deleteProject(id) {
-  if (!confirm('Delete this project? All tasks and submissions inside it will also be permanently deleted.')) return;
+  if (!(await confirmDialog('Delete this project? All tasks and submissions inside it will also be permanently deleted.'))) return;
   try {
     await api.delete(`/projects/${id}`);
     showToast('Project deleted successfully', 'success');

@@ -349,7 +349,7 @@ window.updateHelpTicketStatus = async function(id, status) {
 };
 
 window.deleteHelpTicket = async function(id) {
-  if (!confirm('Are you sure you want to delete this ticket?')) return;
+  if (!(await confirmDialog('Are you sure you want to delete this ticket?'))) return;
   try {
     await api.delete(`/tickets/${id}`);
     showToast('Ticket deleted', 'success');

@@ -378,7 +378,7 @@ window.resetUserPassword = async function(id, email) {
 
 // Delete user (permanent soft-delete)
 window.deleteUser = async function(id) {
-  if (!confirm('CRITICAL: Permanently purge this user data? This will archive all associations.')) return;
+  if (!(await confirmDialog('CRITICAL: Permanently purge this user data? This will archive all associations.', { confirmText: 'Archive', danger: false }))) return;
   try {
     const res = await api.delete(`/users/${id}`);
     showToast(res.message || 'User data purged successfully', 'success');
@@ -507,7 +507,7 @@ function closeDetailPanel() {
 }
 
 async function deactivateUser(id) {
-  if (!confirm('Are you sure you want to deactivate this user?')) return;
+  if (!(await confirmDialog('Are you sure you want to deactivate this user?', { confirmText: 'Deactivate' }))) return;
   try {
     await api.put(`/users/${id}`, { is_active: 0 });
     showToast('User deactivated', 'success');

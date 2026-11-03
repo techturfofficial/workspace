@@ -745,7 +745,7 @@ function closeActiveChat() {
 }
 
 async function clearChatHistory(convId) {
-  if (!confirm('Are you sure you want to clear all messages in this chat?')) {
+  if (!(await confirmDialog('Are you sure you want to clear all messages in this chat?', { confirmText: 'Clear' }))) {
     return;
   }
   try {
@@ -759,7 +759,7 @@ async function clearChatHistory(convId) {
 }
 
 async function deleteConversationById(id, title = 'this chat') {
-  if (!confirm(`Are you sure you want to delete "${title}"? All chat history will be permanently deleted.`)) {
+  if (!(await confirmDialog(`Are you sure you want to delete "${title}"? All chat history will be permanently deleted.`))) {
     return;
   }
   try {
@@ -784,7 +784,7 @@ async function deleteClientContact(clientId, name = 'this client') {
 }
 
 async function deleteTeamGroup(teamId, name = 'this team') {
-  if (!confirm(`Are you sure you want to delete team channel "${name}"?`)) {
+  if (!(await confirmDialog(`Are you sure you want to delete team channel "${name}"?`))) {
     return;
   }
   try {

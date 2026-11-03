@@ -578,7 +578,7 @@ async function loadRecentWeeklyReports() {
 // Delete a submitted weekly report
 async function deleteWeeklyReport(id, event) {
   if (event) event.stopPropagation();
-  if (!confirm('Are you sure you want to delete this weekly report?')) return;
+  if (!(await confirmDialog('Are you sure you want to delete this weekly report?'))) return;
 
   try {
     await api.delete(`/submissions/${id}`);

@@ -194,7 +194,7 @@ async function adminReviewSubmission(id, status) {
 }
 
 async function reEvaluateSubmission(id) {
-  if (!confirm('Re-opening review will reset the current approval status. Continue?')) return;
+  if (!(await confirmDialog('Re-opening review will reset the current approval status. Continue?', { confirmText: 'Re-open', danger: false }))) return;
   reviewSubmission(id, 'pending');
 }
 
@@ -623,7 +623,7 @@ async function viewWorkAssets(id) {
 }
 
 async function deleteSubmission(id) {
-  if (!confirm('DESTRUCTIVE ACTION: Permanently remove this submission from the system?')) return;
+  if (!(await confirmDialog('DESTRUCTIVE ACTION: Permanently remove this submission from the system?'))) return;
   try {
     await api.delete(`/submissions/${id}`);
     showToast('Submission purged', 'success');

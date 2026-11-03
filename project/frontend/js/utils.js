@@ -218,6 +218,72 @@ function showToast(message, type = 'info') {
   setTimeout(removeToast, 3500);
 }
 
+/**
+ * In-page replacement for window.confirm(). Returns a Promise<boolean>.
+ * The native confirm() is silently auto-cancelled by some browsers and embedded
+ * views (and by Chrome after "prevent this page from creating dialogs"), which made
+ * delete buttons appear to do nothing.
+ *   if (!(await confirmDialog('Delete this task?'))) return;
+ */
+function confirmDialog(message, { confirmText = 'Delete', cancelText = 'Cancel', danger = true } = {}) {
+  return new Promise(resolve => {
+    const previousFocus = document.activeElement;
+    const overlay = document.createElement('div');
+    overlay.setAttribute('role', 'presentation');
+    overlay.style.cssText = 'position:fixed; inset:0; z-index:100000; display:flex; align-items:center; justify-content:center; padding:16px; background:rgba(15,23,42,0.45);';
+
+    const box = document.createElement('div');
+    box.setAttribute('role', 'alertdialog');
+    box.setAttribute('aria-modal', 'true');
+    box.style.cssText = 'width:100%; max-width:420px; background:var(--bg-card, #ffffff); color:var(--text-primary, #0f172a); border-radius:12px; padding:22px 22px 18px; box-shadow:0 20px 50px rgba(15,23,42,0.3); font-family:inherit;';
+
+    const text = document.createElement('div');
+    text.id = 'confirm-dialog-message';
+    text.style.cssText = 'font-size:0.95rem; line-height:1.5; white-space:pre-line; margin-bottom:20px;';
+    text.textContent = String(message || 'Are you sure?');
+    box.setAttribute('aria-describedby', text.id);
+
+    const actions = document.createElement('div');
+    actions.style.cssText = 'display:flex; justify-content:flex-end; gap:10px;';
+    const btnStyle = 'border:none; border-radius:8px; padding:9px 18px; font-weight:700; font-size:0.85rem; cursor:pointer; font-family:inherit;';
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.textContent = cancelText;
+    cancelBtn.style.cssText = btnStyle + 'background:#e2e8f0; color:#0f172a;';
+    const okBtn = document.createElement('button');
+    okBtn.type = 'button';
+    okBtn.textContent = confirmText;
+    okBtn.style.cssText = btnStyle + (danger ? 'background:#dc2626; color:#ffffff;' : 'background:#102a96; color:#ffffff;');
+
+    actions.append(cancelBtn, okBtn);
+    box.append(text, actions);
+    overlay.appendChild(box);
+
+    const close = (result) => {
+      document.removeEventListener('keydown', onKey, true);
+      overlay.remove();
+      if (previousFocus && previousFocus.focus) previousFocus.focus();
+      resolve(result);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); close(false); }
+      else if (e.key === 'Enter') { e.preventDefault(); close(document.activeElement !== cancelBtn); }
+      else if (e.key === 'Tab') { // keep focus inside the dialog
+        e.preventDefault();
+        (document.activeElement === okBtn ? cancelBtn : okBtn).focus();
+      }
+    };
+    cancelBtn.onclick = () => close(false);
+    okBtn.onclick = () => close(true);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(false); });
+    document.addEventListener('keydown', onKey, true);
+
+    document.body.appendChild(overlay);
+    okBtn.focus();
+  });
+}
+window.confirmDialog = confirmDialog;
+
 function getRoleAvatarStyle(role, ctx = null, size = 120) {
   const r = String(role || '').toLowerCase().trim();
 

@@ -385,7 +385,7 @@ const drive = {
     },
 
     async revokeAccess(userId) {
-        if (!confirm('Revoke access for this employee?')) return;
+        if (!(await confirmDialog('Revoke access for this employee?', { confirmText: 'Revoke' }))) return;
         try {
             await api.delete(`/drive/share/${this.sharingItemId}/${userId}`);
             showToast('Access revoked', 'success');
@@ -415,7 +415,7 @@ const drive = {
         const message = item && item.type === 'folder'
             ? `Delete the folder "${item.name}" and everything inside it? This cannot be undone.`
             : `Permanently delete ${item ? `"${item.name}"` : 'this item'}? This cannot be undone.`;
-        if (!confirm(message)) return;
+        if (!(await confirmDialog(message))) return;
         try {
             await api.delete(`/drive/${id}`);
             showToast('Item deleted', 'success');

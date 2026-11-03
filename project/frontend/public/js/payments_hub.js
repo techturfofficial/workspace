@@ -481,7 +481,10 @@ async function markPaymentPaid(id) {
 }
 
 async function deletePaymentRecord(id) {
-  if (!confirm('Are you sure you want to delete this payment record?')) return;
+  const question = 'Are you sure you want to delete this payment record?';
+  // This page doesn't load utils.js, so fall back to the native dialog if needed.
+  const ok = window.confirmDialog ? await window.confirmDialog(question) : confirm(question);
+  if (!ok) return;
   try {
     await api.delete(`/payments/${id}`);
     if (window.showToast) showToast('Payment record removed', 'success');

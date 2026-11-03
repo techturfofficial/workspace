@@ -144,8 +144,8 @@ function setupEventListeners() {
     safeListen('tool-undo', 'click', undo);
     safeListen('tool-redo', 'click', redo);
 
-    safeListen('tool-clear', 'click', () => {
-        if (confirm('Clear entire canvas? This cannot be undone easily.')) {
+    safeListen('tool-clear', 'click', async () => {
+        if (await confirmDialog('Clear entire canvas? This cannot be undone easily.', { confirmText: 'Clear' })) {
             isHistoryLocked = true;
             canvas.clear();
             isHistoryLocked = false;
@@ -1020,7 +1020,7 @@ async function loadBoardsList() {
         grid.querySelectorAll('.board-delete').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
-                if (!confirm('Delete this board permanently?')) return;
+                if (!(await confirmDialog('Delete this board permanently?'))) return;
                 try {
                     await api.delete(`/workspace/${btn.dataset.id}`);
                     showToast('Board deleted', 'success');

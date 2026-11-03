@@ -1051,7 +1051,7 @@ function formatRole(role) {
 }
 // Admin: Delete client
 async function deleteClient(id) {
-  if (!confirm('Delete this client? This cannot be undone.')) return;
+  if (!(await confirmDialog('Delete this client? This cannot be undone.'))) return;
   try {
     await api.delete(`/clients/${id}`);
     showToast('Client deleted', 'success');
@@ -1064,7 +1064,7 @@ window.deleteClient = deleteClient;
 // Client portal sign-in needs a password. Generates a one-time password for the client
 // (shown once here - share it with the client; they can change it after signing in).
 async function provisionClientPortalLogin(id) {
-  if (!confirm('Generate a new client portal password? Any previous portal password stops working.')) return;
+  if (!(await confirmDialog('Generate a new client portal password? Any previous portal password stops working.', { confirmText: 'Generate', danger: false }))) return;
   try {
     const res = await api.post(`/clients/${id}/provision-login`, {});
     const box = document.getElementById(`portal-credentials-${id}`);

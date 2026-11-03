@@ -437,7 +437,7 @@ async function updateTaskStatus(id, newStatus) {
 }
 
 async function deleteTask(id) {
-  if (!confirm('Are you sure you want to delete this task?')) return;
+  if (!(await confirmDialog('Are you sure you want to delete this task?'))) return;
   try {
     await api.delete(`/tasks/${id}`);
     showToast('Task deleted successfully', 'success');

@@ -110,7 +110,7 @@ window.editCompanyRole = function(id) {
 };
 
 window.deleteCompanyRole = async function(id) {
-  if (!confirm('Delete this custom role? Users assigned to it will lose that secondary role.')) return;
+  if (!(await confirmDialog('Delete this custom role? Users assigned to it will lose that secondary role.'))) return;
   try {
     await api.delete(`/admin/company-roles/${id}`);
     showToast('Role deleted', 'success');
@@ -244,7 +244,7 @@ window.editTeam = function(teamId) {
 };
 
 window.deleteTeam = async function(id) {
-  if (!confirm('Delete this team? Existing chat usage is not affected.')) return;
+  if (!(await confirmDialog('Delete this team? Existing chat usage is not affected.'))) return;
   try {
     await api.delete(`/teams/${id}`);
     showToast('Team deleted', 'success');
@@ -283,7 +283,7 @@ async function loadAuditLogs() {
 }
 
 async function initiateWarpRollback(id) {
-  if (!confirm('INITIATE TEMPORAL WARP?\n\nThis will overwrite current record data with the historical snapshot. Proceed?')) return;
+  if (!(await confirmDialog('INITIATE TEMPORAL WARP?\n\nThis will overwrite current record data with the historical snapshot. Proceed?', { confirmText: 'Roll back' }))) return;
 
   try {
     const res = await api.post(`/admin/rollback/${id}`);
