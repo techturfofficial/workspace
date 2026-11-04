@@ -25,7 +25,9 @@ const clientApi = {
 
     try {
       const res = await fetch(`${this.BASE_URL}${endpoint}`, options);
-      if (res.status === 401) {
+      // 401 means "signed out" only when a session was sent. For the login call itself it is
+      // just a wrong ID/password, which must reach the form instead of reloading the page.
+      if (res.status === 401 && token && endpoint !== '/login') {
         localStorage.removeItem('client_token');
         localStorage.removeItem('client_info');
         window.location.href = 'login.html';

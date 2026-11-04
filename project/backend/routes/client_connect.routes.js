@@ -20,8 +20,12 @@ function normalizePortalToken(raw) {
   return token;
 }
 
+// Staff endpoints are limited to the roles that run Client Connect: the pass list includes
+// full portal tokens, which open that client's portal view.
+const clientConnectStaff = checkRole('admin', 'client_handler');
+
 // --- SUMMARY ---
-router.get('/summary', verifyToken, (req, res) => {
+router.get('/summary', verifyToken, clientConnectStaff, (req, res) => {
   const activeClients = db.prepare('SELECT COUNT(*) as count FROM clients').get().count;
   const activePasses = db.prepare('SELECT COUNT(*) as count FROM portal_access WHERE expires_at > ?').get(new Date().toISOString()).count;
   const recentTalks = db.prepare("SELECT COUNT(*) as count FROM client_interactions WHERE created_at > date('now', '-7 days')").get().count;
@@ -111,7 +115,7 @@ router.get('/portal-data', publicPortalLimiter, (req, res) => {
   }
 });
 
-router.get('/passes/:clientId', verifyToken, (req, res) => {
+router.get('/passes/:clientId', verifyToken, clientConnectStaff, (req, res) => {
   const passes = db.prepare('SELECT * FROM portal_access WHERE client_id=? ORDER BY created_at DESC').all(req.params.clientId);
   res.json(passes);
 });
@@ -124,7 +128,7 @@ router.post('/interactions', verifyToken, checkRole('admin', 'client_handler'), 
   res.json({ message: 'Interaction logged' });
 });
 
-router.get('/interactions/:clientId', verifyToken, (req, res) => {
+router.get('/interactions/:clientId', verifyToken, clientConnectStaff, (req, res) => {
   const rows = db.prepare('SELECT ci.*, u.name as handler_name FROM client_interactions ci LEFT JOIN users u ON ci.handler_id = u.id WHERE ci.client_id=? ORDER BY ci.created_at DESC').all(req.params.clientId);
   res.json(rows);
 });

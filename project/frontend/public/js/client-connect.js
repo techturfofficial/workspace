@@ -63,8 +63,8 @@ function renderClients(clients) {
           <div id="pulse-label-${c.id}" class="pulse-label">Connecting...</div>
         </div>
         <div class="client-info-strip">
-          <div class="client-name">${c.name}</div>
-          <div class="client-meta">${c.email || 'N/A'} • Active Projects: 0</div>
+          <div class="client-name">${escapeHtml(c.name)}</div>
+          <div class="client-meta">${escapeHtml(c.email || 'N/A')} • Active Projects: 0</div>
           
           <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
             <button class="btn-primary" style="font-size:0.65rem;" onclick="openLogInteraction(${c.id})">LOG CALL</button>
@@ -128,11 +128,11 @@ async function openHistory(id) {
     container.innerHTML = history.map(h => `
             <div class="log-item">
                 <div class="log-meta">
-                    <span style="font-weight:700; color:var(--accent-primary);">${h.type.toUpperCase()}</span>
-                    <span>By ${h.handler_name} • ${timeAgo(h.created_at)}</span>
+                    <span style="font-weight:700; color:var(--accent-primary);">${escapeHtml(String(h.type || '').toUpperCase())}</span>
+                    <span>By ${escapeHtml(h.handler_name || 'Unknown')} • ${timeAgo(h.created_at)}</span>
                 </div>
-                <div style="font-size:0.8rem; line-height:1.4;">${h.notes || 'No detailed notes provided.'}</div>
-                <div style="font-size:0.6rem; color:var(--text-muted); margin-top:8px;">Sentiment Captured: <span style="color:var(--accent-primary);">${h.sentiment}</span></div>
+                <div style="font-size:0.8rem; line-height:1.4;">${escapeHtml(h.notes || 'No detailed notes provided.')}</div>
+                <div style="font-size:0.6rem; color:var(--text-muted); margin-top:8px;">Sentiment Captured: <span style="color:var(--accent-primary);">${escapeHtml(h.sentiment)}</span></div>
             </div>
         `).join('');
   } catch (e) {
@@ -158,12 +158,15 @@ async function loadPassHistory(id) {
     if (container) {
       container.innerHTML = passes.length === 0 ? '' :
         `<div style="margin-top:10px;">` +
-        passes.slice(0, 1).map(p => `
+        passes.slice(0, 1).map(p => {
+          const valid = new Date(p.expires_at) > new Date();
+          return `
             <div class="pass-item">
-                <span>Active Token: ${p.token.substring(0, 8)}...</span>
-                <span style="color:var(--accent-primary);">VALID</span>
+                <span>${valid ? 'Active' : 'Last'} Token: ${escapeHtml(String(p.token).substring(0, 8))}...</span>
+                <span style="color:${valid ? 'var(--accent-primary)' : 'var(--text-muted)'};">${valid ? 'VALID' : 'EXPIRED'}</span>
             </div>
-         `).join('') +
+         `;
+        }).join('') +
         `</div>`;
     }
   } catch (e) { }

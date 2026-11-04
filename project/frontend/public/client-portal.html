@@ -189,10 +189,18 @@
                 errorEl.textContent = '';
 
                 try {
-                    const res = await api.post('/client-connect/verify-pass', { token: passKey });
+                    // Called directly rather than through api.js: its 401 handling treats the
+                    // answer to a wrong or expired pass as an expired staff session and sent
+                    // the client to the staff login page.
+                    const res = await fetch('/api/client-connect/verify-pass', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token: passKey.trim() })
+                    });
+                    if (!res.ok) throw new Error('Invalid pass');
                     showToast('Authorized! Fetching secure stream...', 'success');
                     setTimeout(() => {
-                        window.location.href = `client-dashboard.html?pass=${passKey}`;
+                        window.location.href = `client-dashboard.html?pass=${encodeURIComponent(passKey.trim())}`;
                     }, 800);
                 } catch (err) {
                     errorEl.textContent = 'INVALID OR EXPIRED PORTAL PASS';

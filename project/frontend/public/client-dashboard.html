@@ -367,8 +367,11 @@
             }
 
             try {
-                const data = await api.get(`/client-connect/portal-data?token=${token}`);
-                renderDashboard(data);
+                // Direct fetch, not api.js: an expired pass answers 401, which api.js would
+                // treat as an expired staff session and redirect to the staff login page.
+                const res = await fetch(`/api/client-connect/portal-data?token=${encodeURIComponent(token)}`);
+                if (!res.ok) throw new Error('Invalid pass');
+                renderDashboard(await res.json());
             } catch (err) {
                 showToast('SESSION EXPIRED OR INVALID', 'error');
                 setTimeout(() => window.location.href = 'client-portal.html', 2000);
@@ -383,7 +386,7 @@
 
             // Stats
             const mainProject = projects[0] || { status: 'NO ACTIVE PROJECT' };
-            document.getElementById('proj-status-val').textContent = mainProject.status.toUpperCase();
+            document.getElementById('proj-status-val').textContent = String(mainProject.status || '').toUpperCase();
             document.getElementById('pulse-val').textContent = (client.satisfaction_score || 85) + '%';
             document.getElementById('deliverables-val').textContent = submissions.length;
 
@@ -397,8 +400,8 @@
                     html += `
                     <div class="timeline-item ${idx === 0 ? 'active' : 'completed'}">
                         <div class="timeline-date">${formatDate(p.created_at)}</div>
-                        <div class="timeline-title">${p.title} - ${p.status.toUpperCase()}</div>
-                        <div class="timeline-desc">${p.description || 'Project objective initialized.'}</div>
+                        <div class="timeline-title">${escapeHtml(p.title)} - ${escapeHtml(String(p.status || '').toUpperCase())}</div>
+                        <div class="timeline-desc">${escapeHtml(p.description || 'Project objective initialized.')}</div>
                     </div>
                 `;
                 });
@@ -413,10 +416,10 @@
                 assetsEl.innerHTML = submissions.map(s => `
                 <div class="glass-card deliverable-item">
                     <div class="deliverable-info">
-                        <h4>v${s.version} Release</h4>
-                        <p>${s.project_title || 'Project Deliverable'}</p>
+                        <h4>v${escapeHtml(s.version)} Release</h4>
+                        <p>${escapeHtml(s.project_title || 'Project Deliverable')}</p>
                     </div>
-                    <div class="badge badge-${s.status}">${s.status}</div>
+                    <div class="badge badge-${escapeHtml(s.status)}">${escapeHtml(s.status)}</div>
                 </div>
             `).join('');
             }
@@ -425,9 +428,9 @@
             if (last_interaction) {
                 document.getElementById('latest-update').innerHTML = `
                 <div class="update-meta">
-                    ${formatDate(last_interaction.created_at)} - ${last_interaction.type.toUpperCase()}
+                    ${formatDate(last_interaction.created_at)} - ${escapeHtml(String(last_interaction.type || '').toUpperCase())}
                 </div>
-                <div class="update-content">${last_interaction.notes}</div>
+                <div class="update-content">${escapeHtml(last_interaction.notes || '')}</div>
             `;
             }
         }

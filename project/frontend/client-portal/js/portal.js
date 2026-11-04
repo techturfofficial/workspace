@@ -1111,7 +1111,7 @@
       const projSelect = document.getElementById('squad-group-project-select');
       if (projSelect) {
         try {
-          const projs = await clientApi.get('/projects');
+          const projs = await clientApi.get('/workspace');
           const list = Array.isArray(projs) ? projs : (projs.projects || []);
           projSelect.innerHTML = '<option value="">-- General Account Squad --</option>' + 
             list.map(p => `<option value="${p.id}">${p.title}</option>`).join('');
