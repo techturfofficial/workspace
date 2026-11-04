@@ -87,11 +87,9 @@ body {
    the next one is ready and then cross-fades, instead of blanking and redrawing
    everything (which looked like a full refresh). The sidebar and top bar are named so
    they stay put while only the page content changes. Browsers without support simply
-   navigate as before. */
-@view-transition {
-  navigation: auto;
-}
-
+   navigate as before.
+   The @view-transition opt-in itself is an inline <style> in each page's <head>: when it
+   only lived here, Chrome skipped the transition on pages with the navbar search box. */
 .sidebar {
   view-transition-name: tt-sidebar;
 }
@@ -103,12 +101,6 @@ header.navbar {
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation-duration: 160ms;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  @view-transition {
-    navigation: none;
-  }
 }
 
 @keyframes pageReveal {

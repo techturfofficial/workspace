@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tech Turf | Nexus Lab</title>
+  <!-- Smooth page-to-page navigation (see main.css). Declared inline so it is in effect the moment the page starts rendering; from main.css alone Chrome sometimes skipped the transition. -->
+  <style>@view-transition { navigation: auto; } @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }</style>
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="css/dashboard.css">
   <link rel="stylesheet" href="css/animations.css">
