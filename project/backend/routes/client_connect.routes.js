@@ -106,7 +106,9 @@ router.get('/portal-data', publicPortalLimiter, (req, res) => {
       WHERE s.client_id=? 
       ORDER BY s.created_at DESC
     `).all(clientId);
-    const last_interaction = db.prepare('SELECT * FROM client_interactions WHERE client_id=? ORDER BY created_at DESC LIMIT 1').get(clientId);
+    // Call logs are internal (free-text notes, sentiment, who logged it): the client only
+    // gets when the team was last in touch and how.
+    const last_interaction = db.prepare('SELECT type, created_at FROM client_interactions WHERE client_id=? ORDER BY created_at DESC LIMIT 1').get(clientId);
 
     res.json({ client, projects, tasks, submissions, last_interaction });
   } catch (err) {
