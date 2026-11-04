@@ -379,7 +379,7 @@
         });
 
         function renderDashboard(data) {
-            const { client, projects, tasks, submissions, last_interaction } = data;
+            const { client, projects, submissions, last_interaction } = data;
 
             document.getElementById('client-name-display').textContent = client.name;
             document.getElementById('client-company-display').textContent = client.company;
@@ -390,7 +390,7 @@
             document.getElementById('pulse-val').textContent = (client.satisfaction_score || 85) + '%';
             document.getElementById('deliverables-val').textContent = submissions.length;
 
-            // Timeline (using projects and tasks)
+            // Timeline (projects)
             const timelineEl = document.getElementById('timeline-list');
             if (projects.length === 0) {
                 timelineEl.innerHTML = '<div style="color:var(--text-muted); padding:20px;">Establishing project framework...</div>';

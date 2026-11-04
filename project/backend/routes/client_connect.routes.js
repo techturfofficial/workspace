@@ -95,8 +95,9 @@ router.get('/portal-data', publicPortalLimiter, (req, res) => {
       client = db.prepare('SELECT id, name, company, satisfaction_score FROM clients WHERE id=?').get(clientId);
     }
 
+    // Tasks are not sent: they are internal (assignees, notes and other staff-only fields)
+    // and the client dashboard never displayed them.
     const projects = db.prepare('SELECT id, title, status, description, created_at FROM projects WHERE client_id=? ORDER BY created_at DESC').all(clientId);
-    const tasks = db.prepare('SELECT t.*, p.title as project_title FROM tasks t JOIN projects p ON p.id = t.project_id WHERE p.client_id=? ORDER BY t.created_at DESC').all(clientId);
     const submissions = db.prepare(`
       SELECT s.id, s.version, s.leader_status as status, s.created_at, 
       COALESCE(p.title, s.project_name) as project_title
@@ -110,7 +111,7 @@ router.get('/portal-data', publicPortalLimiter, (req, res) => {
     // gets when the team was last in touch and how.
     const last_interaction = db.prepare('SELECT type, created_at FROM client_interactions WHERE client_id=? ORDER BY created_at DESC LIMIT 1').get(clientId);
 
-    res.json({ client, projects, tasks, submissions, last_interaction });
+    res.json({ client, projects, submissions, last_interaction });
   } catch (err) {
     console.error('Portal data error:', err);
     res.status(500).json({ error: 'Failed to load portal data' });
