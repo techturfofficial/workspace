@@ -82,6 +82,35 @@ body {
   height: 100vh;
 }
 
+/* Smooth page-to-page navigation. Each sidebar click loads a new HTML page; with
+   cross-document view transitions the browser keeps the current page on screen until
+   the next one is ready and then cross-fades, instead of blanking and redrawing
+   everything (which looked like a full refresh). The sidebar and top bar are named so
+   they stay put while only the page content changes. Browsers without support simply
+   navigate as before. */
+@view-transition {
+  navigation: auto;
+}
+
+.sidebar {
+  view-transition-name: tt-sidebar;
+}
+
+header.navbar {
+  view-transition-name: tt-navbar;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 160ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @view-transition {
+    navigation: none;
+  }
+}
+
 @keyframes pageReveal {
   from {
     opacity: 0;

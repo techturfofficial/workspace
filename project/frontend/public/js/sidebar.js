@@ -1,11 +1,25 @@
+let sidebarInitialized = false;
+
 function initSidebar() {
+  // sidebar.js initialises itself on load and most pages call initSidebar() again from
+  // DOMContentLoaded. A second run rebuilt the menu (visible flicker) and stacked extra
+  // click handlers and notification polling, so only the first call does anything.
+  if (sidebarInitialized) return;
+  sidebarInitialized = true;
+
   const sidebar = document.getElementById('sidebar');
   const collapseBtn = document.getElementById('sidebar-collapse-btn');
   const mobileToggle = document.getElementById('mobile-toggle');
 
-  // Restore collapse state
+  // Restore collapse state without the width animation, otherwise a collapsed sidebar
+  // visibly shrinks again on every page.
   const isCollapsed = localStorage.getItem('tt_sidebar_collapsed') === 'true';
-  if (isCollapsed && sidebar) sidebar.classList.add('collapsed');
+  if (isCollapsed && sidebar) {
+    sidebar.style.transition = 'none';
+    sidebar.classList.add('collapsed');
+    void sidebar.offsetWidth;
+    sidebar.style.transition = '';
+  }
 
   const sidebarHeader = document.querySelector('.sidebar-header');
   if (sidebarHeader && sidebar) {
@@ -136,7 +150,43 @@ function initSidebar() {
       nav.innerHTML = masterNavHTML;
       if (window.auth && auth.initNavbar) auth.initNavbar();
       updateActiveState();
+
+      // Keep the menu's scroll position across pages so the sidebar doesn't jump back to the top.
+      try {
+        const savedScroll = Number(sessionStorage.getItem('tt_sidebar_scroll'));
+        if (savedScroll) nav.scrollTop = savedScroll;
+        window.addEventListener('pagehide', () => sessionStorage.setItem('tt_sidebar_scroll', String(nav.scrollTop)));
+      } catch (e) { }
+
+      enableNavPrefetch(nav);
     }
+  }
+
+  // Start fetching a page as soon as the pointer rests on its menu item, so by the time
+  // the click lands most of the load has already happened.
+  function enableNavPrefetch(nav) {
+    const prefetched = new Set();
+    const useSpeculationRules = HTMLScriptElement.supports && HTMLScriptElement.supports('speculationrules');
+    const prefetch = (e) => {
+      const item = e.target.closest && e.target.closest('.menu-item[data-nav]');
+      if (!item) return;
+      const url = new URL(item.getAttribute('data-nav'), window.location.href);
+      if (url.pathname === window.location.pathname || prefetched.has(url.href)) return;
+      prefetched.add(url.href);
+      if (useSpeculationRules) {
+        const rules = document.createElement('script');
+        rules.type = 'speculationrules';
+        rules.textContent = JSON.stringify({ prefetch: [{ source: 'list', urls: [url.href] }] });
+        document.head.appendChild(rules);
+      } else {
+        const link = document.createElement('link');
+        link.rel = 'prefetch';
+        link.href = url.href;
+        document.head.appendChild(link);
+      }
+    };
+    nav.addEventListener('pointerover', prefetch);
+    nav.addEventListener('touchstart', prefetch, { passive: true });
   }
 
   function updateActiveState() {
