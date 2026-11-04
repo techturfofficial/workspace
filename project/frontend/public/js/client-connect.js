@@ -64,7 +64,7 @@ function renderClients(clients) {
         </div>
         <div class="client-info-strip">
           <div class="client-name">${escapeHtml(c.name)}</div>
-          <div class="client-meta">${escapeHtml(c.email || 'N/A')} • Active Projects: 0</div>
+          <div class="client-meta">${escapeHtml(c.email || 'N/A')} • Active Projects: ${Number(c.active_projects) || 0}</div>
           
           <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
             <button class="btn-primary" style="font-size:0.65rem;" onclick="openLogInteraction(${c.id})">LOG CALL</button>
