@@ -1038,8 +1038,25 @@ if (!clientColumns.includes('is_active')) {
 if (!clientColumns.includes('last_login_at')) {
   db.exec('ALTER TABLE clients ADD COLUMN last_login_at DATETIME');
 }
+// Portal password kept encrypted (not just hashed) so admins can view it on the client page.
+if (!clientColumns.includes('portal_password_enc')) {
+  db.exec('ALTER TABLE clients ADD COLUMN portal_password_enc TEXT');
+}
 // Unique index — use IF NOT EXISTS to be idempotent
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_login_id ON clients(client_login_id)');
+
+// One-time: give every existing client a sequential Access ID (TT-CLI-0001, ... oldest
+// first). New clients get the next number when they are created.
+if (!db.prepare("SELECT 1 FROM settings WHERE key = 'client_login_ids_sequential'").get()) {
+  db.transaction(() => {
+    const ids = db.prepare('SELECT id FROM clients ORDER BY id').all().map(r => r.id);
+    const setId = db.prepare('UPDATE clients SET client_login_id = ? WHERE id = ?');
+    // Two passes so a new ID never collides with an old one that hasn't moved yet.
+    ids.forEach(id => setId.run(`tmp-renumber-${id}`, id));
+    ids.forEach((id, i) => setId.run('TT-CLI-' + String(i + 1).padStart(4, '0'), id));
+    db.prepare("INSERT INTO settings (key, value) VALUES ('client_login_ids_sequential', ?)").run(new Date().toISOString());
+  })();
+}
 
 // Users table migrations
 try {

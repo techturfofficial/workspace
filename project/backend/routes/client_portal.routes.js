@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const { comparePassword, hashPassword, verifyClientToken, requireClientScope, isStrongPassword } = require('../auth');
 const { publish } = require('../services/realtime');
 const { notifyUsers } = require('../services/notification.service');
+const { encryptPassword } = require('../services/portal-credentials');
 
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -291,7 +292,8 @@ router.post('/change-password', verifyClientToken, requireClientScope, async (re
 
   try {
     const hash = await hashPassword(password);
-    db.prepare('UPDATE clients SET password_hash = ? WHERE id = ?').run(hash, req.clientScope.clientId);
+    // Keep the admin-viewable copy in step, so the client page shows the current password.
+    db.prepare('UPDATE clients SET password_hash = ?, portal_password_enc = ? WHERE id = ?').run(hash, encryptPassword(password), req.clientScope.clientId);
     res.json({ message: 'Password updated successfully' });
   } catch (err) {
     console.error('Password change error:', err);

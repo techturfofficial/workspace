@@ -1,10 +1,12 @@
 const router = require('express').Router();
 const db = require('../db');
 const { verifyToken, checkRole } = require('../auth');
+const { encryptPassword, decryptPassword, nextClientLoginId } = require('../services/portal-credentials');
 
-// Never send portal credentials to the browser; only whether a password is set.
+// Never send portal credentials to the browser; only whether a password is set. Admins
+// read the password through GET /:id/portal-password.
 function withoutSecrets(client) {
-  const { password_hash, portal_password, ...rest } = client;
+  const { password_hash, portal_password, portal_password_enc, ...rest } = client;
   return { ...rest, has_portal_password: Boolean(password_hash) };
 }
 
@@ -61,10 +63,8 @@ router.post('/', verifyToken, checkRole('admin', 'client_handler', 'team_leader'
   } = req.body;
   if (!name) return res.status(400).json({ message: 'Name required' });
   try {
-    const cleanName = (name || '').toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/^_+|_+$/g, '');
-    const loginId = client_login_id && client_login_id.trim() !== '' 
-      ? client_login_id.trim() 
-      : (cleanName ? `${cleanName}_login` : `client_${Date.now()}`);
+    // Access IDs are always assigned in sequence (TT-CLI-0001, ...), never typed in.
+    const loginId = nextClientLoginId(db);
     const result = db.prepare(`INSERT INTO clients (
       name, company, client_login_id, phone, phone_alt, email, location, comm_method,
       industry, business_desc, audience, competitors, brand_assets,
@@ -97,7 +97,8 @@ router.post('/', verifyToken, checkRole('admin', 'client_handler', 'team_leader'
 
 router.put('/:id', verifyToken, checkRole('admin', 'client_handler', 'team_leader'), (req, res) => {
   const fields = [
-    'name', 'company', 'client_login_id', 'phone', 'phone_alt', 'email', 'location', 'comm_method',
+    // client_login_id is not editable: Access IDs stay in their TT-CLI-#### sequence.
+    'name', 'company', 'phone', 'phone_alt', 'email', 'location', 'comm_method',
     'industry', 'business_desc', 'audience', 'competitors', 'brand_assets',
     'service_type', 'project_desc', 'project_goals', 'features', 'design_prefs', 'reference_examples',
     'platform', 'tech', 'integrations', 'hosting',
@@ -170,22 +171,22 @@ router.delete('/:id', verifyToken, checkRole('admin'), (req, res) => {
   }
 });
 
-// POST /api/clients/:id/provision-login (staff only)
+// POST /api/clients/:id/provision-login (admin only): sets a new portal password
 const crypto = require('crypto');
 const { hashPassword } = require('../auth');
-router.post('/:id/provision-login', verifyToken, checkRole('admin', 'client_handler'), async (req, res) => {
+router.post('/:id/provision-login', verifyToken, checkRole('admin'), async (req, res) => {
   const { id } = req.params;
   try {
     const client = db.prepare('SELECT id, name, client_login_id FROM clients WHERE id=?').get(id);
     if (!client) return res.status(404).json({ message: 'Client not found' });
 
-    // Keep an Access ID the team already gave the client; only generate one if missing.
-    const clientLoginId = client.client_login_id || ('TT-CLI-' + String(client.id).padStart(5, '0'));
+    // Keep the client's Access ID; only assign the next one in sequence if it's missing.
+    const clientLoginId = client.client_login_id || nextClientLoginId(db);
     const tempPassword = 'TT-' + crypto.randomBytes(4).toString('hex').toUpperCase() + '$9z';
     const hash = await hashPassword(tempPassword);
 
-    db.prepare('UPDATE clients SET client_login_id=?, password_hash=?, is_active=1 WHERE id=?')
-      .run(clientLoginId, hash, client.id);
+    db.prepare('UPDATE clients SET client_login_id=?, password_hash=?, portal_password_enc=?, is_active=1 WHERE id=?')
+      .run(clientLoginId, hash, encryptPassword(tempPassword), client.id);
 
     res.json({
       message: 'Client portal login provisioned successfully',
@@ -196,6 +197,18 @@ router.post('/:id/provision-login', verifyToken, checkRole('admin', 'client_hand
     console.error('Provision login error:', err);
     res.status(500).json({ message: 'Failed to provision client login: ' + err.message });
   }
+});
+
+// GET /api/clients/:id/portal-password (admin only): the client's current portal password.
+// password is null when none is set, or it was set before passwords were stored viewable.
+router.get('/:id/portal-password', verifyToken, checkRole('admin'), (req, res) => {
+  const client = db.prepare('SELECT client_login_id, password_hash, portal_password_enc FROM clients WHERE id=?').get(req.params.id);
+  if (!client) return res.status(404).json({ message: 'Client not found' });
+  res.json({
+    client_login_id: client.client_login_id,
+    has_password: Boolean(client.password_hash),
+    password: client.portal_password_enc ? decryptPassword(client.portal_password_enc) : null
+  });
 });
 
 module.exports = router;

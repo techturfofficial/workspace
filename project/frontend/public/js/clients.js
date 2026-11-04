@@ -17,7 +17,6 @@ async function initClients() {
       // 1. Basic Client Information
       name: document.getElementById('client-name').value,
       company: document.getElementById('client-company').value,
-      client_login_id: document.getElementById('client-login-id')?.value || '',
       phone: document.getElementById('client-phone').value,
       phone_alt: document.getElementById('client-phone-alt').value,
       email: document.getElementById('client-email').value,
@@ -237,8 +236,8 @@ function openNewClientEditor() {
         <input id="quick-client-company" class="form-control" type="text" placeholder="Company or brand">
       </div>
       <div class="form-group">
-        <label for="quick-client-login-id">Client Access ID (Portal Username)</label>
-        <input id="quick-client-login-id" class="form-control" type="text" placeholder="e.g. TT-CLI-00012">
+        <label>Client Access ID (Portal Username)</label>
+        <input class="form-control" type="text" value="Assigned automatically (TT-CLI-0001, 0002, ...)" disabled>
       </div>
       <div class="form-group">
         <label for="quick-client-project-key">Project Key</label>
@@ -287,7 +286,6 @@ async function createQuickClient() {
   const data = {
     name,
     company: document.getElementById('quick-client-company')?.value.trim() || '',
-    client_login_id: document.getElementById('quick-client-login-id')?.value.trim() || '',
     project_key: document.getElementById('quick-client-project-key')?.value.trim() || '',
     email: document.getElementById('quick-client-email')?.value.trim() || '',
     phone: document.getElementById('quick-client-phone')?.value.trim() || '',
@@ -339,12 +337,13 @@ async function openClientDetail(id) {
 
       <div style="margin-bottom:24px;">
         <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">Client Access ID</div>
-        <div style="font-weight:700; color:var(--accent-secondary); font-family:var(--font-mono);">${c.client_login_id || '—'}</div>
-        ${(typeof auth !== 'undefined' && auth.hasRole('admin', 'client_handler')) ? `
+        <div style="font-weight:700; color:var(--accent-secondary); font-family:var(--font-mono);">${escapeHtml(c.client_login_id || '—')}</div>
+        ${(typeof auth !== 'undefined' && auth.hasRole('admin')) ? `
+        <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; margin:12px 0 4px;">Portal Password</div>
+        <div id="portal-password-${Number(c.id)}" style="font-weight:700; font-family:var(--font-mono);">Loading...</div>
         <button type="button" class="btn-secondary" style="margin-top:8px; font-size:0.75rem; padding:6px 12px;" onclick="provisionClientPortalLogin(${Number(c.id)})">
           <i class="fas fa-key"></i> ${c.has_portal_password ? 'Reset portal password' : 'Create portal password'}
-        </button>
-        <div id="portal-credentials-${Number(c.id)}" style="display:none; margin-top:8px; padding:10px; border:1px dashed var(--accent-primary); border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:0.8rem;"></div>` : ''}
+        </button>` : ''}
       </div>
       
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px;">
@@ -436,6 +435,7 @@ async function openClientDetail(id) {
     overlay.style.display = 'block';
     overlay.onclick = closeDetailPanel;
     document.getElementById('panel-body').insertAdjacentHTML('beforeend', `<div style="margin-top:32px;">${adminControls}</div>`);
+    if (auth.hasRole('admin')) loadClientPortalPassword(c.id);
   } catch (e) {
     showToast('Failed to load client details', 'error');
   }
@@ -1061,16 +1061,34 @@ async function deleteClient(id) {
 }
 window.deleteClient = deleteClient;
 
-// Client portal sign-in needs a password. Generates a one-time password for the client
-// (shown once here - share it with the client; they can change it after signing in).
+// Admins see the client's current portal password next to the Access ID.
+async function loadClientPortalPassword(id) {
+  const el = document.getElementById(`portal-password-${id}`);
+  if (!el) return;
+  try {
+    const res = await api.get(`/clients/${id}/portal-password`);
+    if (res.password) {
+      el.textContent = res.password;
+    } else {
+      el.textContent = res.has_password ? 'Set before passwords were viewable - reset to see it' : 'Not set yet';
+      el.style.color = 'var(--text-muted)';
+      el.style.fontWeight = '400';
+    }
+  } catch (e) {
+    el.textContent = 'Could not load';
+  }
+}
+
+// Client portal sign-in needs a password. Admin only: generates a new one, shown above.
 async function provisionClientPortalLogin(id) {
   if (!(await confirmDialog('Generate a new client portal password? Any previous portal password stops working.', { confirmText: 'Generate', danger: false }))) return;
   try {
     const res = await api.post(`/clients/${id}/provision-login`, {});
-    const box = document.getElementById(`portal-credentials-${id}`);
-    if (box) {
-      box.style.display = 'block';
-      box.innerHTML = `Access ID: <strong>${escapeHtml(res.client_login_id)}</strong><br>Password: <strong>${escapeHtml(res.temp_password)}</strong><br><span style="font-family:inherit; color:var(--text-muted);">Shown only once - copy it now and share it with the client securely.</span>`;
+    const el = document.getElementById(`portal-password-${id}`);
+    if (el) {
+      el.textContent = res.temp_password;
+      el.style.color = '';
+      el.style.fontWeight = '700';
     }
     showToast('Client portal password created', 'success');
   } catch (err) {
