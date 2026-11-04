@@ -10539,6 +10539,45 @@
           }
         },
         {
+          "name": "GET /api/client-connect/summary as designer -> 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staff_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/client-connect/summary",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "client-connect",
+                "summary"
+              ]
+            }
+          }
+        },
+        {
           "name": "POST /api/client-connect/portal-pass as designer -> 403",
           "event": [
             {
@@ -10592,6 +10631,46 @@
           }
         },
         {
+          "name": "GET /api/client-connect/passes/:clientId as designer -> 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staff_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/client-connect/passes/999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "client-connect",
+                "passes",
+                "999999"
+              ]
+            }
+          }
+        },
+        {
           "name": "POST /api/client-connect/interactions as designer -> 403",
           "event": [
             {
@@ -10641,6 +10720,46 @@
                   "language": "json"
                 }
               }
+            }
+          }
+        },
+        {
+          "name": "GET /api/client-connect/interactions/:clientId as designer -> 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staff_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/client-connect/interactions/999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "client-connect",
+                "interactions",
+                "999999"
+              ]
             }
           }
         },
