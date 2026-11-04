@@ -3,39 +3,41 @@
 ## Folder Structure
 
 ```
-techturf/
-├── frontend/
-│   └── dist/
-├── backend/
-│   ├── index.js
-│   ├── db.js
-│   ├── routes/
-│   └── services/
-├── storage/
-│   ├── techturf.db
-│   ├── uploads/
-│   └── drive_storage/
-├── .env
-├── package.json
-└── README.md
+TT_CRM_Update/
+├── deploy.sh                 # safe update script (backup DB, pull, install, restart)
+├── techturf.db               # live SQLite database (not in git)
+└── project/
+    ├── package.json          # all backend dependencies; `npm start` runs the server
+    ├── .env                  # copy of .env.example with real secrets (not in git)
+    ├── create_admin.js
+    ├── backend/
+    │   ├── index.js
+    │   ├── db.js
+    │   ├── routes/
+    │   └── services/
+    ├── frontend/
+    │   ├── public/           # employee CRM (static HTML/CSS/JS, no build step)
+    │   └── client-portal/    # client portal (served on port 5000)
+    └── storage/              # uploads and drive files (not in git)
 ```
 
 ## Deployment Steps
 
-1. **Install dependencies and build frontend**
+For updates on the server, run `./deploy.sh` from the repository root: it stops the
+backend, backs up the database, pulls `origin/main`, installs dependencies and restarts.
+
+First-time setup:
+
+1. **Configure the environment**
    ```bash
-   cd frontend
-   npm ci
-   npm run build
-   cd ..
+   cd project
+   cp .env.example .env    # then set JWT_SECRET, APP_URL, ALLOWED_ORIGINS, ...
    ```
-2. **Install backend dependencies**
+2. **Install dependencies** (the frontend is plain static files, nothing to build)
    ```bash
-   cd backend
-   npm ci
-   cd ..
+   npm ci --omit=dev
    ```
-3. **Start backend with PM2**
+3. **Start the backend with PM2**
    ```bash
    pm2 start backend/index.js --name techturf-backend
    ```
